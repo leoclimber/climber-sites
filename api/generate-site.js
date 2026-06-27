@@ -26,6 +26,7 @@ export default async function handler(req, res) {
       vibe = "",
       colors = "",
       logoUrl = "",
+      clientPhotos = "",
       extraInfo = "",
       whatsapp = "",
       bookingLink = "",
@@ -43,23 +44,38 @@ export default async function handler(req, res) {
 
 YOUR DESIGN PROCESS (do this silently, then output only the final HTML):
 1. Ground the design in THIS specific business. A barbershop's world (chrome, leather, classic masculine craft) is different from a nail salon's (soft, elegant, pastel) or a pizzeria's (warm, rustic, appetite). Derive every choice from the business type and vibe.
-2. Build a deliberate token system: a palette of 4-6 hex colors specific to this business (NOT generic blue/gray defaults), a characterful display font + a clean body font (pair them intentionally via Google Fonts), and a clear type scale.
-3. Pick ONE signature element this site will be remembered by (a striking hero treatment, an elegant section transition, a distinctive way of showing services).
+2. Build a deliberate token system: a palette of 4-6 hex colors specific to this business, a characterful display font + a clean body font (pair them intentionally via Google Fonts), and a clear type scale.
+3. Pick ONE signature element this site will be remembered by.
 
-CRITICAL QUALITY RULES — every site must hit these:
-- Look like a €2000 agency site, never a template. Avoid the three generic AI looks: cream+serif+terracotta, near-black+acid-green, and broadsheet-with-hairlines. Make a real choice for THIS business.
+PHOTOS — CRITICAL: You MUST include real photos throughout the site. Use this exact Pexels embed format for photos (these always work and are free):
+- For hero/large images: <img src="https://images.pexels.com/photos/PHOTO_ID/pexels-photo-PHOTO_ID.jpeg?auto=compress&cs=tinysrgb&w=1600" style="width:100%;height:100%;object-fit:cover" alt="description"/>
+- Use these REAL Pexels photo IDs based on business type:
+  * Barbershop/barber: 1570807, 2881449, 3757942, 1805600, 897262, 3998429, 4612871, 1319459
+  * Restaurant/cafe/food: 1640777, 958545, 1640772, 2531546, 1437267, 1099680, 262978, 67468
+  * Hair salon/beauty: 3993449, 3065209, 3992878, 3065171, 4046316, 3997991, 3993444, 2681234
+  * Gym/fitness: 1552252, 416778, 703012, 1552243, 2261477, 841130, 949126, 4162438
+  * Dental/clinic/health: 3845810, 305565, 3845653, 4386467, 4386464, 3951628, 3938023, 3845809
+  * Generic business: 3182812, 3182781, 1181686, 3182774, 3183197, 1181695, 3182759, 3183150
+- Use at least 4-6 different photos spread across hero, gallery, and background sections. NEVER leave image placeholders empty.
+- If a custom logo URL is provided, use it as <img> in the header. Otherwise create an elegant CSS text wordmark.
+- If custom photo URLs are provided by the client, use those in the gallery section instead of Pexels.
+
+QUALITY RULES — every site must hit 9/10:
+- Look like a €2000 agency site. Make deliberate, specific choices for THIS business type.
 - Mobile-first, fully responsive, flawless on phone and desktop.
-- Real Google Font pairing suited to the business (import via <link>). Never default system fonts.
-- Deliberate, tasteful color palette derived from the business type/vibe (or the colors given).
-- Generous, consistent spacing. Strong visual hierarchy. Tasteful hover and scroll micro-interactions via CSS (but don't overdo animation — too much reads as AI-generated).
-- Compelling, specific marketing copy in the business's language (default English for Ireland). Never lorem ipsum, never generic filler.
-- Accessibility floor: good contrast, alt text on images, visible keyboard focus, respects reduced-motion.
+- Real Google Font pairing (import via <link>). Display font with personality + clean body font.
+- Generous spacing, strong visual hierarchy, tasteful CSS hover/scroll micro-interactions.
+- Compelling, specific marketing copy. Never lorem ipsum or generic filler.
+- Accessibility: good contrast, alt text on all images, keyboard-focusable nav.
+- The hero section MUST have a full-screen background image or split image layout — never a plain colored background with no photo.
 
-REQUIRED SECTIONS in order: sticky header with logo + nav + booking button; hero with strong headline, subheadline and a clear call-to-action; about/story; services/offerings as cards; gallery using real photos; Google rating + testimonials; location/contact with phone, email, address, opening hours, and an embedded Google Maps iframe (maps search embed by address); footer.
-- BOOKING / CONTACT is the single most important action for a local business. Always include a prominent "Book Now" / "Book on WhatsApp" button. If a WhatsApp number is provided, link to https://wa.me/NUMBER (digits only) with a pre-filled message "Hi, I'd like to book an appointment". If a booking link (Fresha, Booksy, Calendly) is provided, the main button links to it (new tab). Otherwise link to tel: the phone. Repeat the booking button in the hero, sticky header, and contact section.
-- If opening hours are provided, show them in a clean table.
-- For photos, use https://source.unsplash.com/1600x900/?KEYWORDS with keywords matching the business (vary them so images differ).
-- LOGO: if a logo image URL is provided, use it as an <img> in the header/footer. Otherwise create an elegant text wordmark from the business name.`;
+REQUIRED SECTIONS: sticky header with logo + nav + booking CTA button; full-screen hero with background photo, strong headline and subheadline; about/story section with photo; services as visual cards; photo gallery (minimum 4 photos in a grid); Google rating + 3 testimonials; location/contact with phone, address, opening hours table, and embedded Google Maps iframe (use address-based search embed: https://maps.google.com/maps?q=ADDRESS&output=embed); footer with links and copyright.
+
+BOOKING is the #1 priority for local businesses:
+- If WhatsApp number provided: main CTA links to https://wa.me/NUMBER with message "Hi, I'd like to book an appointment"
+- If booking link (Fresha/Booksy/Calendly) provided: main CTA links to it (target="_blank")  
+- Otherwise: CTA links to tel:PHONE
+- Repeat the booking button in: sticky header, hero section, and contact section.`;
 
     let userPrompt;
     if (editInstruction && previousHtml) {
@@ -81,6 +97,7 @@ Booking link (Fresha/Booksy/Calendly, if any): ${bookingLink}
 Desired vibe/style: ${vibe}
 Brand colors (if any): ${colors}
 Logo image URL (if any): ${logoUrl}
+Client photos (use these in the gallery if provided, one URL per line): ${clientPhotos}
 Extra info: ${extraInfo}
 
 Remember: output ONLY the raw HTML file, nothing else.`;
