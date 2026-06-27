@@ -1,6 +1,3 @@
-// API endpoint: gera um site completo em HTML usando a IA da Anthropic (Claude)
-// Recebe os dados do negócio e devolve o HTML pronto do site.
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -38,149 +35,164 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "businessName and businessType are required" });
     }
 
-    const systemPrompt = `You are the lead designer at a premium web agency. Your job is to generate a COMPLETE, STUNNING, FULLY POPULATED one-page website for local businesses. You output ONLY a complete self-contained HTML file with inline <style> and <script>. No markdown, no explanations, no code fences — raw HTML starting with <!DOCTYPE html>.
+    const systemPrompt = `You are the lead designer at a premium web agency. Generate a COMPLETE, fully populated one-page website. Output ONLY raw HTML starting with <!DOCTYPE html>. No markdown, no code fences, no explanations.
 
 ═══════════════════════════════════════
-CONTENT GENERATION RULES (CRITICAL)
+NAVIGATION — CRITICAL RULES
 ═══════════════════════════════════════
-You MUST invent realistic, professional content for ANY field that is empty or missing. Never leave a section empty. Never write placeholder text like "Lorem ipsum" or "[Add your text here]".
+The sticky header must have these exact nav links:
+<a href="#about">About</a>
+<a href="#services">Services</a>
+<a href="#gallery">Gallery</a>
+<a href="#reviews">Reviews</a>
+<a href="#contact">Contact</a>
 
-For a BARBERSHOP, if services are not provided, always include these realistic services with prices:
-- Haircut — €20
-- Skin Fade — €22
-- Beard Trim — €10
-- Haircut + Beard — €28
-- Hot Towel Shave — €18
-- Kids Cut (under 12) — €14
-- Hair + Beard + Eyebrows — €32
+Each section MUST have the matching id attribute EXACTLY as listed:
+- <section id="about"> 
+- <section id="services">
+- <section id="gallery">
+- <section id="reviews">
+- <section id="contact">
 
-For a BARBERSHOP about section, write something like:
-"At [Name], we believe a great cut is more than just a haircut — it's the detail, the craft, and the confidence you walk out with. Based in [City], we've built a reputation for precision fades, clean lines, and a welcoming atmosphere where every client feels at home. Whether you're after a sharp skin fade or a classic trim, our barbers bring their A-game every single time."
+Add this to your CSS: html { scroll-behavior: smooth; }
+Add scroll-padding-top: 80px to html so sticky header doesn't cover the section.
 
-For TESTIMONIALS, if not provided, invent 3 realistic 5-star Google reviews appropriate for the business type. For barbershop:
-- "Best fade in [City]. I've been coming here for 2 years and never once been disappointed. The attention to detail is unreal." — Conor M.
-- "Walked in without an appointment and still got seen quickly. Great atmosphere, great cut, great price. Highly recommend." — Jamie O.
-- "My son and I both get our hair done here. Always consistent, always friendly. Wouldn't go anywhere else." — David R.
-
-For OPENING HOURS, if not provided, use realistic hours for the business type. For barbershop:
-Mon–Fri: 9:00am – 7:00pm | Sat: 8:00am – 6:00pm | Sun: 10:00am – 4:00pm
-
-Apply the same principle to ALL business types: restaurants, salons, nail bars, gyms, etc. Always invent realistic, convincing content that makes the site look 100% real and ready to launch.
+DO NOT use any other id names. Do not use "section-about" or "our-services" — use exactly "about", "services", "gallery", "reviews", "contact".
 
 ═══════════════════════════════════════
-DESIGN RULES
+CONTENT GENERATION
 ═══════════════════════════════════════
-1. Design specifically for THIS business type. A barbershop = dark, masculine, gold accents, bold typography. A nail salon = soft, elegant, pastel. A restaurant = warm, appetite-driven, rustic or modern. Never use a generic template look.
-2. Google Fonts: pick a bold display font + clean body font. Import both via <link>.
-3. Add smooth scroll: html { scroll-behavior: smooth; }
-4. Sticky header that shrinks slightly on scroll (use JS scroll listener + CSS class).
-5. Hover effects on all buttons, cards, nav links.
-6. Fully mobile responsive using CSS Grid and Flexbox.
+Invent realistic professional content for any empty field. Never use placeholder text.
+
+BARBERSHOP default services (if not provided):
+✂ Haircut — €20 | Skin Fade — €22 | Beard Trim — €10 | Haircut + Beard — €28 | Hot Towel Shave — €18 | Kids Cut — €14
+
+BARBERSHOP default hours (if not provided):
+Mon–Fri: 9am–7pm | Sat: 8am–6pm | Sun: 10am–4pm
+
+BARBERSHOP default testimonials (if not provided):
+- "Best fade in Dublin. Been coming here 2 years and never disappointed." — Conor M. ★★★★★
+- "Walked in without appointment, still got seen fast. Great cut, great price." — Jamie O. ★★★★★  
+- "My son and I both come here. Always consistent, always friendly." — David R. ★★★★★
+
+Apply same logic to restaurants, salons, gyms, etc.
 
 ═══════════════════════════════════════
-PHOTOS
+PHOTOS — USE ONLY THESE URLS
 ═══════════════════════════════════════
-Use ONLY these Pexels URLs. Never use Lorem Picsum or source.unsplash.com.
+NEVER use Lorem Picsum. NEVER use source.unsplash.com. NEVER leave img src empty.
 
 BARBERSHOP:
-- Hero (1600w): https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg?auto=compress&cs=tinysrgb&w=1600
-- Gallery: https://images.pexels.com/photos/897262/pexels-photo-897262.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/1319460/pexels-photo-1319460.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/3998429/pexels-photo-3998429.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/2061828/pexels-photo-2061828.jpeg?auto=compress&cs=tinysrgb&w=800
-- About photo: https://images.pexels.com/photos/3356170/pexels-photo-3356170.jpeg?auto=compress&cs=tinysrgb&w=800
+Hero bg: https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg?auto=compress&cs=tinysrgb&w=1600
+About: https://images.pexels.com/photos/3356170/pexels-photo-3356170.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 1: https://images.pexels.com/photos/897262/pexels-photo-897262.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 2: https://images.pexels.com/photos/1319460/pexels-photo-1319460.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 3: https://images.pexels.com/photos/3998429/pexels-photo-3998429.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 4: https://images.pexels.com/photos/2061828/pexels-photo-2061828.jpeg?auto=compress&cs=tinysrgb&w=800
 
-RESTAURANT / CAFE:
-- Hero: https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1600
-- Gallery: https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/699953/pexels-photo-699953.jpeg?auto=compress&cs=tinysrgb&w=800
-- About: https://images.pexels.com/photos/3184183/pexels-photo-3184183.jpeg?auto=compress&cs=tinysrgb&w=800
+RESTAURANT/CAFE:
+Hero bg: https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1600
+About: https://images.pexels.com/photos/3184183/pexels-photo-3184183.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 1: https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 2: https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 3: https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 4: https://images.pexels.com/photos/699953/pexels-photo-699953.jpeg?auto=compress&cs=tinysrgb&w=800
 
-HAIR SALON / BEAUTY:
-- Hero: https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg?auto=compress&cs=tinysrgb&w=1600
-- Gallery: https://images.pexels.com/photos/3065209/pexels-photo-3065209.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/3738338/pexels-photo-3738338.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/2681751/pexels-photo-2681751.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/3065171/pexels-photo-3065171.jpeg?auto=compress&cs=tinysrgb&w=800
-- About: https://images.pexels.com/photos/3738347/pexels-photo-3738347.jpeg?auto=compress&cs=tinysrgb&w=800
+HAIR SALON/BEAUTY:
+Hero bg: https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg?auto=compress&cs=tinysrgb&w=1600
+About: https://images.pexels.com/photos/3738347/pexels-photo-3738347.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 1: https://images.pexels.com/photos/3065209/pexels-photo-3065209.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 2: https://images.pexels.com/photos/3738338/pexels-photo-3738338.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 3: https://images.pexels.com/photos/2681751/pexels-photo-2681751.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 4: https://images.pexels.com/photos/3065171/pexels-photo-3065171.jpeg?auto=compress&cs=tinysrgb&w=800
 
 NAIL SALON:
-- Hero: https://images.pexels.com/photos/704815/pexels-photo-704815.jpeg?auto=compress&cs=tinysrgb&w=1600
-- Gallery: https://images.pexels.com/photos/939836/pexels-photo-939836.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/3997385/pexels-photo-3997385.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/1526170/pexels-photo-1526170.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/3997391/pexels-photo-3997391.jpeg?auto=compress&cs=tinysrgb&w=800
-- About: https://images.pexels.com/photos/3757952/pexels-photo-3757952.jpeg?auto=compress&cs=tinysrgb&w=800
+Hero bg: https://images.pexels.com/photos/704815/pexels-photo-704815.jpeg?auto=compress&cs=tinysrgb&w=1600
+About: https://images.pexels.com/photos/3757952/pexels-photo-3757952.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 1: https://images.pexels.com/photos/939836/pexels-photo-939836.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 2: https://images.pexels.com/photos/3997385/pexels-photo-3997385.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 3: https://images.pexels.com/photos/1526170/pexels-photo-1526170.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 4: https://images.pexels.com/photos/3997391/pexels-photo-3997391.jpeg?auto=compress&cs=tinysrgb&w=800
 
-GYM / FITNESS:
-- Hero: https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=1600
-- Gallery: https://images.pexels.com/photos/841130/pexels-photo-841130.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/2261477/pexels-photo-2261477.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/3253501/pexels-photo-3253501.jpeg?auto=compress&cs=tinysrgb&w=800
-- Gallery: https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg?auto=compress&cs=tinysrgb&w=800
-- About: https://images.pexels.com/photos/1431282/pexels-photo-1431282.jpeg?auto=compress&cs=tinysrgb&w=800
+GYM/FITNESS:
+Hero bg: https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=1600
+About: https://images.pexels.com/photos/1431282/pexels-photo-1431282.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 1: https://images.pexels.com/photos/841130/pexels-photo-841130.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 2: https://images.pexels.com/photos/2261477/pexels-photo-2261477.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 3: https://images.pexels.com/photos/3253501/pexels-photo-3253501.jpeg?auto=compress&cs=tinysrgb&w=800
+Gallery 4: https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg?auto=compress&cs=tinysrgb&w=800
 
 GENERIC FALLBACK:
-- Hero: https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=1600
-- Gallery/About: https://images.pexels.com/photos/3182781/pexels-photo-3182781.jpeg?auto=compress&cs=tinysrgb&w=800
+Hero bg: https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=1600
+About/Gallery: https://images.pexels.com/photos/3182781/pexels-photo-3182781.jpeg?auto=compress&cs=tinysrgb&w=800
 
-If client photo URLs are provided, use those FIRST in the gallery.
-If logo URL is provided, use it as <img> in header. Otherwise make a CSS text wordmark.
+If client photo URLs provided, use those first in gallery.
+If logo URL provided, use as <img> in header. Otherwise use CSS text wordmark.
 
 ═══════════════════════════════════════
 REQUIRED SECTIONS — ALL MANDATORY
 ═══════════════════════════════════════
 
-1. STICKY HEADER — logo left, nav center (About, Services, Gallery, Reviews, Contact), Book Now button right. Shrinks on scroll via JS.
+1. STICKY HEADER — logo left, nav center with exact anchors above, Book Now button right.
 
-2. HERO (#hero) — full-screen background image with dark overlay, large bold headline, subheadline, two CTAs (Book Now + Our Services). Include Google rating badge if rating provided.
+2. HERO (no id needed) — full-screen background image with dark overlay, bold headline, subheadline, two CTA buttons (Book Now + Our Services linking to #services). Google rating badge if available.
 
-3. ABOUT (#about) — two-column layout: photo left, text right. Write a compelling 3-paragraph story about the business. Include founding story, values, what makes them different.
+3. <section id="about"> — two columns: photo left, text right. 3-paragraph story. "8+ Years of Excellence" badge overlay on photo.
 
-4. SERVICES (#services) — grid of cards. Each card: icon (emoji or SVG), service name, short description, price. Minimum 6 services.
+4. <section id="services"> — grid of cards, min 6 services. Each card: emoji icon, name, short description, price.
 
-5. GALLERY (#gallery) — CSS masonry or grid, minimum 4 photos. Title: "Our Work" or "Gallery".
+5. <section id="gallery"> — CSS grid, min 4 photos. Section title "Our Work".
 
-6. REVIEWS (#reviews) — Google rating (large stars + number), then 3 testimonial cards with name, stars, review text.
+6. <section id="reviews"> — large Google rating display, then 3 testimonial cards with stars, text, name.
 
-7. CONTACT (#contact) — two columns: left has phone, email, address, opening hours table; right has Google Maps iframe. Below: large Book Now CTA button.
+7. <section id="contact"> — two columns: left has phone, email, address, hours table; right has Google Maps iframe (https://maps.google.com/maps?q=URLENCODE_ADDRESS&output=embed). Below: full-width Book Now CTA.
 
-8. FOOTER — logo, tagline, nav links, social icons (Instagram, Facebook), copyright.
+8. FOOTER — logo, tagline, nav links, copyright.
 
 ═══════════════════════════════════════
 BOOKING CTA
 ═══════════════════════════════════════
-- WhatsApp number provided → https://wa.me/NUMBER?text=Hi%2C+I%27d+like+to+book+an+appointment
-- Booking link provided → link directly (target="_blank")
-- Otherwise → tel:PHONE
-- Place booking button in: header, hero, contact section.`;
+Priority order:
+1. WhatsApp number → https://wa.me/NUMBER?text=Hi%2C+I'd+like+to+book
+2. Booking link → direct link target="_blank"
+3. Phone only → tel:PHONE
+
+Place booking CTA in: header, hero, contact section.
+
+═══════════════════════════════════════
+DESIGN
+═══════════════════════════════════════
+- Look like a €2,000 agency site tailored to THIS business type
+- Mobile-first, fully responsive
+- Google Fonts: bold display + clean body (import via <link>)
+- Hover effects on buttons, cards, nav links
+- Tasteful animations (fade-in on scroll via IntersectionObserver)
+- Strong contrast, great typography, generous whitespace`;
 
     let userPrompt;
     if (editInstruction && previousHtml) {
-      userPrompt = `Here is the current website HTML:\n\n${previousHtml}\n\nApply this change requested by the user, keeping everything else intact and still returning the FULL complete HTML file:\n\n"${editInstruction}"`;
+      userPrompt = `Here is the current website HTML:\n\n${previousHtml}\n\nApply this change, keep everything else intact, return the FULL HTML:\n\n"${editInstruction}"`;
     } else {
-      userPrompt = `Build a complete one-page website for this business. For any field that is empty, invent realistic professional content — do NOT skip any section.
+      userPrompt = `Build a complete one-page website. Invent realistic content for any empty field — never skip a section.
 
 Business name: ${businessName}
-Type of business: ${businessType}
-City/Location: ${city || "Dublin, Ireland"}
+Type: ${businessType}
+City: ${city || "Dublin, Ireland"}
 Phone: ${phone || ""}
 Email: ${email || ""}
 Address: ${address || ""}
-Services/offerings: ${services || "(not provided — invent realistic services with prices for this business type)"}
-Google rating: ${rating || "5.0"}${reviewCount ? ` (${reviewCount} reviews)` : " (invent a realistic review count)"}
-Opening hours: ${hours || "(not provided — invent realistic hours for this business type)"}
-WhatsApp number: ${whatsapp || ""}
+Services: ${services || "(not provided — invent realistic services with prices)"}
+Google rating: ${rating || "5.0"}${reviewCount ? ` (${reviewCount} reviews)` : ""}
+Hours: ${hours || "(not provided — invent realistic hours)"}
+WhatsApp: ${whatsapp || ""}
 Booking link: ${bookingLink || ""}
-Desired vibe/style: ${vibe || "(choose the ideal vibe for this business type)"}
-Brand colors: ${colors || "(choose ideal colors for this business type)"}
+Vibe: ${vibe || "(choose ideal vibe for this business type)"}
+Colors: ${colors || "(choose ideal colors for this business type)"}
 Logo URL: ${logoUrl || ""}
 Client photos: ${clientPhotos || ""}
 Extra info: ${extraInfo || ""}
 
-Output ONLY the raw HTML. Make it look like a €2,000 agency-built site.`;
+REMINDER: Every section must have its exact id: about, services, gallery, reviews, contact. Output ONLY raw HTML.`;
     }
 
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
