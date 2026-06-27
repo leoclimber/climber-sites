@@ -349,12 +349,12 @@ function showSite(html){
   currentHtml = html;
   const area = document.getElementById("previewArea");
   area.className = "";
-  area.innerHTML = '<iframe id="frame"></iframe>';
+  area.innerHTML = '<iframe id="frame" style="width:100%;min-height:480px;border:none;border-radius:10px;background:#fff"></iframe>';
   const frame = document.getElementById("frame");
-  frame.srcdoc = html;
+  const blob = new Blob([html], {type:"text/html"});
+  frame.src = URL.createObjectURL(blob);
   document.getElementById("actions").style.display = "flex";
   document.getElementById("editBox").style.display = "block";
-  // limpa estado de publicação anterior
   const pr = document.getElementById("publishResult"); if(pr) pr.innerHTML = "";
   const db = document.getElementById("domainBox"); if(db) db.style.display = "none";
   const dr = document.getElementById("domainResult"); if(dr) dr.innerHTML = "";
@@ -495,9 +495,9 @@ function download(){
 }
 
 function openFull(){
-  const w = window.open("");
-  w.document.write(currentHtml);
-  w.document.close();
+  const blob = new Blob([currentHtml], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
 }
 </script>
 </body>
