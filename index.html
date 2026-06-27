@@ -149,6 +149,10 @@
       <input id="logoUrl" placeholder="Cole o link de uma imagem do logo (ex: do Instagram)"/>
       <div class="tip" style="margin-top:4px">Deixe vazio para um modelo de demonstração. Depois de fechar a venda, cole o logo real dele aqui.</div>
 
+      <label>Fotos do cliente <span class="opt">(opcional)</span></label>
+      <textarea id="clientPhotos" placeholder="Cole links de fotos reais do negócio (uma por linha). Ex: fotos do Instagram, Google, WhatsApp..."></textarea>
+      <div class="tip" style="margin-top:4px">Sem fotos? A IA usa fotos profissionais gratuitas automaticamente.</div>
+
       <button class="btn" id="genBtn" onclick="generate()">✦ Gerar site</button>
       <div class="tip">Só o nome e o tipo são obrigatórios. Quanto mais você preencher, melhor o site fica.</div>
       <div id="formErr"></div>
@@ -323,6 +327,7 @@ function collectData(){
     vibe: val("vibe"),
     colors: val("colors"),
     logoUrl: val("logoUrl"),
+    clientPhotos: val("clientPhotos"),
   };
 }
 
