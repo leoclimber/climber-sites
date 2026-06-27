@@ -116,15 +116,15 @@ export default async function handler(req, res) {
     const systemPrompt = `You are a senior web designer. Output ONLY a complete self-contained HTML file with inline CSS and JS. No markdown, no code fences — start directly with <!DOCTYPE html>.
 
 CRITICAL RULES:
-- Use EXACTLY the image URLs provided — do not change or invent any image URLs
+- Use EXACTLY the image URLs provided in the prompt — do not change them
 - Section ids must be exactly: about, services, gallery, reviews, contact
 - Add to CSS: html { scroll-behavior: smooth; scroll-padding-top: 80px; }
 - Sticky header with nav linking to #about #services #gallery #reviews #contact
-- Hero must use the provided hero image as full-screen background-image with a dark overlay
+- Hero must use the provided hero image as CSS background-image with a dark overlay
 - All sections must have visible content — no empty sections
 - Invent realistic about text (3 paragraphs), 3 testimonials with Irish names
 - Design must strongly reflect the business type visually
-- Mobile responsive`;
+- Mobile responsive using flexbox and grid`;
 
     let userPrompt;
     if (editInstruction && previousHtml) {
@@ -132,51 +132,50 @@ CRITICAL RULES:
     } else {
       userPrompt = `Build a complete one-page website using these exact details:
 
-IMAGES (use these exact URLs, do not modify):
-- Hero background-image: ${photos.hero}
-- About section photo src: ${photos.about}
-- Gallery img 1 src: ${photos.g1}
-- Gallery img 2 src: ${photos.g2}
-- Gallery img 3 src: ${photos.g3}
-- Gallery img 4 src: ${photos.g4}
+IMAGES (use these exact URLs):
+Hero background-image: ${photos.hero}
+About photo src: ${photos.about}
+Gallery img 1: ${photos.g1}
+Gallery img 2: ${photos.g2}
+Gallery img 3: ${photos.g3}
+Gallery img 4: ${photos.g4}
 
-BOOKING BUTTON: href="${bookingCta}" label="${bookingLabel}" — place in header, hero, and contact section
+BOOKING: href="${bookingCta}" label="${bookingLabel}" — place in header, hero, contact
 
 BUSINESS:
 Name: ${businessName}
 Type: ${businessType}
 City: ${city || "Dublin, Ireland"}
 Phone: ${phone || "+353 1 000 0000"}
-Email: ${email || "info@" + businessName.toLowerCase().replace(/\s+/g, "") + ".ie"}
+Email: ${email || "info@business.ie"}
 Address: ${address || "Dublin, Ireland"}
 Services: ${services || defaultServices}
 Rating: ${rating || "5.0"} (${reviewCount || "100+"} reviews)
 Hours: ${hours || defaultHours}
 Vibe: ${vibe || "professional and modern"}
-Colors: ${colors || "dark with gold accents"}
-Logo: ${logoUrl ? `<img src="${logoUrl}" style="height:40px">` : `<span style="font-weight:900;font-size:1.2rem">${businessName.toUpperCase()}</span>`}
+Colors: ${colors || "dark background with gold accents"}
+Logo: ${logoUrl || businessName.toUpperCase()}
 
-SECTIONS REQUIRED:
-1. Sticky header: logo left, nav center (About/Services/Gallery/Reviews/Contact), booking CTA button right
-2. Hero: full-screen background-image (use hero URL above), dark overlay, big headline, subheadline, 2 buttons
-3. #about: 2 columns — left photo (use about URL), right 3 paragraphs of story + "8+ Years" badge
-4. #services: grid of 6 cards with emoji icon, name, price
-5. #gallery: 4-photo grid (use g1-g4 URLs)
-6. #reviews: rating display + 3 testimonial cards with Irish names
-7. #contact: hours table + phone + address + Google Maps iframe + booking button
+REQUIRED SECTIONS:
+1. Sticky header: logo left, nav center, booking button right
+2. Hero: full-screen CSS background-image with dark overlay, bold headline, 2 CTA buttons
+3. <section id="about">: 2 columns — photo left, 3 paragraphs right
+4. <section id="services">: 6 service cards with emoji, name, price
+5. <section id="gallery">: 4-photo CSS grid
+6. <section id="reviews">: rating + 3 testimonial cards
+7. <section id="contact">: hours + phone + address + Google Maps iframe + booking button
 8. Footer: name, tagline, copyright
 
-Output ONLY the raw HTML starting with <!DOCTYPE html>.`;
+Output ONLY raw HTML starting with <!DOCTYPE html>.`;
     }
 
-    // STREAMING — resolve o problema de timeout do Vercel
+    // Streaming para evitar timeout do Vercel
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": ANTHROPIC_KEY,
         "anthropic-version": "2023-06-01",
-        "anthropic-beta": "messages-2023-06-01",
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
@@ -192,7 +191,6 @@ Output ONLY the raw HTML starting with <!DOCTYPE html>.`;
       return res.status(502).json({ error: "AI generation failed", detail: errText });
     }
 
-    // Lê o stream e acumula o texto completo
     const reader = anthropicRes.body.getReader();
     const decoder = new TextDecoder();
     let fullText = "";
@@ -220,7 +218,7 @@ Output ONLY the raw HTML starting with <!DOCTYPE html>.`;
     html = html.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
 
     if (!html.toLowerCase().includes("<!doctype") && !html.toLowerCase().includes("<html")) {
-      return res.status(502).json({ error: "AI did not return valid HTML", detail: html.slice(0, 200) });
+      return res.status(502).json({ error: "AI did not return valid HTML", detail: html.slice(0, 300) });
     }
 
     return res.status(200).json({ html });
