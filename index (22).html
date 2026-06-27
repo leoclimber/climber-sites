@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Climber Sites — Gerador de Sites</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0b1120;color:#e2e8f0;min-height:100vh}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px}
+  header{display:flex;align-items:center;gap:12px;padding:8px 0 24px}
+  .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:20px}
+  h1{font-size:22px;font-weight:800;color:#fff}
+  .sub{color:#94a3b8;font-size:13px;margin-top:2px}
+  .grid{display:grid;grid-template-columns:1fr;gap:20px}
+  @media(min-width:900px){.grid{grid-template-columns:380px 1fr}}
+  .panel{background:#111a2e;border:1px solid #1e293b;border-radius:16px;padding:20px}
+  .panel h2{font-size:15px;font-weight:700;color:#fff;margin-bottom:14px}
+  label{display:block;font-size:12px;font-weight:600;color:#94a3b8;margin:12px 0 5px;text-transform:uppercase;letter-spacing:.5px}
+  label .opt{color:#64748b;font-weight:400;text-transform:none;letter-spacing:0}
+  input,textarea,select{width:100%;background:#0b1120;border:1px solid #334155;border-radius:10px;padding:11px 13px;color:#e2e8f0;font-size:14px;font-family:inherit}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:#3b82f6}
+  textarea{resize:vertical;min-height:64px}
+  .btn{width:100%;margin-top:18px;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-weight:800;font-size:15px;cursor:pointer;transition:opacity .2s}
+  .btn:hover{opacity:.9}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn2{background:#1e293b;color:#e2e8f0}
+  .preview{background:#111a2e;border:1px solid #1e293b;border-radius:16px;padding:14px;display:flex;flex-direction:column;min-height:500px}
+  .preview-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .preview-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .smallbtn{padding:8px 14px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;background:#1e293b;color:#e2e8f0}
+  .smallbtn.primary{background:#3b82f6;color:#fff}
+  .smallbtn:disabled{opacity:.5;cursor:not-allowed}
+  iframe{width:100%;flex:1;min-height:480px;border:none;border-radius:10px;background:#fff}
+  .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#64748b;gap:10px;padding:40px}
+  .empty .big{font-size:40px}
+  .loading{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#cbd5e1;gap:14px}
+  .spinner{width:42px;height:42px;border:4px solid #1e293b;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .err{background:#7f1d1d;border:1px solid #b91c1c;color:#fecaca;padding:12px 14px;border-radius:10px;font-size:13px;margin-top:12px}
+  .edit-row{display:flex;gap:8px;margin-top:12px}
+  .edit-row input{flex:1}
+  .tip{font-size:12px;color:#64748b;margin-top:6px;line-height:1.5}
+  .tabbtn{padding:11px 20px;border:1px solid #1e293b;border-radius:11px;background:#111a2e;color:#94a3b8;font-weight:700;font-size:14px;cursor:pointer}
+  .tabbtn.active{background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border-color:transparent}
+  .leadcard{background:#111a2e;border:1px solid #1e293b;border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .leadcard .info{flex:1;min-width:200px}
+  .leadcard .nm{font-weight:700;color:#fff;font-size:15px}
+  .leadcard .meta{font-size:12px;color:#94a3b8;margin-top:3px;line-height:1.5}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;background:#064e3b;color:#6ee7b7}
+  .badge.has{background:#422006;color:#fdba74}
+  .filterbtn{padding:8px 14px;border:1px solid #334155;border-radius:9px;background:#0b1120;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer}
+  .filterbtn.active{background:#1e293b;color:#fff;border-color:#3b82f6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">C</div>
+    <div>
+      <h1>Climber Sites</h1>
+      <div class="sub">Gere sites profissionais para seus clientes em segundos</div>
+    </div>
+  </header>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+    <button class="tabbtn active" id="tab-builder" onclick="switchTab('builder')">🌐 Gerar Site</button>
+    <button class="tabbtn" id="tab-leads" onclick="switchTab('leads')">🔍 Achar Clientes</button>
+  </div>
+
+  <!-- ABA: ACHAR CLIENTES -->
+  <div id="view-leads" style="display:none">
+    <div class="panel" style="margin-bottom:20px">
+      <h2>Achar negócios sem site</h2>
+      <div class="tip" style="margin-top:0;margin-bottom:10px">Escolha o tipo de negócio e a cidade. A ferramenta lista os que NÃO têm site — seus melhores clientes.</div>
+      <div style="background:#1e3a5f;border:1px solid #2563eb;color:#bfdbfe;padding:9px 12px;border-radius:9px;font-size:12px;line-height:1.5;margin-bottom:12px">💡 Você tem cerca de <b>600 buscas grátis por mês</b> (≈20 por dia). Mais que suficiente para prospectar. Configure um limite de gastos no Google Cloud para garantir.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label>Tipo de negócio</label>
+          <input id="leadType" placeholder="Ex: barbershop, restaurant, salon"/>
+        </div>
+        <div>
+          <label>Cidade ou país</label>
+          <input id="leadCity" placeholder="Ex: Dublin, Ireland (cidade traz melhores resultados)"/>
+        </div>
+      </div>
+      <button class="btn" id="findBtn" onclick="findLeads()" style="margin-top:14px">🔍 Buscar clientes</button>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="filterbtn active" id="filter-no" onclick="setFilter('no')">Só os SEM site</button>
+        <button class="filterbtn" id="filter-all" onclick="setFilter('all')">Mostrar todos</button>
+      </div>
+      <div class="tip" style="margin-top:8px">Use "Mostrar todos" quando buscar um negócio pelo nome (ex: Los Hermanos Dublin) para ver mesmo se ele já tem site.</div>
+      <div id="leadsErr"></div>
+    </div>
+    <div id="leadsResult"></div>
+  </div>
+
+  <!-- ABA: GERAR SITE -->
+  <div id="view-builder">
+  <div class="grid">
+    <!-- Formulário -->
+    <div class="panel">
+      <h2>Dados do negócio</h2>
+
+      <label>Nome do negócio</label>
+      <input id="businessName" placeholder="Ex: Lincoln Tower Soda Fountain"/>
+
+      <label>Tipo de negócio</label>
+      <input id="businessType" placeholder="Ex: Restaurante, Salão, Mecânica"/>
+
+      <label>Cidade <span class="opt">(opcional)</span></label>
+      <input id="city" placeholder="Ex: Dublin, Ireland"/>
+
+      <label>Telefone <span class="opt">(opcional)</span></label>
+      <input id="phone" placeholder="Ex: +353 83 137 3056"/>
+
+      <label>Email <span class="opt">(opcional)</span></label>
+      <input id="email" placeholder="Ex: contato@negocio.ie"/>
+
+      <label>Endereço <span class="opt">(opcional)</span></label>
+      <input id="address" placeholder="Ex: 116 E Berry St, Dublin"/>
+
+      <label>O que oferece <span class="opt">(opcional)</span></label>
+      <textarea id="services" placeholder="Ex: cortes, barba, coloração — ou pratos, especialidades..."></textarea>
+
+      <label>WhatsApp para agendamento <span class="opt">(opcional)</span></label>
+      <input id="whatsapp" placeholder="Ex: 353831373056 (só números)"/>
+
+      <label>Link de agendamento <span class="opt">(opcional)</span></label>
+      <input id="bookingLink" placeholder="Ex: link do Fresha, Booksy ou Calendly"/>
+
+      <label>Horário de funcionamento <span class="opt">(opcional)</span></label>
+      <textarea id="hours" placeholder="Ex: Seg-Sex 9h-19h, Sáb 9h-17h, Dom fechado"></textarea>
+
+      <label>Nota Google <span class="opt">(opcional)</span></label>
+      <input id="rating" placeholder="Ex: 4.6"/>
+
+      <label>Nº de avaliações <span class="opt">(opcional)</span></label>
+      <input id="reviewCount" placeholder="Ex: 94"/>
+
+      <label>Estilo / vibe <span class="opt">(opcional)</span></label>
+      <input id="vibe" placeholder="Ex: moderno, aconchegante, luxuoso"/>
+
+      <label>Cores da marca <span class="opt">(opcional)</span></label>
+      <input id="colors" placeholder="Ex: verde e dourado"/>
+
+      <label>Logo do cliente — link da imagem <span class="opt">(opcional)</span></label>
+      <input id="logoUrl" placeholder="Cole o link de uma imagem do logo (ex: do Instagram)"/>
+      <div class="tip" style="margin-top:4px">Deixe vazio para um modelo de demonstração. Depois de fechar a venda, cole o logo real dele aqui.</div>
+
+      <button class="btn" id="genBtn" onclick="generate()">✦ Gerar site</button>
+      <div class="tip">Só o nome e o tipo são obrigatórios. Quanto mais você preencher, melhor o site fica.</div>
+      <div id="formErr"></div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview">
+      <div class="preview-bar">
+        <div class="dot" style="background:#ef4444"></div>
+        <div class="dot" style="background:#f59e0b"></div>
+        <div class="dot" style="background:#22c55e"></div>
+        <div class="preview-actions" id="actions" style="display:none">
+          <button class="smallbtn" onclick="regenerate()" id="regenBtn">↻ Gerar de novo</button>
+          <button class="smallbtn" onclick="openFull()">⛶ Abrir em tela cheia</button>
+          <button class="smallbtn primary" onclick="download()">↓ Baixar site</button>
+        </div>
+      </div>
+
+      <div id="previewArea" class="empty">
+        <div class="big">🌐</div>
+        <div>Preencha os dados e clique em <b>Gerar site</b>.<br/>O site vai aparecer aqui pronto.</div>
+      </div>
+
+      <div id="editBox" style="display:none">
+        <div class="edit-row">
+          <input id="editInput" placeholder="Peça uma mudança: ex: deixa as cores mais escuras"/>
+          <button class="smallbtn primary" onclick="applyEdit()" id="editBtn">Aplicar</button>
+        </div>
+        <div class="tip">Você pode pedir quantos ajustes quiser antes de publicar.</div>
+
+        <!-- Publicação -->
+        <div style="margin-top:16px;border-top:1px solid #1e293b;padding-top:16px">
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px">🚀 Publicar na internet</div>
+          <button class="smallbtn primary" style="width:100%" onclick="publish()" id="publishBtn">Publicar agora (grátis no Vercel)</button>
+          <div id="publishResult" style="margin-top:10px"></div>
+        </div>
+
+        <!-- Domínio (aparece após publicar) -->
+        <div id="domainBox" style="display:none;margin-top:14px;border-top:1px solid #1e293b;padding-top:14px">
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">🌐 Conectar domínio do cliente</div>
+          <div class="tip" style="margin-top:0;margin-bottom:8px">O cliente compra o domínio (ex: barbearia.ie) e você cola aqui.</div>
+          <div class="edit-row">
+            <input id="domainInput" placeholder="ex: barbeariadojoao.ie"/>
+            <button class="smallbtn primary" onclick="attachDomain()" id="domainBtn">Conectar</button>
+          </div>
+          <div id="domainResult" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<script>
+let currentHtml = "";
+let currentName = "site";
+
+function switchTab(which){
+  document.getElementById("view-builder").style.display = which === "builder" ? "block" : "none";
+  document.getElementById("view-leads").style.display = which === "leads" ? "block" : "none";
+  document.getElementById("tab-builder").classList.toggle("active", which === "builder");
+  document.getElementById("tab-leads").classList.toggle("active", which === "leads");
+}
+
+let leadFilter = "no"; // "no" = só sem site, "all" = todos
+
+function setFilter(f){
+  leadFilter = f;
+  document.getElementById("filter-no").classList.toggle("active", f === "no");
+  document.getElementById("filter-all").classList.toggle("active", f === "all");
+}
+
+async function findLeads(){
+  const type = document.getElementById("leadType").value.trim();
+  const city = document.getElementById("leadCity").value.trim();
+  document.getElementById("leadsErr").innerHTML = "";
+  if (!type || !city){
+    document.getElementById("leadsErr").innerHTML = '<div class="err">Preencha o tipo de negócio e a cidade.</div>';
+    return;
+  }
+  const btn = document.getElementById("findBtn");
+  btn.disabled = true; btn.textContent = "Buscando...";
+  document.getElementById("leadsResult").innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">Procurando negócios...</div>';
+  try {
+    const r = await fetch("/api/find-leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ businessType: type, city: city, onlyNoWebsite: leadFilter === "no" }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || data.error || "Falha");
+    if (!data.leads || data.leads.length === 0){
+      document.getElementById("leadsResult").innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">Nenhum negócio encontrado para essa busca. Tente outra cidade ou tipo.</div>';
+      return;
+    }
+    let html = '<div style="margin-bottom:12px;color:#cbd5e1;font-size:14px;font-weight:700">'+data.total+' negócios encontrados 🎯</div>';
+    for (const l of data.leads){
+      const badge = l.hasWebsite
+        ? '<span class="badge has">JÁ TEM SITE</span>'
+        : '<span class="badge">SEM SITE</span>';
+      html += '<div class="leadcard"><div class="info">'+
+        '<div class="nm">'+l.name+' '+badge+'</div>'+
+        '<div class="meta">'+
+        (l.phone ? '📞 '+l.phone+'<br/>' : '')+
+        (l.address ? '📍 '+l.address+'<br/>' : '')+
+        (l.website ? '🌐 <a href="'+l.website+'" target="_blank" style="color:#60a5fa">'+l.website+'</a><br/>' : '')+
+        (l.rating ? '⭐ '+l.rating+(l.reviews ? ' ('+l.reviews+' avaliações)' : '') : '')+
+        '</div></div>'+
+        '<button class="smallbtn primary" onclick=\'useLead('+JSON.stringify(JSON.stringify(l))+')\'>Criar site →</button>'+
+        '</div>';
+    }
+    document.getElementById("leadsResult").innerHTML = html;
+  } catch(e){
+    document.getElementById("leadsResult").innerHTML = '<div class="err">Não consegui buscar agora: '+e.message+'</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = "🔍 Buscar clientes";
+  }
+}
+
+// Sugestões de estilo e cores por tipo de negócio (a IA usaria algo assim)
+function suggestStyle(type){
+  const t = (type||"").toLowerCase();
+  if (t.includes("barb")) return { vibe: "moderno, masculino, sofisticado", colors: "preto, dourado e cinza" };
+  if (t.includes("salon") || t.includes("salão") || t.includes("beauty") || t.includes("nail") || t.includes("hair")) return { vibe: "elegante, acolhedor, refinado", colors: "rosa suave, branco e dourado" };
+  if (t.includes("restaur") || t.includes("food") || t.includes("pizz") || t.includes("cafe") || t.includes("café") || t.includes("coffee")) return { vibe: "aconchegante, apetitoso, convidativo", colors: "vermelho, madeira e creme" };
+  if (t.includes("gym") || t.includes("fitness") || t.includes("academia")) return { vibe: "energético, forte, motivador", colors: "preto, vermelho e branco" };
+  if (t.includes("dent") || t.includes("clinic") || t.includes("clínica") || t.includes("health")) return { vibe: "limpo, confiável, profissional", colors: "azul, branco e verde-água" };
+  if (t.includes("mech") || t.includes("auto") || t.includes("car") || t.includes("garage")) return { vibe: "robusto, confiável, técnico", colors: "azul-escuro, laranja e cinza" };
+  if (t.includes("law") || t.includes("advog") || t.includes("account")) return { vibe: "sério, confiável, premium", colors: "azul-marinho, dourado e branco" };
+  return { vibe: "moderno, profissional, acolhedor", colors: "azul-marinho e dourado" };
+}
+
+// Quando clica "Criar site" num lead, leva os dados pra aba de gerar
+function useLead(jsonStr){
+  let l;
+  try { l = JSON.parse(jsonStr); } catch(e){ return; }
+  const type = document.getElementById("leadType").value || "";
+  document.getElementById("businessName").value = l.name || "";
+  document.getElementById("businessType").value = type;
+  document.getElementById("city").value = document.getElementById("leadCity").value || "";
+  document.getElementById("phone").value = l.phone || "";
+  document.getElementById("address").value = l.address || "";
+  if (l.rating) document.getElementById("rating").value = l.rating;
+  if (l.reviews) document.getElementById("reviewCount").value = l.reviews;
+  // auto-preenche estilo e cores sugeridos (você pode trocar)
+  const s = suggestStyle(type);
+  if (!document.getElementById("vibe").value) document.getElementById("vibe").value = s.vibe;
+  if (!document.getElementById("colors").value) document.getElementById("colors").value = s.colors;
+  switchTab("builder");
+  window.scrollTo({top:0,behavior:"smooth"});
+  // avisa que pode ajustar antes de gerar
+  const fe = document.getElementById("formErr");
+  if (fe) fe.innerHTML = '<div style="background:#1e3a5f;border:1px solid #2563eb;color:#bfdbfe;padding:10px 12px;border-radius:9px;font-size:13px;margin-top:10px">✓ Dados de <b>'+(l.name||"")+'</b> carregados, com cores e estilo sugeridos. Ajuste o que quiser e clique em <b>Gerar site</b>.</div>';
+}
+
+function val(id){ return document.getElementById(id).value.trim(); }
+
+function collectData(){
+  return {
+    businessName: val("businessName"),
+    businessType: val("businessType"),
+    city: val("city"),
+    phone: val("phone"),
+    email: val("email"),
+    address: val("address"),
+    services: val("services"),
+    whatsapp: val("whatsapp"),
+    bookingLink: val("bookingLink"),
+    hours: val("hours"),
+    rating: val("rating"),
+    reviewCount: val("reviewCount"),
+    vibe: val("vibe"),
+    colors: val("colors"),
+    logoUrl: val("logoUrl"),
+  };
+}
+
+function setLoading(msg){
+  document.getElementById("actions").style.display = "none";
+  document.getElementById("editBox").style.display = "none";
+  const area = document.getElementById("previewArea");
+  area.className = "loading";
+  area.innerHTML = '<div class="spinner"></div><div>'+msg+'</div><div style="font-size:12px;color:#64748b">Isso leva uns 20-40 segundos. Não feche a página.</div>';
+}
+
+function showError(msg){
+  const area = document.getElementById("previewArea");
+  area.className = "empty";
+  area.innerHTML = '<div class="big">⚠️</div><div>'+msg+'</div>';
+}
+
+function showSite(html){
+  currentHtml = html;
+  const area = document.getElementById("previewArea");
+  area.className = "";
+  area.innerHTML = '<iframe id="frame"></iframe>';
+  const frame = document.getElementById("frame");
+  frame.srcdoc = html;
+  document.getElementById("actions").style.display = "flex";
+  document.getElementById("editBox").style.display = "block";
+  // limpa estado de publicação anterior
+  const pr = document.getElementById("publishResult"); if(pr) pr.innerHTML = "";
+  const db = document.getElementById("domainBox"); if(db) db.style.display = "none";
+  const dr = document.getElementById("domainResult"); if(dr) dr.innerHTML = "";
+}
+
+async function callApi(payload){
+  const r = await fetch("/api/generate-site", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || "Falha ao gerar");
+  return data.html;
+}
+
+async function generate(){
+  const d = collectData();
+  document.getElementById("formErr").innerHTML = "";
+  if (!d.businessName || !d.businessType){
+    document.getElementById("formErr").innerHTML = '<div class="err">Preencha pelo menos o nome e o tipo do negócio.</div>';
+    return;
+  }
+  currentName = d.businessName.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "site";
+  document.getElementById("genBtn").disabled = true;
+  setLoading("Criando o site do " + d.businessName + "...");
+  try {
+    const html = await callApi(d);
+    showSite(html);
+  } catch(e){
+    showError("Não consegui gerar agora. Tente de novo. ("+e.message+")");
+  } finally {
+    document.getElementById("genBtn").disabled = false;
+  }
+}
+
+async function regenerate(){
+  document.getElementById("regenBtn").disabled = true;
+  setLoading("Gerando uma nova versão...");
+  try {
+    const html = await callApi(collectData());
+    showSite(html);
+  } catch(e){
+    showError("Não consegui gerar agora. Tente de novo. ("+e.message+")");
+  } finally {
+    document.getElementById("regenBtn").disabled = false;
+  }
+}
+
+async function applyEdit(){
+  const instr = document.getElementById("editInput").value.trim();
+  if (!instr) return;
+  document.getElementById("editBtn").disabled = true;
+  setLoading("Aplicando: " + instr);
+  try {
+    const payload = collectData();
+    payload.editInstruction = instr;
+    payload.previousHtml = currentHtml;
+    const html = await callApi(payload);
+    showSite(html);
+    document.getElementById("editInput").value = "";
+  } catch(e){
+    showError("Não consegui aplicar a mudança. Tente de novo. ("+e.message+")");
+  } finally {
+    document.getElementById("editBtn").disabled = false;
+  }
+}
+
+let publishedProject = "";
+
+async function publish(){
+  if (!currentHtml) return;
+  const btn = document.getElementById("publishBtn");
+  btn.disabled = true;
+  btn.textContent = "Publicando...";
+  document.getElementById("publishResult").innerHTML = "";
+  try {
+    const r = await fetch("/api/publish-site", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html: currentHtml, projectName: currentName }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || data.error || "Falha");
+    publishedProject = data.projectName;
+    document.getElementById("publishResult").innerHTML =
+      '<div style="background:#064e3b;border:1px solid #059669;color:#a7f3d0;padding:10px 12px;border-radius:9px;font-size:13px">✓ Site no ar!<br/><a href="'+data.url+'" target="_blank" style="color:#6ee7b7;word-break:break-all">'+data.url+'</a></div>';
+    document.getElementById("domainBox").style.display = "block";
+  } catch(e){
+    document.getElementById("publishResult").innerHTML =
+      '<div style="background:#7f1d1d;border:1px solid #b91c1c;color:#fecaca;padding:10px 12px;border-radius:9px;font-size:13px">Não consegui publicar: '+e.message+'</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Publicar agora (grátis no Vercel)";
+  }
+}
+
+async function attachDomain(){
+  const domain = document.getElementById("domainInput").value.trim();
+  if (!domain || !publishedProject) return;
+  const btn = document.getElementById("domainBtn");
+  btn.disabled = true;
+  btn.textContent = "...";
+  document.getElementById("domainResult").innerHTML = "";
+  try {
+    const r = await fetch("/api/attach-domain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectName: publishedProject, domain }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || data.error || "Falha");
+    const dns = data.dnsInstructions;
+    document.getElementById("domainResult").innerHTML =
+      '<div style="background:#1e3a5f;border:1px solid #2563eb;color:#bfdbfe;padding:10px 12px;border-radius:9px;font-size:12px;line-height:1.6">'+
+      '✓ Domínio adicionado: <b>'+data.domain+'</b><br/><br/>'+
+      'Peça ao cliente para adicionar no painel do domínio dele:<br/>'+
+      '• Tipo <b>'+dns.aRecord.type+'</b> · nome <b>'+dns.aRecord.name+'</b> · valor <b>'+dns.aRecord.value+'</b><br/>'+
+      '• Tipo <b>'+dns.cnameRecord.type+'</b> · nome <b>'+dns.cnameRecord.name+'</b> · valor <b>'+dns.cnameRecord.value+'</b><br/><br/>'+
+      'Pode levar de minutos a algumas horas para ficar no ar.</div>';
+  } catch(e){
+    document.getElementById("domainResult").innerHTML =
+      '<div style="background:#7f1d1d;border:1px solid #b91c1c;color:#fecaca;padding:10px 12px;border-radius:9px;font-size:13px">Não consegui conectar: '+e.message+'</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Conectar";
+  }
+}
+
+function download(){
+  const blob = new Blob([currentHtml], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = currentName + ".html";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function openFull(){
+  const w = window.open("");
+  w.document.write(currentHtml);
+  w.document.close();
+}
+</script>
+</body>
+</html>
