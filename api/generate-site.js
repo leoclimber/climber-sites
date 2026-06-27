@@ -169,7 +169,8 @@ REQUIRED SECTIONS:
 Output ONLY raw HTML starting with <!DOCTYPE html>.`;
     }
 
-    // Streaming para evitar timeout do Vercel
+    // Chamada simples (sem streaming) — igual ao Climber que funciona.
+    // O vercel.json garante 60s de timeout, suficiente para gerar o site.
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -180,7 +181,6 @@ Output ONLY raw HTML starting with <!DOCTYPE html>.`;
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 6000,
-        stream: true,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       }),
@@ -191,34 +191,16 @@ Output ONLY raw HTML starting with <!DOCTYPE html>.`;
       return res.status(502).json({ error: "AI generation failed", detail: errText });
     }
 
-    const reader = anthropicRes.body.getReader();
-    const decoder = new TextDecoder();
-    let fullText = "";
+    const data = await anthropicRes.json();
+    let html = (data.content || [])
+      .map((b) => (b.type === "text" ? b.text : ""))
+      .join("")
+      .trim();
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split("\n");
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
-              fullText += parsed.delta.text;
-            }
-          } catch (_) {}
-        }
-      }
-    }
-
-    let html = fullText.trim();
     html = html.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
 
     if (!html.toLowerCase().includes("<!doctype") && !html.toLowerCase().includes("<html")) {
-      return res.status(502).json({ error: "AI did not return valid HTML", detail: html.slice(0, 300) });
+      return res.status(502).json({ error: "AI did not return valid HTML" });
     }
 
     return res.status(200).json({ html });
