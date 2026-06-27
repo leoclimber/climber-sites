@@ -10,32 +10,17 @@ export default async function handler(req, res) {
 
   try {
     const {
-      businessName = "",
-      businessType = "",
-      city = "",
-      phone = "",
-      email = "",
-      address = "",
-      services = "",
-      rating = "",
-      reviewCount = "",
-      vibe = "",
-      colors = "",
-      logoUrl = "",
-      clientPhotos = "",
-      extraInfo = "",
-      whatsapp = "",
-      bookingLink = "",
-      hours = "",
-      editInstruction = "",
-      previousHtml = "",
+      businessName = "", businessType = "", city = "", phone = "", email = "",
+      address = "", services = "", rating = "", reviewCount = "", vibe = "",
+      colors = "", logoUrl = "", clientPhotos = "", extraInfo = "",
+      whatsapp = "", bookingLink = "", hours = "",
+      editInstruction = "", previousHtml = "",
     } = req.body || {};
 
     if (!businessName || !businessType) {
       return res.status(400).json({ error: "businessName and businessType are required" });
     }
 
-    // Determina fotos pelo tipo de negócio
     const t = (businessType || "").toLowerCase();
     let photos = {
       hero: "https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=1600",
@@ -92,101 +77,111 @@ export default async function handler(req, res) {
       };
     }
 
-    // Se cliente enviou fotos próprias, usa elas na galeria
     if (clientPhotos && clientPhotos.trim()) {
       const cp = clientPhotos.trim().split("\n").map(u => u.trim()).filter(Boolean);
       if (cp[0]) photos.g1 = cp[0];
       if (cp[1]) photos.g2 = cp[1];
       if (cp[2]) photos.g3 = cp[2];
       if (cp[3]) photos.g4 = cp[3];
-      if (cp[4]) photos.about = cp[4];
     }
 
-    // Determina o CTA de booking
-    let bookingCta = `tel:${phone || ""}`;
+    let bookingCta = phone ? `tel:${phone}` : "#contact";
     let bookingLabel = "Call to Book";
     if (whatsapp) {
-      bookingCta = `https://wa.me/${whatsapp}?text=Hi%2C+I'd+like+to+book+an+appointment`;
+      bookingCta = `https://wa.me/${whatsapp}?text=Hi%2C+I'd+like+to+book`;
       bookingLabel = "Book on WhatsApp";
     } else if (bookingLink) {
       bookingCta = bookingLink;
       bookingLabel = "Book Now";
     }
 
-    const systemPrompt = `You are a senior web designer. Output ONLY a complete self-contained HTML file. No markdown, no code fences — raw HTML starting with <!DOCTYPE html>.
+    const defaultServices = t.includes("barb")
+      ? "Haircut €20 | Skin Fade €22 | Beard Trim €10 | Haircut + Beard €28 | Hot Towel Shave €18 | Kids Cut €14"
+      : t.includes("restaurant") || t.includes("cafe") || t.includes("food")
+      ? "Starters €8-12 | Mains €16-24 | Desserts €7 | Daily Specials | Coffee & Drinks"
+      : t.includes("salon") || t.includes("hair")
+      ? "Wash & Cut €35 | Colour from €60 | Highlights from €80 | Blowdry €25 | Treatment €20"
+      : t.includes("nail")
+      ? "Manicure €25 | Pedicure €35 | Gel Nails €40 | Nail Art from €5 | Removal €15"
+      : t.includes("gym") || t.includes("fitness")
+      ? "Day Pass €10 | Monthly €45 | Personal Training €50 | Group Classes €8 | Annual €399"
+      : services || "Consultation €30 | Standard Service €50 | Premium Service €80";
 
-Rules:
-- Invent realistic content for any missing field (services, hours, testimonials, about text)
-- All section ids MUST be exactly: about, services, gallery, reviews, contact
-- html { scroll-behavior: smooth; scroll-padding-top: 80px; }
-- Mobile responsive, Google Fonts, hover effects
-- Design must match the business type (barbershop = dark/gold/masculine, etc.)
-- Compelling copy, never placeholder text
-- Keep total HTML under 4000 words to ensure fast generation`;
+    const defaultHours = t.includes("barb")
+      ? "Mon–Fri 9am–7pm | Sat 8am–6pm | Sun 10am–4pm"
+      : t.includes("restaurant") || t.includes("cafe")
+      ? "Mon–Thu 12pm–10pm | Fri–Sat 12pm–11pm | Sun 1pm–9pm"
+      : "Mon–Fri 9am–6pm | Sat 10am–5pm | Sun Closed";
+
+    const systemPrompt = `You are a senior web designer. Output ONLY a complete self-contained HTML file with inline CSS and JS. No markdown, no code fences — start directly with <!DOCTYPE html>.
+
+CRITICAL RULES:
+- Use EXACTLY the image URLs provided — do not change or invent any image URLs
+- Section ids must be exactly: about, services, gallery, reviews, contact
+- Add to CSS: html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+- Sticky header with nav linking to #about #services #gallery #reviews #contact
+- Hero must use the provided hero image as full-screen background-image with a dark overlay
+- All sections must have visible content — no empty sections
+- Invent realistic about text (3 paragraphs), 3 testimonials with Irish names
+- Design must strongly reflect the business type visually
+- Mobile responsive`;
 
     let userPrompt;
     if (editInstruction && previousHtml) {
-      userPrompt = `Current HTML:\n${previousHtml}\n\nApply this edit and return full HTML:\n"${editInstruction}"`;
+      userPrompt = `Current HTML:\n${previousHtml}\n\nApply this edit and return the complete HTML:\n"${editInstruction}"`;
     } else {
-      const defaultServices = t.includes("barb")
-        ? "Haircut €20, Skin Fade €22, Beard Trim €10, Haircut + Beard €28, Hot Towel Shave €18, Kids Cut €14"
-        : t.includes("restaurant") || t.includes("cafe")
-        ? "Starters €8-12, Mains €16-24, Desserts €7, Daily Specials, Coffee & Drinks"
-        : t.includes("salon") || t.includes("hair")
-        ? "Wash & Cut €35, Colour from €60, Highlights from €80, Blowdry €25, Treatment €20"
-        : t.includes("nail")
-        ? "Manicure €25, Pedicure €35, Gel Nails €40, Nail Art from €5, Removal €15"
-        : t.includes("gym") || t.includes("fitness")
-        ? "Day Pass €10, Monthly €45, Personal Training €50/session, Group Classes €8, Annual €399"
-        : services || "Main Service €30, Premium Service €50, Consultation €20";
+      userPrompt = `Build a complete one-page website using these exact details:
 
-      const defaultHours = t.includes("barb")
-        ? "Mon–Fri: 9am–7pm | Sat: 8am–6pm | Sun: 10am–4pm"
-        : t.includes("restaurant") || t.includes("cafe")
-        ? "Mon–Thu: 12pm–10pm | Fri–Sat: 12pm–11pm | Sun: 1pm–9pm"
-        : "Mon–Fri: 9am–6pm | Sat: 10am–5pm | Sun: Closed";
+IMAGES (use these exact URLs, do not modify):
+- Hero background-image: ${photos.hero}
+- About section photo src: ${photos.about}
+- Gallery img 1 src: ${photos.g1}
+- Gallery img 2 src: ${photos.g2}
+- Gallery img 3 src: ${photos.g3}
+- Gallery img 4 src: ${photos.g4}
 
-      userPrompt = `Build a complete one-page website. Use these EXACT image URLs (already chosen for you — do not change them):
-Hero background: ${photos.hero}
-About photo: ${photos.about}
-Gallery photo 1: ${photos.g1}
-Gallery photo 2: ${photos.g2}
-Gallery photo 3: ${photos.g3}
-Gallery photo 4: ${photos.g4}
-Logo URL: ${logoUrl || "(none — use CSS text wordmark)"}
+BOOKING BUTTON: href="${bookingCta}" label="${bookingLabel}" — place in header, hero, and contact section
 
-Booking CTA href: ${bookingCta}
-Booking CTA label: "${bookingLabel}"
-
-Business details:
+BUSINESS:
 Name: ${businessName}
 Type: ${businessType}
 City: ${city || "Dublin, Ireland"}
-Phone: ${phone || "(invent a realistic Irish number)"}
-Email: ${email || ""}
-Address: ${address || "(invent a realistic address in " + (city || "Dublin") + ")"}
+Phone: ${phone || "+353 1 000 0000"}
+Email: ${email || "info@" + businessName.toLowerCase().replace(/\s+/g, "") + ".ie"}
+Address: ${address || "Dublin, Ireland"}
 Services: ${services || defaultServices}
-Google rating: ${rating || "5.0"} (${reviewCount || "100+"} reviews)
+Rating: ${rating || "5.0"} (${reviewCount || "100+"} reviews)
 Hours: ${hours || defaultHours}
-Vibe: ${vibe || "(choose best for this business type)"}
-Colors: ${colors || "(choose best for this business type)"}
-Extra: ${extraInfo || ""}
+Vibe: ${vibe || "professional and modern"}
+Colors: ${colors || "dark with gold accents"}
+Logo: ${logoUrl ? `<img src="${logoUrl}" style="height:40px">` : `<span style="font-weight:900;font-size:1.2rem">${businessName.toUpperCase()}</span>`}
 
-Generate ALL sections: sticky header, hero, #about, #services, #gallery, #reviews, #contact, footer.
-Invent compelling about text (3 paragraphs), 3 realistic testimonials, all content.
-Output ONLY raw HTML.`;
+SECTIONS REQUIRED:
+1. Sticky header: logo left, nav center (About/Services/Gallery/Reviews/Contact), booking CTA button right
+2. Hero: full-screen background-image (use hero URL above), dark overlay, big headline, subheadline, 2 buttons
+3. #about: 2 columns — left photo (use about URL), right 3 paragraphs of story + "8+ Years" badge
+4. #services: grid of 6 cards with emoji icon, name, price
+5. #gallery: 4-photo grid (use g1-g4 URLs)
+6. #reviews: rating display + 3 testimonial cards with Irish names
+7. #contact: hours table + phone + address + Google Maps iframe + booking button
+8. Footer: name, tagline, copyright
+
+Output ONLY the raw HTML starting with <!DOCTYPE html>.`;
     }
 
+    // STREAMING — resolve o problema de timeout do Vercel
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": ANTHROPIC_KEY,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "messages-2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 4096,
+        model: "claude-sonnet-4-6",
+        max_tokens: 6000,
+        stream: true,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       }),
@@ -197,16 +192,35 @@ Output ONLY raw HTML.`;
       return res.status(502).json({ error: "AI generation failed", detail: errText });
     }
 
-    const data = await anthropicRes.json();
-    let html = (data.content || [])
-      .map((b) => (b.type === "text" ? b.text : ""))
-      .join("")
-      .trim();
+    // Lê o stream e acumula o texto completo
+    const reader = anthropicRes.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = "";
 
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split("\n");
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
+              fullText += parsed.delta.text;
+            }
+          } catch (_) {}
+        }
+      }
+    }
+
+    let html = fullText.trim();
     html = html.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
 
     if (!html.toLowerCase().includes("<!doctype") && !html.toLowerCase().includes("<html")) {
-      return res.status(502).json({ error: "AI did not return valid HTML" });
+      return res.status(502).json({ error: "AI did not return valid HTML", detail: html.slice(0, 200) });
     }
 
     return res.status(200).json({ html });
