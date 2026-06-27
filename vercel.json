@@ -1,16 +1,16 @@
 {
   "functions": {
     "api/generate-site.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/find-leads.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "api/publish-site.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "api/attach-domain.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
   }
 }
