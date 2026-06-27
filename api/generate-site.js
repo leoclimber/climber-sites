@@ -125,7 +125,8 @@ CRITICAL RULES:
 - On EVERY <img> tag add: onerror="this.style.display='none'" so a broken image never shows broken text or alt text on screen
 - Invent realistic about text (3 paragraphs), 3 testimonials with Irish names
 - Design must strongly reflect the business type visually
-- Mobile responsive using flexbox and grid`;
+- Mobile responsive using flexbox and grid
+- IMPORTANT: You MUST complete ALL sections through to the closing </html> tag. The reviews and contact sections and footer are mandatory — never stop early or leave the HTML unfinished. Keep CSS concise to leave room to finish every section.`;
 
     let userPrompt;
     if (editInstruction && previousHtml) {
@@ -181,7 +182,7 @@ Output ONLY raw HTML starting with <!DOCTYPE html>.`;
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 8000,
+        max_tokens: 16000,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       }),
@@ -202,6 +203,11 @@ Output ONLY raw HTML starting with <!DOCTYPE html>.`;
 
     if (!html.toLowerCase().includes("<!doctype") && !html.toLowerCase().includes("<html")) {
       return res.status(502).json({ error: "AI did not return valid HTML" });
+    }
+
+    // Detecta HTML cortado (geração incompleta) e tenta sinalizar
+    if (!html.toLowerCase().includes("</html>")) {
+      return res.status(502).json({ error: "Generation incomplete, please try again" });
     }
 
     return res.status(200).json({ html });
