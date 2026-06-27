@@ -47,18 +47,16 @@ YOUR DESIGN PROCESS (do this silently, then output only the final HTML):
 2. Build a deliberate token system: a palette of 4-6 hex colors specific to this business, a characterful display font + a clean body font (pair them intentionally via Google Fonts), and a clear type scale.
 3. Pick ONE signature element this site will be remembered by.
 
-PHOTOS — CRITICAL: You MUST include real photos throughout the site. Use this exact Pexels embed format for photos (these always work and are free):
-- For hero/large images: <img src="https://images.pexels.com/photos/PHOTO_ID/pexels-photo-PHOTO_ID.jpeg?auto=compress&cs=tinysrgb&w=1600" style="width:100%;height:100%;object-fit:cover" alt="description"/>
-- Use these REAL Pexels photo IDs based on business type:
-  * Barbershop/barber: 1570807, 2881449, 3757942, 1805600, 897262, 3998429, 4612871, 1319459
-  * Restaurant/cafe/food: 1640777, 958545, 1640772, 2531546, 1437267, 1099680, 262978, 67468
-  * Hair salon/beauty: 3993449, 3065209, 3992878, 3065171, 4046316, 3997991, 3993444, 2681234
-  * Gym/fitness: 1552252, 416778, 703012, 1552243, 2261477, 841130, 949126, 4162438
-  * Dental/clinic/health: 3845810, 305565, 3845653, 4386467, 4386464, 3951628, 3938023, 3845809
-  * Generic business: 3182812, 3182781, 1181686, 3182774, 3183197, 1181695, 3182759, 3183150
-- Use at least 4-6 different photos spread across hero, gallery, and background sections. NEVER leave image placeholders empty.
-- If a custom logo URL is provided, use it as <img> in the header. Otherwise create an elegant CSS text wordmark.
-- If custom photo URLs are provided by the client, use those in the gallery section instead of Pexels.
+PHOTOS: Use Lorem Picsum which always works reliably: https://picsum.photos/seed/SEED/WIDTH/HEIGHT
+- Hero background image: https://picsum.photos/seed/biz1/1600/900
+- Use different seeds for each image so they vary: biz1, biz2, biz3, biz4, biz5, biz6
+- Gallery needs at least 4 images, each with a different seed
+- For barbershop use seeds like: barber1, barber2, barber3, fade1, cut1
+- For restaurant: food1, food2, chef1, dining1, plate1
+- For salon: salon1, salon2, beauty1, hair1, style1
+- NEVER leave image src empty. Every <img> must have a real picsum URL.
+- If client photo URLs are provided, use those in gallery instead of picsum.
+- LOGO: if a logo URL is provided use it as <img> in header. Otherwise create elegant CSS text wordmark.
 
 QUALITY RULES — every site must hit 9/10:
 - Look like a €2000 agency site. Make deliberate, specific choices for THIS business type.
