@@ -33,11 +33,11 @@ export default async function handler(req, res) {
     if (t.includes("barb")) {
       photos = {
         hero: "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg?auto=compress&cs=tinysrgb&w=1600",
-        about: "https://images.pexels.com/photos/3356170/pexels-photo-3356170.jpeg?auto=compress&cs=tinysrgb&w=800",
+        about: "https://images.pexels.com/photos/1570807/pexels-photo-1570807.jpeg?auto=compress&cs=tinysrgb&w=800",
         g1: "https://images.pexels.com/photos/897262/pexels-photo-897262.jpeg?auto=compress&cs=tinysrgb&w=800",
         g2: "https://images.pexels.com/photos/1319460/pexels-photo-1319460.jpeg?auto=compress&cs=tinysrgb&w=800",
         g3: "https://images.pexels.com/photos/3998429/pexels-photo-3998429.jpeg?auto=compress&cs=tinysrgb&w=800",
-        g4: "https://images.pexels.com/photos/2061828/pexels-photo-2061828.jpeg?auto=compress&cs=tinysrgb&w=800",
+        g4: "https://images.pexels.com/photos/1570806/pexels-photo-1570806.jpeg?auto=compress&cs=tinysrgb&w=800",
       };
     } else if (t.includes("restaurant") || t.includes("cafe") || t.includes("food") || t.includes("pizz")) {
       photos = {
@@ -122,6 +122,7 @@ CRITICAL RULES:
 - Sticky header with nav linking to #about #services #gallery #reviews #contact
 - Hero must use the provided hero image as CSS background-image with a dark overlay
 - All sections must have visible content — no empty sections
+- On EVERY <img> tag add: onerror="this.style.display='none'" so a broken image never shows broken text or alt text on screen
 - Invent realistic about text (3 paragraphs), 3 testimonials with Irish names
 - Design must strongly reflect the business type visually
 - Mobile responsive using flexbox and grid`;
