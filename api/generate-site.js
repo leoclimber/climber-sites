@@ -14,6 +14,7 @@ export default async function handler(req, res) {
       address = "", services = "", rating = "", reviewCount = "", vibe = "",
       colors = "", logoUrl = "", clientPhotos = "", extraInfo = "",
       whatsapp = "", bookingLink = "", hours = "",
+      heroVideoUrl = "",
       editInstruction = "", previousHtml = "",
     } = req.body || {};
 
@@ -23,7 +24,6 @@ export default async function handler(req, res) {
 
     const t = (businessType || "").toLowerCase();
 
-    // Catálogo de fotos por tipo de negócio (URLs Pexels verificadas)
     const photoSets = {
       barber: {
         hero: "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg?auto=compress&cs=tinysrgb&w=1600",
@@ -131,12 +131,11 @@ export default async function handler(req, res) {
       },
     };
 
-    // Detecta a categoria a partir do tipo digitado
     function detectCategory(s) {
       if (s.includes("barb")) return "barber";
       if (s.includes("pub") || s.includes("bar")) return "pub";
       if (s.includes("cafe") || s.includes("café") || s.includes("coffee")) return "cafe";
-      if (s.includes("restaurant") || s.includes("food") || s.includes("pizz") || s.includes("bistro") || s.includes("diner")) return "restaurant";
+      if (s.includes("restaurant") || s.includes("food") || s.includes("pizz") || s.includes("bistro") || s.includes("diner") || s.includes("burger") || s.includes("smash")) return "restaurant";
       if (s.includes("nail")) return "nail";
       if (s.includes("spa") || s.includes("massage") || s.includes("estét") || s.includes("esthet") || s.includes("aesthet") || s.includes("wax")) return "spa";
       if (s.includes("salon") || s.includes("salão") || s.includes("hair") || s.includes("beauty")) return "salon";
@@ -151,7 +150,6 @@ export default async function handler(req, res) {
     const category = detectCategory(t);
     let photos = { ...photoSets[category] };
 
-    // Fotos do cliente substituem a galeria, se enviadas
     if (clientPhotos && clientPhotos.trim()) {
       const cp = clientPhotos.trim().split("\n").map(u => u.trim()).filter(Boolean);
       if (cp[0]) photos.g1 = cp[0];
@@ -160,7 +158,6 @@ export default async function handler(req, res) {
       if (cp[3]) photos.g4 = cp[3];
     }
 
-    // CTA de agendamento
     let bookingCta = phone ? `tel:${phone}` : "#contact";
     let bookingLabel = "Call to Book";
     if (whatsapp) {
@@ -171,7 +168,6 @@ export default async function handler(req, res) {
       bookingLabel = "Book Now";
     }
 
-    // Serviços padrão por categoria
     const servicesByCat = {
       barber: "Haircut €20 | Skin Fade €22 | Beard Trim €10 | Haircut + Beard €28 | Hot Towel Shave €18 | Kids Cut €14",
       restaurant: "Starters €8-12 | Mains €16-24 | Desserts €7 | Daily Specials | Sunday Roast €18",
@@ -189,7 +185,6 @@ export default async function handler(req, res) {
     };
     const defaultServices = services || servicesByCat[category];
 
-    // Horários padrão por categoria
     const hoursByCat = {
       barber: "Mon–Fri 9am–7pm | Sat 8am–6pm | Sun 10am–4pm",
       restaurant: "Mon–Thu 12pm–10pm | Fri–Sat 12pm–11pm | Sun 1pm–9pm",
@@ -201,37 +196,82 @@ export default async function handler(req, res) {
     };
     const defaultHours = hours || hoursByCat[category] || hoursByCat.generic;
 
-    const systemPrompt = `You are a senior web designer. Output ONLY a complete self-contained HTML file with inline CSS and JS. No markdown, no code fences — start directly with <!DOCTYPE html>.
+    // Paletas premium por categoria
+    const paletteByCat = {
+      barber: "Background: #0d0d0d, Accent: #b8923f (gold), Text: #f0ece0, Secondary: #1a1a1a",
+      restaurant: "Background: #1a1410, Accent: #d4622a (burnt orange), Text: #f5efe6, Secondary: #2a1f1a",
+      pub: "Background: #1b2e22 (bottle green), Accent: #c9933e (amber), Text: #ede4d3, Secondary: #243d2e",
+      cafe: "Background: #faf7f2, Accent: #6b4226 (espresso), Text: #1a1410, Secondary: #f0e8d8",
+      salon: "Background: #faf7f4, Accent: #c17a5a (terracotta), Text: #3d2b24, Secondary: #f5ede6",
+      nail: "Background: #fdf8f5, Accent: #e8a4b0 (blush rose), Text: #2d1f1f, Secondary: #f8f0eb",
+      spa: "Background: #f5f0eb, Accent: #8b7355 (warm taupe), Text: #2a2018, Secondary: #ebe3d8",
+      gym: "Background: #0d0d0d, Accent: #e0a829 (yellow), Text: #f0f0f0, Secondary: #161718",
+      dental: "Background: #f8fbff, Accent: #2563eb (blue), Text: #1e2a3a, Secondary: #edf4ff",
+      auto: "Background: #161718, Accent: #e0a829 (industrial yellow), Text: #eceeef, Secondary: #1f2224",
+      pet: "Background: #f0f9f4, Accent: #2d9b6a (forest green), Text: #1a3028, Secondary: #e4f5ec",
+      tattoo: "Background: #0a0a0a, Accent: #c0392b (blood red), Text: #f0f0f0, Secondary: #141414",
+      generic: "Background: #0f172a, Accent: #3b82f6 (blue), Text: #e2e8f0, Secondary: #1e293b",
+    };
 
-CRITICAL RULES:
-- Use EXACTLY the image URLs provided in the prompt — do not change them
+    const heroSection = heroVideoUrl
+      ? `HERO TYPE: VIDEO HERO
+Hero video URL: ${heroVideoUrl}
+The hero must use a full-screen <video> tag (autoplay muted loop playsinline) with this video as source.
+The video covers 100% width and height of the viewport (100vw / 100vh), object-fit: cover.
+Overlay a dark semi-transparent gradient on top of the video (rgba 0,0,0,0.5).
+On top of the overlay: bold headline, subtitle, 2 CTA buttons, and rating badge.
+This video IS the hero — no background-image fallback needed.`
+      : `HERO TYPE: PHOTO HERO
+Hero background-image: ${photos.hero}
+Use as CSS background-image with dark overlay (rgba 0,0,0,0.55), background-size: cover, background-position: center.`;
+
+    const systemPrompt = `You are the lead designer at a premium digital agency known for building sites that look custom-made, never AI-generated or templated. Every site you build looks like it was made by a real studio for a specific client.
+
+ABSOLUTE DESIGN RULES — follow all of these:
+- Choose a color palette that fits THIS specific business — use the palette provided in the prompt
+- Typography must carry personality — use Google Fonts that match the business vibe (import them)
+- DO NOT use generic centered hero text + flat gradient + stock button
+- DO NOT use generic numbered section markers (01/02/03) unless content is genuinely sequential
+- DO NOT use excessive rounded corners and soft shadows on every single element
+- The hero is the most important moment — make it bold, specific, memorable
+- If a VIDEO URL is provided for the hero, use a full-screen <video> tag — this is the #1 priority visual element
+- If NO video, use the photo as hero background with a strong typographic statement
+- Use scroll-triggered fade-in animations (IntersectionObserver) on sections for a premium feel
+- One deliberate hover micro-interaction per section (card lift, underline reveal, image zoom)
+- Mobile-first responsive design — most clients see this on their phone during a sales call
+- Copy must sound local and specific — never generic marketing speak like "quality you can trust"
+
+Output ONLY a complete self-contained HTML file with inline CSS and JS. No markdown, no code fences — start directly with <!DOCTYPE html>.
+
+CRITICAL TECHNICAL RULES:
+- Use EXACTLY the image URLs provided — do not change them
 - Section ids must be exactly: about, services, gallery, reviews, faq, contact
 - Add to CSS: html { scroll-behavior: smooth; scroll-padding-top: 80px; }
 - Sticky header with nav linking to #about #services #gallery #reviews #faq #contact
-- Hero must use the provided hero image as CSS background-image with a dark overlay
 - All sections must have visible content — no empty sections
-- On EVERY <img> tag add: onerror="this.style.display='none'" so a broken image never shows broken text or alt text on screen
-- Invent realistic about text (3 paragraphs), 3 testimonials with local-sounding names, and 4 FAQ items relevant to this business type
-- Design must strongly reflect the business type visually
-- Mobile responsive using flexbox and grid
-- IMPORTANT: You MUST complete ALL sections through to the closing </html> tag. The reviews, faq and contact sections and footer are mandatory — never stop early or leave the HTML unfinished. Keep CSS concise to leave room to finish every section.
-- Add a fixed floating WhatsApp button in the bottom-right corner (green circle, WhatsApp icon, ~58px) that links to the booking URL, visible on all screens, with a subtle shadow and hover scale effect.`;
+- On EVERY <img> tag add: onerror="this.style.display='none'"
+- Invent realistic about text (3 paragraphs), 3 testimonials with local-sounding names, 4 FAQ items
+- MUST complete ALL sections through to closing </html> — never stop early`;
 
     let userPrompt;
     if (editInstruction && previousHtml) {
-      userPrompt = `Current HTML:\n${previousHtml}\n\nApply this edit and return the complete HTML:\n"${editInstruction}"`;
+      userPrompt = `Current HTML:\n${previousHtml}\n\nApply this edit and return the complete updated HTML:\n"${editInstruction}"`;
     } else {
-      userPrompt = `Build a complete one-page website using these exact details:
+      userPrompt = `Build a complete one-page premium website. This needs to look good enough to close a €699 sale on a phone screen during a cold call.
+
+PALETTE TO USE:
+${paletteByCat[category]}
+
+${heroSection}
 
 IMAGES (use these exact URLs):
-Hero background-image: ${photos.hero}
 About photo src: ${photos.about}
 Gallery img 1: ${photos.g1}
 Gallery img 2: ${photos.g2}
 Gallery img 3: ${photos.g3}
 Gallery img 4: ${photos.g4}
 
-BOOKING: href="${bookingCta}" label="${bookingLabel}" — place in header, hero, contact, and the floating WhatsApp button
+BOOKING: href="${bookingCta}" label="${bookingLabel}" — place in header, hero, contact, and floating WhatsApp button
 
 BUSINESS:
 Name: ${businessName}
@@ -244,21 +284,21 @@ Services: ${defaultServices}
 Rating: ${rating || "5.0"} (${reviewCount || "100+"} reviews)
 Hours: ${defaultHours}
 Vibe: ${vibe || "professional and modern"}
-Colors: ${colors || "choose the ideal palette for this business type"}
+Colors: ${colors || "use the palette above"}
 Logo: ${logoUrl || businessName.toUpperCase()}
 Extra info: ${extraInfo || ""}
 
 REQUIRED SECTIONS (in this order):
 1. Sticky header: logo left, nav center (About/Services/Gallery/Reviews/FAQ/Contact), booking button right
-2. Hero: full-screen CSS background-image with dark overlay, bold headline, 2 CTA buttons, rating badge
-3. <section id="about">: 2 columns — photo left, 3 paragraphs right, "Years of Excellence" badge
-4. <section id="services">: 6 service cards with emoji icon, name, price
-5. <section id="gallery">: 4-photo CSS grid
-6. <section id="reviews">: big rating number + 3 testimonial cards with local names
-7. <section id="faq">: 4 frequently asked questions with answers, relevant to this business type
-8. <section id="contact">: address, phone, email, opening hours table + Google Maps iframe (https://maps.google.com/maps?q=ENCODED_ADDRESS&output=embed) + booking button
+2. Hero: full-screen — see HERO TYPE above. Bold headline specific to this business, subtitle, 2 CTA buttons, rating badge
+3. <section id="about">: 2 columns — photo left, 3 paragraphs right with local specific copy, badge
+4. <section id="services">: 6 service cards with emoji, name, price — styled to match business palette
+5. <section id="gallery">: 4-photo CSS grid with hover zoom effect
+6. <section id="reviews">: big rating number + 3 testimonial cards with Irish-sounding names
+7. <section id="faq">: 4 FAQ items with accordion open/close, relevant to this business
+8. <section id="contact">: address, phone, email, hours table + Google Maps iframe + booking button
 9. Footer: name, tagline, copyright
-10. Floating WhatsApp button (fixed bottom-right) linking to the booking URL
+10. Floating WhatsApp button (fixed bottom-right, green, 58px) linking to booking URL
 
 Output ONLY raw HTML starting with <!DOCTYPE html> and ending with </html>.`;
     }
