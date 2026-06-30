@@ -52,6 +52,18 @@
   .badge.has{background:#422006;color:#fdba74}
   .filterbtn{padding:8px 14px;border:1px solid #334155;border-radius:9px;background:#0b1120;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer}
   .filterbtn.active{background:#1e293b;color:#fff;border-color:#3b82f6}
+
+  /* Video upload box */
+  .video-upload-box{background:#0b1120;border:2px dashed #334155;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative}
+  .video-upload-box:hover{border-color:#3b82f6}
+  .video-upload-box.has-video{border-color:#8b5cf6;border-style:solid}
+  .video-upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .video-upload-icon{font-size:28px;margin-bottom:8px}
+  .video-upload-label{font-size:13px;color:#94a3b8;line-height:1.5}
+  .video-upload-label b{color:#c4b5fd}
+  .video-preview-thumb{width:100%;border-radius:8px;margin-top:10px;max-height:120px;object-fit:cover}
+  .video-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(139,92,246,0.15);border:1px solid #8b5cf6;color:#c4b5fd;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;margin-top:8px}
+  .video-remove{display:inline-block;margin-top:8px;color:#64748b;font-size:12px;cursor:pointer;text-decoration:underline}
 </style>
 </head>
 <body>
@@ -82,7 +94,7 @@
         </div>
         <div>
           <label>Cidade ou país</label>
-          <input id="leadCity" placeholder="Ex: Dublin, Ireland (cidade traz melhores resultados)"/>
+          <input id="leadCity" placeholder="Ex: Dublin, Ireland"/>
         </div>
       </div>
       <button class="btn" id="findBtn" onclick="findLeads()" style="margin-top:14px">🔍 Buscar clientes</button>
@@ -90,7 +102,7 @@
         <button class="filterbtn active" id="filter-no" onclick="setFilter('no')">Só os SEM site</button>
         <button class="filterbtn" id="filter-all" onclick="setFilter('all')">Mostrar todos</button>
       </div>
-      <div class="tip" style="margin-top:8px">Use "Mostrar todos" quando buscar um negócio pelo nome (ex: Los Hermanos Dublin) para ver mesmo se ele já tem site.</div>
+      <div class="tip" style="margin-top:8px">Use "Mostrar todos" quando buscar um negócio pelo nome para ver mesmo se ele já tem site.</div>
       <div id="leadsErr"></div>
     </div>
     <div id="leadsResult"></div>
@@ -104,10 +116,10 @@
       <h2>Dados do negócio</h2>
 
       <label>Nome do negócio</label>
-      <input id="businessName" placeholder="Ex: Lincoln Tower Soda Fountain"/>
+      <input id="businessName" placeholder="Ex: The Burger Spot Dublin"/>
 
       <label>Tipo de negócio</label>
-      <input id="businessType" placeholder="Ex: Restaurante, Salão, Mecânica"/>
+      <input id="businessType" placeholder="Ex: Restaurante, Salão, Barbearia, Pub"/>
 
       <label>Cidade <span class="opt">(opcional)</span></label>
       <input id="city" placeholder="Ex: Dublin, Ireland"/>
@@ -119,10 +131,10 @@
       <input id="email" placeholder="Ex: contato@negocio.ie"/>
 
       <label>Endereço <span class="opt">(opcional)</span></label>
-      <input id="address" placeholder="Ex: 116 E Berry St, Dublin"/>
+      <input id="address" placeholder="Ex: 116 Grafton St, Dublin 2"/>
 
       <label>O que oferece <span class="opt">(opcional)</span></label>
-      <textarea id="services" placeholder="Ex: cortes, barba, coloração — ou pratos, especialidades..."></textarea>
+      <textarea id="services" placeholder="Ex: cortes, barba, coloração..."></textarea>
 
       <label>WhatsApp para agendamento <span class="opt">(opcional)</span></label>
       <input id="whatsapp" placeholder="Ex: 353831373056 (só números)"/>
@@ -131,13 +143,13 @@
       <input id="bookingLink" placeholder="Ex: link do Fresha, Booksy ou Calendly"/>
 
       <label>Horário de funcionamento <span class="opt">(opcional)</span></label>
-      <textarea id="hours" placeholder="Ex: Seg-Sex 9h-19h, Sáb 9h-17h, Dom fechado"></textarea>
+      <textarea id="hours" placeholder="Ex: Seg-Sex 9h-19h, Sáb 9h-17h"></textarea>
 
       <label>Nota Google <span class="opt">(opcional)</span></label>
-      <input id="rating" placeholder="Ex: 4.6"/>
+      <input id="rating" placeholder="Ex: 4.8"/>
 
       <label>Nº de avaliações <span class="opt">(opcional)</span></label>
-      <input id="reviewCount" placeholder="Ex: 94"/>
+      <input id="reviewCount" placeholder="Ex: 212"/>
 
       <label>Estilo / vibe <span class="opt">(opcional)</span></label>
       <input id="vibe" placeholder="Ex: moderno, aconchegante, luxuoso"/>
@@ -146,12 +158,28 @@
       <input id="colors" placeholder="Ex: verde e dourado"/>
 
       <label>Logo do cliente — link da imagem <span class="opt">(opcional)</span></label>
-      <input id="logoUrl" placeholder="Cole o link de uma imagem do logo (ex: do Instagram)"/>
-      <div class="tip" style="margin-top:4px">Deixe vazio para um modelo de demonstração. Depois de fechar a venda, cole o logo real dele aqui.</div>
+      <input id="logoUrl" placeholder="Cole o link de uma imagem do logo"/>
+      <div class="tip" style="margin-top:4px">Deixe vazio para usar o nome do negócio como logo.</div>
 
       <label>Fotos do cliente <span class="opt">(opcional)</span></label>
-      <textarea id="clientPhotos" placeholder="Cole links de fotos reais do negócio (uma por linha). Ex: fotos do Instagram, Google, WhatsApp..."></textarea>
+      <textarea id="clientPhotos" placeholder="Cole links de fotos reais (uma por linha)"></textarea>
       <div class="tip" style="margin-top:4px">Sem fotos? A IA usa fotos profissionais gratuitas automaticamente.</div>
+
+      <!-- NOVO: VIDEO 3D HERO -->
+      <label>Vídeo 3D do hero <span class="opt">(opcional — premium)</span></label>
+      <div class="video-upload-box" id="videoBox" onclick="document.getElementById('videoFile').click()">
+        <input type="file" id="videoFile" accept="video/mp4,video/webm" style="display:none" onchange="handleVideoUpload(event)"/>
+        <div id="videoEmpty">
+          <div class="video-upload-icon">🎬</div>
+          <div class="video-upload-label">Toca aqui para subir o vídeo 3D gerado no fal.ai<br/><b>MP4 ou WebM · máx 50MB</b></div>
+        </div>
+        <div id="videoFilled" style="display:none">
+          <div class="video-badge">✦ Vídeo 3D premium ativado</div>
+          <div id="videoName" style="font-size:12px;color:#94a3b8;margin-top:6px"></div>
+          <span class="video-remove" onclick="removeVideo(event)">Remover vídeo</span>
+        </div>
+      </div>
+      <div class="tip" style="margin-top:6px">Com vídeo: o hero do site fica com o produto em movimento (hambúrguer montando, cerveja gelando, etc). Sem vídeo: usa foto profissional padrão.</div>
 
       <button class="btn" id="genBtn" onclick="generate()">✦ Gerar site</button>
       <div class="tip">Só o nome e o tipo são obrigatórios. Quanto mais você preencher, melhor o site fica.</div>
@@ -183,17 +211,15 @@
         </div>
         <div class="tip">Você pode pedir quantos ajustes quiser antes de publicar.</div>
 
-        <!-- Publicação -->
         <div style="margin-top:16px;border-top:1px solid #1e293b;padding-top:16px">
           <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px">🚀 Publicar na internet</div>
           <button class="smallbtn primary" style="width:100%" onclick="publish()" id="publishBtn">Publicar agora (grátis no Vercel)</button>
           <div id="publishResult" style="margin-top:10px"></div>
         </div>
 
-        <!-- Domínio (aparece após publicar) -->
         <div id="domainBox" style="display:none;margin-top:14px;border-top:1px solid #1e293b;padding-top:14px">
           <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">🌐 Conectar domínio do cliente</div>
-          <div class="tip" style="margin-top:0;margin-bottom:8px">O cliente compra o domínio (ex: barbearia.ie) e você cola aqui.</div>
+          <div class="tip" style="margin-top:0;margin-bottom:8px">O cliente compra o domínio e você cola aqui.</div>
           <div class="edit-row">
             <input id="domainInput" placeholder="ex: barbeariadojoao.ie"/>
             <button class="smallbtn primary" onclick="attachDomain()" id="domainBtn">Conectar</button>
@@ -209,6 +235,8 @@
 <script>
 let currentHtml = "";
 let currentName = "site";
+let heroVideoBase64 = "";
+let heroVideoMime = "";
 
 function switchTab(which){
   document.getElementById("view-builder").style.display = which === "builder" ? "block" : "none";
@@ -217,12 +245,74 @@ function switchTab(which){
   document.getElementById("tab-leads").classList.toggle("active", which === "leads");
 }
 
-let leadFilter = "no"; // "no" = só sem site, "all" = todos
-
+let leadFilter = "no";
 function setFilter(f){
   leadFilter = f;
   document.getElementById("filter-no").classList.toggle("active", f === "no");
   document.getElementById("filter-all").classList.toggle("active", f === "all");
+}
+
+// Video upload handling
+function handleVideoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 50 * 1024 * 1024) {
+    alert("Vídeo muito grande. Máximo 50MB.");
+    return;
+  }
+  heroVideoMime = file.type;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    heroVideoBase64 = e.target.result; // full data URL
+    document.getElementById("videoEmpty").style.display = "none";
+    document.getElementById("videoFilled").style.display = "block";
+    document.getElementById("videoName").textContent = file.name + " (" + (file.size/1024/1024).toFixed(1) + "MB)";
+    document.getElementById("videoBox").classList.add("has-video");
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeVideo(e) {
+  e.stopPropagation();
+  heroVideoBase64 = "";
+  heroVideoMime = "";
+  document.getElementById("videoFile").value = "";
+  document.getElementById("videoEmpty").style.display = "block";
+  document.getElementById("videoFilled").style.display = "none";
+  document.getElementById("videoBox").classList.remove("has-video");
+}
+
+function suggestStyle(type){
+  const t = (type||"").toLowerCase();
+  if (t.includes("barb")) return { vibe: "moderno, masculino, sofisticado", colors: "preto, dourado e cinza" };
+  if (t.includes("salon") || t.includes("salão") || t.includes("beauty") || t.includes("nail") || t.includes("hair")) return { vibe: "elegante, acolhedor, refinado", colors: "rosa suave, branco e dourado" };
+  if (t.includes("restaur") || t.includes("food") || t.includes("pizz") || t.includes("cafe") || t.includes("café") || t.includes("coffee") || t.includes("burger")) return { vibe: "aconchegante, apetitoso, convidativo", colors: "vermelho, madeira e creme" };
+  if (t.includes("gym") || t.includes("fitness") || t.includes("academia")) return { vibe: "energético, forte, motivador", colors: "preto, vermelho e branco" };
+  if (t.includes("dent") || t.includes("clinic") || t.includes("clínica") || t.includes("health")) return { vibe: "limpo, confiável, profissional", colors: "azul, branco e verde-água" };
+  if (t.includes("mech") || t.includes("auto") || t.includes("car") || t.includes("garage")) return { vibe: "robusto, confiável, técnico", colors: "azul-escuro, laranja e cinza" };
+  if (t.includes("pub") || t.includes("bar")) return { vibe: "acolhedor, animado, tradicional", colors: "verde garrafa, âmbar e creme" };
+  if (t.includes("tattoo") || t.includes("ink")) return { vibe: "ousado, artístico, underground", colors: "preto, vermelho e cinza" };
+  return { vibe: "moderno, profissional, acolhedor", colors: "azul-marinho e dourado" };
+}
+
+function useLead(jsonStr){
+  let l;
+  try { l = JSON.parse(jsonStr); } catch(e){ return; }
+  const type = document.getElementById("leadType").value || "";
+  document.getElementById("businessName").value = l.name || "";
+  document.getElementById("businessType").value = type;
+  document.getElementById("city").value = document.getElementById("leadCity").value || "";
+  document.getElementById("phone").value = l.phone || "";
+  document.getElementById("address").value = l.address || "";
+  if (l.rating) document.getElementById("rating").value = l.rating;
+  if (l.reviews) document.getElementById("reviewCount").value = l.reviews;
+  const s = suggestStyle(type);
+  if (!document.getElementById("vibe").value) document.getElementById("vibe").value = s.vibe;
+  if (!document.getElementById("colors").value) document.getElementById("colors").value = s.colors;
+  switchTab("builder");
+  window.scrollTo({top:0,behavior:"smooth"});
+  const fe = document.getElementById("formErr");
+  if (fe) fe.innerHTML = '<div style="background:#1e3a5f;border:1px solid #2563eb;color:#bfdbfe;padding:10px 12px;border-radius:9px;font-size:13px;margin-top:10px">✓ Dados de <b>'+(l.name||"")+'</b> carregados. Ajuste o que quiser e clique em <b>Gerar site</b>.</div>';
 }
 
 async function findLeads(){
@@ -245,7 +335,7 @@ async function findLeads(){
     const data = await r.json();
     if (!r.ok) throw new Error(data.detail || data.error || "Falha");
     if (!data.leads || data.leads.length === 0){
-      document.getElementById("leadsResult").innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">Nenhum negócio encontrado para essa busca. Tente outra cidade ou tipo.</div>';
+      document.getElementById("leadsResult").innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">Nenhum negócio encontrado. Tente outra cidade ou tipo.</div>';
       return;
     }
     let html = '<div style="margin-bottom:12px;color:#cbd5e1;font-size:14px;font-weight:700">'+data.total+' negócios encontrados 🎯</div>';
@@ -272,42 +362,6 @@ async function findLeads(){
   }
 }
 
-// Sugestões de estilo e cores por tipo de negócio (a IA usaria algo assim)
-function suggestStyle(type){
-  const t = (type||"").toLowerCase();
-  if (t.includes("barb")) return { vibe: "moderno, masculino, sofisticado", colors: "preto, dourado e cinza" };
-  if (t.includes("salon") || t.includes("salão") || t.includes("beauty") || t.includes("nail") || t.includes("hair")) return { vibe: "elegante, acolhedor, refinado", colors: "rosa suave, branco e dourado" };
-  if (t.includes("restaur") || t.includes("food") || t.includes("pizz") || t.includes("cafe") || t.includes("café") || t.includes("coffee")) return { vibe: "aconchegante, apetitoso, convidativo", colors: "vermelho, madeira e creme" };
-  if (t.includes("gym") || t.includes("fitness") || t.includes("academia")) return { vibe: "energético, forte, motivador", colors: "preto, vermelho e branco" };
-  if (t.includes("dent") || t.includes("clinic") || t.includes("clínica") || t.includes("health")) return { vibe: "limpo, confiável, profissional", colors: "azul, branco e verde-água" };
-  if (t.includes("mech") || t.includes("auto") || t.includes("car") || t.includes("garage")) return { vibe: "robusto, confiável, técnico", colors: "azul-escuro, laranja e cinza" };
-  if (t.includes("law") || t.includes("advog") || t.includes("account")) return { vibe: "sério, confiável, premium", colors: "azul-marinho, dourado e branco" };
-  return { vibe: "moderno, profissional, acolhedor", colors: "azul-marinho e dourado" };
-}
-
-// Quando clica "Criar site" num lead, leva os dados pra aba de gerar
-function useLead(jsonStr){
-  let l;
-  try { l = JSON.parse(jsonStr); } catch(e){ return; }
-  const type = document.getElementById("leadType").value || "";
-  document.getElementById("businessName").value = l.name || "";
-  document.getElementById("businessType").value = type;
-  document.getElementById("city").value = document.getElementById("leadCity").value || "";
-  document.getElementById("phone").value = l.phone || "";
-  document.getElementById("address").value = l.address || "";
-  if (l.rating) document.getElementById("rating").value = l.rating;
-  if (l.reviews) document.getElementById("reviewCount").value = l.reviews;
-  // auto-preenche estilo e cores sugeridos (você pode trocar)
-  const s = suggestStyle(type);
-  if (!document.getElementById("vibe").value) document.getElementById("vibe").value = s.vibe;
-  if (!document.getElementById("colors").value) document.getElementById("colors").value = s.colors;
-  switchTab("builder");
-  window.scrollTo({top:0,behavior:"smooth"});
-  // avisa que pode ajustar antes de gerar
-  const fe = document.getElementById("formErr");
-  if (fe) fe.innerHTML = '<div style="background:#1e3a5f;border:1px solid #2563eb;color:#bfdbfe;padding:10px 12px;border-radius:9px;font-size:13px;margin-top:10px">✓ Dados de <b>'+(l.name||"")+'</b> carregados, com cores e estilo sugeridos. Ajuste o que quiser e clique em <b>Gerar site</b>.</div>';
-}
-
 function val(id){ return document.getElementById(id).value.trim(); }
 
 function collectData(){
@@ -328,6 +382,7 @@ function collectData(){
     colors: val("colors"),
     logoUrl: val("logoUrl"),
     clientPhotos: val("clientPhotos"),
+    heroVideoBase64: heroVideoBase64,
   };
 }
 
@@ -380,7 +435,8 @@ async function generate(){
   }
   currentName = d.businessName.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "site";
   document.getElementById("genBtn").disabled = true;
-  setLoading("Criando o site do " + d.businessName + "...");
+  const videoMsg = heroVideoBase64 ? " com vídeo 3D premium" : "";
+  setLoading("Criando o site do " + d.businessName + videoMsg + "...");
   try {
     const html = await callApi(d);
     showSite(html);
