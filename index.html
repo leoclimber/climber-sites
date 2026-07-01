@@ -310,8 +310,8 @@ async function extractData(){
     if(d.aboutText) document.getElementById("aboutText").value = d.aboutText;
     if(d.suggestedColors) document.getElementById("suggestedColors").value = d.suggestedColors;
     if(d.suggestedFonts) document.getElementById("suggestedFonts").value = d.suggestedFonts;
-    if(d.googleMapsEmbed) document.getElementById("googleMapsEmbed").value = d.googleMapsEmbed;
-    if(d.realReviews) document.getElementById("realReviews").value = d.realReviews;
+    
+    
 
     // Preenche fotos do Google
     if(d.photoUrls && d.photoUrls.length > 0){
@@ -382,8 +382,8 @@ function collectData(){
     aboutText: val("aboutText"),
     suggestedColors: val("suggestedColors"),
     suggestedFonts: val("suggestedFonts"),
-    googleMapsEmbed: val("googleMapsEmbed"),
-    realReviews: val("realReviews"),
+    // googleMapsEmbed removed
+    // realReviews removed
   };
 }
 
