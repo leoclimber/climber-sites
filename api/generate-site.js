@@ -343,7 +343,7 @@ Output ONLY raw HTML starting with <!DOCTYPE html> ending with </html>.`;
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-opus-4-7",
+        model: "claude-opus-4-8",
         max_tokens: 16000,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
