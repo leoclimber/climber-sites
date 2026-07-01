@@ -131,7 +131,7 @@ export default async function handler(req, res) {
 
     // Limit reviews to 300 chars to avoid bloat
     const shortReviews = realReviews ? realReviews.substring(0, 300) : "";
-    const mapsEmbed = googleMapsEmbed || "";
+    const mapsEmbed = "";
 
     const systemPrompt = `You are a premium web designer in Dublin. Build websites that look hand-crafted, never AI-generated.
 Output ONLY a complete self-contained HTML file. No markdown, no fences. Start with <!DOCTYPE html>.
