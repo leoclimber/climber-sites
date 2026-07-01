@@ -13,7 +13,7 @@
   h1{font-size:22px;font-weight:800;color:#fff}
   .sub{color:#94a3b8;font-size:13px;margin-top:2px}
   .grid{display:grid;grid-template-columns:1fr;gap:20px}
-  @media(min-width:900px){.grid{grid-template-columns:380px 1fr}}
+  @media(min-width:900px){.grid{grid-template-columns:400px 1fr}}
   .panel{background:#111a2e;border:1px solid #1e293b;border-radius:16px;padding:20px}
   .panel h2{font-size:15px;font-weight:700;color:#fff;margin-bottom:14px}
   label{display:block;font-size:12px;font-weight:600;color:#94a3b8;margin:12px 0 5px;text-transform:uppercase;letter-spacing:.5px}
@@ -24,7 +24,9 @@
   .btn{width:100%;margin-top:18px;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-weight:800;font-size:15px;cursor:pointer;transition:opacity .2s}
   .btn:hover{opacity:.9}
   .btn:disabled{opacity:.5;cursor:not-allowed}
-  .btn2{background:#1e293b;color:#e2e8f0}
+  .btn-extract{width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-weight:700;font-size:14px;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn-extract:hover{opacity:.9}
+  .btn-extract:disabled{opacity:.5;cursor:not-allowed}
   .preview{background:#111a2e;border:1px solid #1e293b;border-radius:16px;padding:14px;display:flex;flex-direction:column;min-height:500px}
   .preview-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
   .dot{width:11px;height:11px;border-radius:50%}
@@ -39,6 +41,7 @@
   .spinner{width:42px;height:42px;border:4px solid #1e293b;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .err{background:#7f1d1d;border:1px solid #b91c1c;color:#fecaca;padding:12px 14px;border-radius:10px;font-size:13px;margin-top:12px}
+  .success-box{background:#064e3b;border:1px solid #059669;color:#a7f3d0;padding:12px 14px;border-radius:10px;font-size:13px;margin-top:12px}
   .edit-row{display:flex;gap:8px;margin-top:12px}
   .edit-row input{flex:1}
   .tip{font-size:12px;color:#64748b;margin-top:6px;line-height:1.5}
@@ -52,18 +55,14 @@
   .badge.has{background:#422006;color:#fdba74}
   .filterbtn{padding:8px 14px;border:1px solid #334155;border-radius:9px;background:#0b1120;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer}
   .filterbtn.active{background:#1e293b;color:#fff;border-color:#3b82f6}
-
-  /* Video upload box */
-  .video-upload-box{background:#0b1120;border:2px dashed #334155;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative}
-  .video-upload-box:hover{border-color:#3b82f6}
-  .video-upload-box.has-video{border-color:#8b5cf6;border-style:solid}
-  .video-upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-  .video-upload-icon{font-size:28px;margin-bottom:8px}
-  .video-upload-label{font-size:13px;color:#94a3b8;line-height:1.5}
-  .video-upload-label b{color:#c4b5fd}
-  .video-preview-thumb{width:100%;border-radius:8px;margin-top:10px;max-height:120px;object-fit:cover}
-  .video-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(139,92,246,0.15);border:1px solid #8b5cf6;color:#c4b5fd;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;margin-top:8px}
-  .video-remove{display:inline-block;margin-top:8px;color:#64748b;font-size:12px;cursor:pointer;text-decoration:underline}
+  .section-divider{border:none;border-top:1px solid #1e293b;margin:18px 0}
+  .section-header{font-size:12px;font-weight:700;color:#3b82f6;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+  .video-box{background:#0b1120;border:2px dashed #334155;border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:border-color .2s}
+  .video-box:hover{border-color:#3b82f6}
+  .video-box.has-video{border-color:#8b5cf6;border-style:solid}
+  .video-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(139,92,246,0.15);border:1px solid #8b5cf6;color:#c4b5fd;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;margin-top:6px}
+  .extract-result{background:#0b1120;border:1px solid #1e3a5f;border-radius:10px;padding:12px;margin-top:10px;font-size:12px;color:#94a3b8;line-height:1.6}
+  .extract-result b{color:#60a5fa}
 </style>
 </head>
 <body>
@@ -72,7 +71,7 @@
     <div class="logo">C</div>
     <div>
       <h1>Climber Sites</h1>
-      <div class="sub">Gere sites profissionais para seus clientes em segundos</div>
+      <div class="sub">Gere sites premium para negócios locais em Dublin</div>
     </div>
   </header>
 
@@ -85,24 +84,17 @@
   <div id="view-leads" style="display:none">
     <div class="panel" style="margin-bottom:20px">
       <h2>Achar negócios sem site</h2>
-      <div class="tip" style="margin-top:0;margin-bottom:10px">Escolha o tipo de negócio e a cidade. A ferramenta lista os que NÃO têm site — seus melhores clientes.</div>
-      <div style="background:#1e3a5f;border:1px solid #2563eb;color:#bfdbfe;padding:9px 12px;border-radius:9px;font-size:12px;line-height:1.5;margin-bottom:12px">💡 Você tem cerca de <b>600 buscas grátis por mês</b> (≈20 por dia). Mais que suficiente para prospectar. Configure um limite de gastos no Google Cloud para garantir.</div>
+      <div class="tip" style="margin-top:0;margin-bottom:10px">Escolha o tipo de negócio e a cidade.</div>
+      <div style="background:#1e3a5f;border:1px solid #2563eb;color:#bfdbfe;padding:9px 12px;border-radius:9px;font-size:12px;line-height:1.5;margin-bottom:12px">💡 Você tem cerca de <b>600 buscas grátis por mês</b>.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div>
-          <label>Tipo de negócio</label>
-          <input id="leadType" placeholder="Ex: barbershop, restaurant, salon"/>
-        </div>
-        <div>
-          <label>Cidade ou país</label>
-          <input id="leadCity" placeholder="Ex: Dublin, Ireland"/>
-        </div>
+        <div><label>Tipo de negócio</label><input id="leadType" placeholder="Ex: barbershop, burger restaurant"/></div>
+        <div><label>Cidade</label><input id="leadCity" placeholder="Ex: Dublin, Ireland"/></div>
       </div>
       <button class="btn" id="findBtn" onclick="findLeads()" style="margin-top:14px">🔍 Buscar clientes</button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="filterbtn active" id="filter-no" onclick="setFilter('no')">Só os SEM site</button>
         <button class="filterbtn" id="filter-all" onclick="setFilter('all')">Mostrar todos</button>
       </div>
-      <div class="tip" style="margin-top:8px">Use "Mostrar todos" quando buscar um negócio pelo nome para ver mesmo se ele já tem site.</div>
       <div id="leadsErr"></div>
     </div>
     <div id="leadsResult"></div>
@@ -111,15 +103,30 @@
   <!-- ABA: GERAR SITE -->
   <div id="view-builder">
   <div class="grid">
-    <!-- Formulário -->
     <div class="panel">
-      <h2>Dados do negócio</h2>
+
+      <!-- BLOCO 1: EXTRAÇÃO AUTOMÁTICA -->
+      <div class="section-header">⚡ Extração automática (novo)</div>
+      <label>Link do Google Maps do cliente</label>
+      <input id="googleMapsUrl" placeholder="Cole o link do Google Maps aqui..."/>
+      <label>Link do Instagram <span class="opt">(opcional)</span></label>
+      <input id="instagramUrl" placeholder="https://instagram.com/negocio"/>
+      <button class="btn-extract" id="extractBtn" onclick="extractData()">
+        ⚡ Extrair todos os dados automaticamente
+      </button>
+      <div id="extractResult"></div>
+
+      <hr class="section-divider"/>
+
+      <!-- BLOCO 2: DADOS DO NEGÓCIO -->
+      <div class="section-header">📋 Dados do negócio</div>
+      <h2 style="display:none"></h2>
 
       <label>Nome do negócio</label>
-      <input id="businessName" placeholder="Ex: The Burger Spot Dublin"/>
+      <input id="businessName" placeholder="Ex: Taboo Burger Dublin"/>
 
       <label>Tipo de negócio</label>
-      <input id="businessType" placeholder="Ex: Restaurante, Salão, Barbearia, Pub"/>
+      <input id="businessType" placeholder="Ex: Burger Restaurant, Barbershop, Pub"/>
 
       <label>Cidade <span class="opt">(opcional)</span></label>
       <input id="city" placeholder="Ex: Dublin, Ireland"/>
@@ -133,17 +140,17 @@
       <label>Endereço <span class="opt">(opcional)</span></label>
       <input id="address" placeholder="Ex: 116 Grafton St, Dublin 2"/>
 
-      <label>O que oferece <span class="opt">(opcional)</span></label>
-      <textarea id="services" placeholder="Ex: cortes, barba, coloração..."></textarea>
+      <label>Menu / Serviços <span class="opt">(opcional)</span></label>
+      <textarea id="services" placeholder="Ex: Classic Burger €14 | Double Smash €17 | Fries €6..."></textarea>
 
-      <label>WhatsApp para agendamento <span class="opt">(opcional)</span></label>
+      <label>WhatsApp <span class="opt">(opcional)</span></label>
       <input id="whatsapp" placeholder="Ex: 353831373056 (só números)"/>
 
       <label>Link de agendamento <span class="opt">(opcional)</span></label>
-      <input id="bookingLink" placeholder="Ex: link do Fresha, Booksy ou Calendly"/>
+      <input id="bookingLink" placeholder="Ex: link do Fresha, Booksy..."/>
 
-      <label>Horário de funcionamento <span class="opt">(opcional)</span></label>
-      <textarea id="hours" placeholder="Ex: Seg-Sex 9h-19h, Sáb 9h-17h"></textarea>
+      <label>Horários <span class="opt">(opcional)</span></label>
+      <textarea id="hours" placeholder="Ex: Mon–Fri 12pm–10pm | Sat–Sun 12pm–11pm"></textarea>
 
       <label>Nota Google <span class="opt">(opcional)</span></label>
       <input id="rating" placeholder="Ex: 4.8"/>
@@ -152,37 +159,52 @@
       <input id="reviewCount" placeholder="Ex: 212"/>
 
       <label>Estilo / vibe <span class="opt">(opcional)</span></label>
-      <input id="vibe" placeholder="Ex: moderno, aconchegante, luxuoso"/>
+      <input id="vibe" placeholder="Ex: bold, underground, artsy"/>
 
       <label>Cores da marca <span class="opt">(opcional)</span></label>
-      <input id="colors" placeholder="Ex: verde e dourado"/>
+      <input id="colors" placeholder="Ex: preto e laranja"/>
 
-      <label>Logo do cliente — link da imagem <span class="opt">(opcional)</span></label>
-      <input id="logoUrl" placeholder="Cole o link de uma imagem do logo"/>
-      <div class="tip" style="margin-top:4px">Deixe vazio para usar o nome do negócio como logo.</div>
+      <label>Logo <span class="opt">(opcional)</span></label>
+      <input id="logoUrl" placeholder="Link da imagem do logo"/>
 
-      <label>Fotos do cliente <span class="opt">(opcional)</span></label>
-      <textarea id="clientPhotos" placeholder="Cole links de fotos reais (uma por linha)"></textarea>
-      <div class="tip" style="margin-top:4px">Sem fotos? A IA usa fotos profissionais gratuitas automaticamente.</div>
+      <label>Fotos do cliente <span class="opt">(opcional — uma por linha)</span></label>
+      <textarea id="clientPhotos" placeholder="Cole links de fotos reais (do Google ou Instagram)"></textarea>
 
-      <!-- NOVO: VIDEO 3D HERO -->
-      <label>Vídeo 3D do hero <span class="opt">(opcional — premium)</span></label>
-      <div class="video-upload-box" id="videoBox" onclick="document.getElementById('videoFile').click()">
+      <hr class="section-divider"/>
+
+      <!-- BLOCO 3: PREMIUM -->
+      <div class="section-header">✨ Opções premium</div>
+
+      <label>Vídeo 3D do hero <span class="opt">(opcional)</span></label>
+      <div class="video-box" id="videoBox" onclick="document.getElementById('videoFile').click()">
         <input type="file" id="videoFile" accept="video/mp4,video/webm" style="display:none" onchange="handleVideoUpload(event)"/>
         <div id="videoEmpty">
-          <div class="video-upload-icon">🎬</div>
-          <div class="video-upload-label">Toca aqui para subir o vídeo 3D gerado no fal.ai<br/><b>MP4 ou WebM · máx 50MB</b></div>
+          <div style="font-size:24px;margin-bottom:6px">🎬</div>
+          <div style="font-size:13px;color:#94a3b8">Toca aqui para subir o vídeo 3D do fal.ai<br/><span style="color:#c4b5fd;font-weight:600">MP4 · máx 50MB</span></div>
         </div>
         <div id="videoFilled" style="display:none">
-          <div class="video-badge">✦ Vídeo 3D premium ativado</div>
-          <div id="videoName" style="font-size:12px;color:#94a3b8;margin-top:6px"></div>
-          <span class="video-remove" onclick="removeVideo(event)">Remover vídeo</span>
+          <div class="video-badge">✦ Vídeo 3D ativado</div>
+          <div id="videoName" style="font-size:11px;color:#94a3b8;margin-top:4px"></div>
+          <span onclick="removeVideo(event)" style="font-size:11px;color:#64748b;cursor:pointer;text-decoration:underline;display:block;margin-top:4px">Remover</span>
         </div>
       </div>
-      <div class="tip" style="margin-top:6px">Com vídeo: o hero do site fica com o produto em movimento (hambúrguer montando, cerveja gelando, etc). Sem vídeo: usa foto profissional padrão.</div>
+      <div class="tip">Com vídeo: hero animado premium. Sem vídeo: foto profissional.</div>
 
-      <button class="btn" id="genBtn" onclick="generate()">✦ Gerar site</button>
-      <div class="tip">Só o nome e o tipo são obrigatórios. Quanto mais você preencher, melhor o site fica.</div>
+      <label>Site de referência <span class="opt">(opcional)</span></label>
+      <input id="referenceUrl" placeholder="Ex: https://theoneburgerbcn.com"/>
+      <div class="tip">O Claude usa esse site como inspiração visual de qualidade.</div>
+
+      <!-- Campos hidden preenchidos pela extração -->
+      <input type="hidden" id="heroHeadline"/>
+      <input type="hidden" id="heroSubtitle"/>
+      <input type="hidden" id="aboutText"/>
+      <input type="hidden" id="suggestedColors"/>
+      <input type="hidden" id="suggestedFonts"/>
+      <input type="hidden" id="googleMapsEmbed"/>
+      <input type="hidden" id="realReviews"/>
+
+      <button class="btn" id="genBtn" onclick="generate()">✦ Gerar site premium</button>
+      <div class="tip">Só nome e tipo são obrigatórios. Com extração automática fica muito melhor.</div>
       <div id="formErr"></div>
     </div>
 
@@ -194,22 +216,22 @@
         <div class="dot" style="background:#22c55e"></div>
         <div class="preview-actions" id="actions" style="display:none">
           <button class="smallbtn" onclick="regenerate()" id="regenBtn">↻ Gerar de novo</button>
-          <button class="smallbtn" onclick="openFull()">⛶ Abrir em tela cheia</button>
-          <button class="smallbtn primary" onclick="download()">↓ Baixar site</button>
+          <button class="smallbtn" onclick="openFull()">⛶ Tela cheia</button>
+          <button class="smallbtn primary" onclick="download()">↓ Baixar</button>
         </div>
       </div>
 
       <div id="previewArea" class="empty">
         <div class="big">🌐</div>
-        <div>Preencha os dados e clique em <b>Gerar site</b>.<br/>O site vai aparecer aqui pronto.</div>
+        <div>Cole o link do Google Maps e clique em <b>Extrair</b>.<br/>Ou preencha os dados e clique em <b>Gerar site premium</b>.</div>
       </div>
 
       <div id="editBox" style="display:none">
         <div class="edit-row">
-          <input id="editInput" placeholder="Peça uma mudança: ex: deixa as cores mais escuras"/>
+          <input id="editInput" placeholder="Peça uma mudança: ex: deixa mais escuro, muda a fonte..."/>
           <button class="smallbtn primary" onclick="applyEdit()" id="editBtn">Aplicar</button>
         </div>
-        <div class="tip">Você pode pedir quantos ajustes quiser antes de publicar.</div>
+        <div class="tip">Peça quantos ajustes quiser antes de publicar.</div>
 
         <div style="margin-top:16px;border-top:1px solid #1e293b;padding-top:16px">
           <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px">🚀 Publicar na internet</div>
@@ -218,10 +240,9 @@
         </div>
 
         <div id="domainBox" style="display:none;margin-top:14px;border-top:1px solid #1e293b;padding-top:14px">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">🌐 Conectar domínio do cliente</div>
-          <div class="tip" style="margin-top:0;margin-bottom:8px">O cliente compra o domínio e você cola aqui.</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">🌐 Conectar domínio</div>
           <div class="edit-row">
-            <input id="domainInput" placeholder="ex: barbeariadojoao.ie"/>
+            <input id="domainInput" placeholder="ex: tabooburger.ie"/>
             <button class="smallbtn primary" onclick="attachDomain()" id="domainBtn">Conectar</button>
           </div>
           <div id="domainResult" style="margin-top:10px"></div>
@@ -236,34 +257,87 @@
 let currentHtml = "";
 let currentName = "site";
 let heroVideoBase64 = "";
-let heroVideoMime = "";
+let leadFilter = "no";
 
 function switchTab(which){
-  document.getElementById("view-builder").style.display = which === "builder" ? "block" : "none";
-  document.getElementById("view-leads").style.display = which === "leads" ? "block" : "none";
-  document.getElementById("tab-builder").classList.toggle("active", which === "builder");
-  document.getElementById("tab-leads").classList.toggle("active", which === "leads");
+  document.getElementById("view-builder").style.display = which==="builder"?"block":"none";
+  document.getElementById("view-leads").style.display = which==="leads"?"block":"none";
+  document.getElementById("tab-builder").classList.toggle("active",which==="builder");
+  document.getElementById("tab-leads").classList.toggle("active",which==="leads");
 }
 
-let leadFilter = "no";
 function setFilter(f){
-  leadFilter = f;
-  document.getElementById("filter-no").classList.toggle("active", f === "no");
-  document.getElementById("filter-all").classList.toggle("active", f === "all");
+  leadFilter=f;
+  document.getElementById("filter-no").classList.toggle("active",f==="no");
+  document.getElementById("filter-all").classList.toggle("active",f==="all");
 }
 
-// Video upload handling
-function handleVideoUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  if (file.size > 50 * 1024 * 1024) {
-    alert("Vídeo muito grande. Máximo 50MB.");
-    return;
+// EXTRAÇÃO AUTOMÁTICA
+async function extractData(){
+  const googleUrl = document.getElementById("googleMapsUrl").value.trim();
+  const instaUrl = document.getElementById("instagramUrl").value.trim();
+  if(!googleUrl){ alert("Cole o link do Google Maps primeiro."); return; }
+  const btn = document.getElementById("extractBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<div style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite"></div> Extraindo dados...';
+  document.getElementById("extractResult").innerHTML = '<div style="color:#94a3b8;font-size:13px;margin-top:8px">⏳ Buscando informações do negócio...</div>';
+  try {
+    const r = await fetch("/api/extract-business", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ googleMapsUrl: googleUrl, instagramUrl: instaUrl }),
+    });
+    const data = await r.json();
+    if(!r.ok) throw new Error(data.detail || data.error || "Falha");
+    const d = data.extracted;
+
+    // Preenche o formulário automaticamente
+    if(d.businessName) document.getElementById("businessName").value = d.businessName;
+    if(d.businessType) document.getElementById("businessType").value = d.businessType;
+    if(d.city) document.getElementById("city").value = d.city;
+    if(d.phone) document.getElementById("phone").value = d.phone;
+    if(d.address) document.getElementById("address").value = d.address;
+    if(d.rating) document.getElementById("rating").value = d.rating;
+    if(d.reviewCount) document.getElementById("reviewCount").value = d.reviewCount;
+    if(d.hours) document.getElementById("hours").value = d.hours;
+    if(d.services) document.getElementById("services").value = d.services;
+    if(d.vibe) document.getElementById("vibe").value = d.vibe;
+    if(d.suggestedColors) document.getElementById("colors").value = d.suggestedColors;
+
+    // Preenche campos hidden
+    if(d.heroHeadline) document.getElementById("heroHeadline").value = d.heroHeadline;
+    if(d.heroSubtitle) document.getElementById("heroSubtitle").value = d.heroSubtitle;
+    if(d.aboutText) document.getElementById("aboutText").value = d.aboutText;
+    if(d.suggestedColors) document.getElementById("suggestedColors").value = d.suggestedColors;
+    if(d.suggestedFonts) document.getElementById("suggestedFonts").value = d.suggestedFonts;
+    if(d.googleMapsEmbed) document.getElementById("googleMapsEmbed").value = d.googleMapsEmbed;
+    if(d.realReviews) document.getElementById("realReviews").value = d.realReviews;
+
+    // Preenche fotos do Google
+    if(d.photoUrls && d.photoUrls.length > 0){
+      document.getElementById("clientPhotos").value = d.photoUrls.join("\n");
+    }
+
+    document.getElementById("extractResult").innerHTML =
+      '<div class="success-box">✓ Dados extraídos! Formulário preenchido automaticamente.<br/>' +
+      '<b>' + (d.businessName||"") + '</b> · ' + (d.rating||"") + '★ · ' + (d.reviewCount||"") + ' avaliações<br/>' +
+      (d.photoUrls?.length ? d.photoUrls.length + ' fotos encontradas' : '') +
+      '</div>';
+  } catch(e){
+    document.getElementById("extractResult").innerHTML = '<div class="err">Não consegui extrair: '+e.message+'.<br/>Preencha os dados manualmente.</div>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Extrair todos os dados automaticamente';
   }
-  heroVideoMime = file.type;
+}
+
+function handleVideoUpload(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  if(file.size > 50*1024*1024){ alert("Vídeo muito grande. Máximo 50MB."); return; }
   const reader = new FileReader();
-  reader.onload = function(e) {
-    heroVideoBase64 = e.target.result; // full data URL
+  reader.onload = function(e){
+    heroVideoBase64 = e.target.result;
     document.getElementById("videoEmpty").style.display = "none";
     document.getElementById("videoFilled").style.display = "block";
     document.getElementById("videoName").textContent = file.name + " (" + (file.size/1024/1024).toFixed(1) + "MB)";
@@ -272,94 +346,13 @@ function handleVideoUpload(event) {
   reader.readAsDataURL(file);
 }
 
-function removeVideo(e) {
+function removeVideo(e){
   e.stopPropagation();
   heroVideoBase64 = "";
-  heroVideoMime = "";
   document.getElementById("videoFile").value = "";
   document.getElementById("videoEmpty").style.display = "block";
   document.getElementById("videoFilled").style.display = "none";
   document.getElementById("videoBox").classList.remove("has-video");
-}
-
-function suggestStyle(type){
-  const t = (type||"").toLowerCase();
-  if (t.includes("barb")) return { vibe: "moderno, masculino, sofisticado", colors: "preto, dourado e cinza" };
-  if (t.includes("salon") || t.includes("salão") || t.includes("beauty") || t.includes("nail") || t.includes("hair")) return { vibe: "elegante, acolhedor, refinado", colors: "rosa suave, branco e dourado" };
-  if (t.includes("restaur") || t.includes("food") || t.includes("pizz") || t.includes("cafe") || t.includes("café") || t.includes("coffee") || t.includes("burger")) return { vibe: "aconchegante, apetitoso, convidativo", colors: "vermelho, madeira e creme" };
-  if (t.includes("gym") || t.includes("fitness") || t.includes("academia")) return { vibe: "energético, forte, motivador", colors: "preto, vermelho e branco" };
-  if (t.includes("dent") || t.includes("clinic") || t.includes("clínica") || t.includes("health")) return { vibe: "limpo, confiável, profissional", colors: "azul, branco e verde-água" };
-  if (t.includes("mech") || t.includes("auto") || t.includes("car") || t.includes("garage")) return { vibe: "robusto, confiável, técnico", colors: "azul-escuro, laranja e cinza" };
-  if (t.includes("pub") || t.includes("bar")) return { vibe: "acolhedor, animado, tradicional", colors: "verde garrafa, âmbar e creme" };
-  if (t.includes("tattoo") || t.includes("ink")) return { vibe: "ousado, artístico, underground", colors: "preto, vermelho e cinza" };
-  return { vibe: "moderno, profissional, acolhedor", colors: "azul-marinho e dourado" };
-}
-
-function useLead(jsonStr){
-  let l;
-  try { l = JSON.parse(jsonStr); } catch(e){ return; }
-  const type = document.getElementById("leadType").value || "";
-  document.getElementById("businessName").value = l.name || "";
-  document.getElementById("businessType").value = type;
-  document.getElementById("city").value = document.getElementById("leadCity").value || "";
-  document.getElementById("phone").value = l.phone || "";
-  document.getElementById("address").value = l.address || "";
-  if (l.rating) document.getElementById("rating").value = l.rating;
-  if (l.reviews) document.getElementById("reviewCount").value = l.reviews;
-  const s = suggestStyle(type);
-  if (!document.getElementById("vibe").value) document.getElementById("vibe").value = s.vibe;
-  if (!document.getElementById("colors").value) document.getElementById("colors").value = s.colors;
-  switchTab("builder");
-  window.scrollTo({top:0,behavior:"smooth"});
-  const fe = document.getElementById("formErr");
-  if (fe) fe.innerHTML = '<div style="background:#1e3a5f;border:1px solid #2563eb;color:#bfdbfe;padding:10px 12px;border-radius:9px;font-size:13px;margin-top:10px">✓ Dados de <b>'+(l.name||"")+'</b> carregados. Ajuste o que quiser e clique em <b>Gerar site</b>.</div>';
-}
-
-async function findLeads(){
-  const type = document.getElementById("leadType").value.trim();
-  const city = document.getElementById("leadCity").value.trim();
-  document.getElementById("leadsErr").innerHTML = "";
-  if (!type || !city){
-    document.getElementById("leadsErr").innerHTML = '<div class="err">Preencha o tipo de negócio e a cidade.</div>';
-    return;
-  }
-  const btn = document.getElementById("findBtn");
-  btn.disabled = true; btn.textContent = "Buscando...";
-  document.getElementById("leadsResult").innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">Procurando negócios...</div>';
-  try {
-    const r = await fetch("/api/find-leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ businessType: type, city: city, onlyNoWebsite: leadFilter === "no" }),
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.detail || data.error || "Falha");
-    if (!data.leads || data.leads.length === 0){
-      document.getElementById("leadsResult").innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">Nenhum negócio encontrado. Tente outra cidade ou tipo.</div>';
-      return;
-    }
-    let html = '<div style="margin-bottom:12px;color:#cbd5e1;font-size:14px;font-weight:700">'+data.total+' negócios encontrados 🎯</div>';
-    for (const l of data.leads){
-      const badge = l.hasWebsite
-        ? '<span class="badge has">JÁ TEM SITE</span>'
-        : '<span class="badge">SEM SITE</span>';
-      html += '<div class="leadcard"><div class="info">'+
-        '<div class="nm">'+l.name+' '+badge+'</div>'+
-        '<div class="meta">'+
-        (l.phone ? '📞 '+l.phone+'<br/>' : '')+
-        (l.address ? '📍 '+l.address+'<br/>' : '')+
-        (l.website ? '🌐 <a href="'+l.website+'" target="_blank" style="color:#60a5fa">'+l.website+'</a><br/>' : '')+
-        (l.rating ? '⭐ '+l.rating+(l.reviews ? ' ('+l.reviews+' avaliações)' : '') : '')+
-        '</div></div>'+
-        '<button class="smallbtn primary" onclick=\'useLead('+JSON.stringify(JSON.stringify(l))+')\'>Criar site →</button>'+
-        '</div>';
-    }
-    document.getElementById("leadsResult").innerHTML = html;
-  } catch(e){
-    document.getElementById("leadsResult").innerHTML = '<div class="err">Não consegui buscar agora: '+e.message+'</div>';
-  } finally {
-    btn.disabled = false; btn.textContent = "🔍 Buscar clientes";
-  }
 }
 
 function val(id){ return document.getElementById(id).value.trim(); }
@@ -383,6 +376,14 @@ function collectData(){
     logoUrl: val("logoUrl"),
     clientPhotos: val("clientPhotos"),
     heroVideoBase64: heroVideoBase64,
+    referenceUrl: val("referenceUrl"),
+    heroHeadline: val("heroHeadline"),
+    heroSubtitle: val("heroSubtitle"),
+    aboutText: val("aboutText"),
+    suggestedColors: val("suggestedColors"),
+    suggestedFonts: val("suggestedFonts"),
+    googleMapsEmbed: val("googleMapsEmbed"),
+    realReviews: val("realReviews"),
   };
 }
 
@@ -391,7 +392,7 @@ function setLoading(msg){
   document.getElementById("editBox").style.display = "none";
   const area = document.getElementById("previewArea");
   area.className = "loading";
-  area.innerHTML = '<div class="spinner"></div><div>'+msg+'</div><div style="font-size:12px;color:#64748b">Isso leva uns 20-40 segundos. Não feche a página.</div>';
+  area.innerHTML = '<div class="spinner"></div><div>'+msg+'</div><div style="font-size:12px;color:#64748b">Usando Claude Opus — pode levar 30-60s. Não feche a página.</div>';
 }
 
 function showError(msg){
@@ -406,42 +407,41 @@ function showSite(html){
   area.className = "";
   area.innerHTML = '<iframe id="frame" style="width:100%;min-height:480px;border:none;border-radius:10px;background:#fff"></iframe>';
   const frame = document.getElementById("frame");
-  const blob = new Blob([html], {type:"text/html"});
+  const blob = new Blob([html],{type:"text/html"});
   frame.src = URL.createObjectURL(blob);
   document.getElementById("actions").style.display = "flex";
   document.getElementById("editBox").style.display = "block";
   const pr = document.getElementById("publishResult"); if(pr) pr.innerHTML = "";
   const db = document.getElementById("domainBox"); if(db) db.style.display = "none";
-  const dr = document.getElementById("domainResult"); if(dr) dr.innerHTML = "";
 }
 
 async function callApi(payload){
-  const r = await fetch("/api/generate-site", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const r = await fetch("/api/generate-site",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
     body: JSON.stringify(payload),
   });
   const data = await r.json();
-  if (!r.ok) throw new Error(data.error || "Falha ao gerar");
+  if(!r.ok) throw new Error(data.error||"Falha ao gerar");
   return data.html;
 }
 
 async function generate(){
   const d = collectData();
   document.getElementById("formErr").innerHTML = "";
-  if (!d.businessName || !d.businessType){
+  if(!d.businessName||!d.businessType){
     document.getElementById("formErr").innerHTML = '<div class="err">Preencha pelo menos o nome e o tipo do negócio.</div>';
     return;
   }
-  currentName = d.businessName.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "site";
+  currentName = d.businessName.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"site";
   document.getElementById("genBtn").disabled = true;
-  const videoMsg = heroVideoBase64 ? " com vídeo 3D premium" : "";
-  setLoading("Criando o site do " + d.businessName + videoMsg + "...");
+  const videoMsg = heroVideoBase64 ? " com vídeo 3D" : "";
+  setLoading("Criando o site premium do " + d.businessName + videoMsg + "...");
   try {
     const html = await callApi(d);
     showSite(html);
   } catch(e){
-    showError("Não consegui gerar agora. Tente de novo. ("+e.message+")");
+    showError("Não consegui gerar. Tente de novo. ("+e.message+")");
   } finally {
     document.getElementById("genBtn").disabled = false;
   }
@@ -449,12 +449,12 @@ async function generate(){
 
 async function regenerate(){
   document.getElementById("regenBtn").disabled = true;
-  setLoading("Gerando uma nova versão...");
+  setLoading("Gerando nova versão...");
   try {
     const html = await callApi(collectData());
     showSite(html);
   } catch(e){
-    showError("Não consegui gerar agora. Tente de novo. ("+e.message+")");
+    showError("Não consegui gerar. ("+e.message+")");
   } finally {
     document.getElementById("regenBtn").disabled = false;
   }
@@ -462,7 +462,7 @@ async function regenerate(){
 
 async function applyEdit(){
   const instr = document.getElementById("editInput").value.trim();
-  if (!instr) return;
+  if(!instr) return;
   document.getElementById("editBtn").disabled = true;
   setLoading("Aplicando: " + instr);
   try {
@@ -473,7 +473,7 @@ async function applyEdit(){
     showSite(html);
     document.getElementById("editInput").value = "";
   } catch(e){
-    showError("Não consegui aplicar a mudança. Tente de novo. ("+e.message+")");
+    showError("Não consegui aplicar. ("+e.message+")");
   } finally {
     document.getElementById("editBtn").disabled = false;
   }
@@ -482,78 +482,130 @@ async function applyEdit(){
 let publishedProject = "";
 
 async function publish(){
-  if (!currentHtml) return;
+  if(!currentHtml) return;
   const btn = document.getElementById("publishBtn");
-  btn.disabled = true;
-  btn.textContent = "Publicando...";
+  btn.disabled = true; btn.textContent = "Publicando...";
   document.getElementById("publishResult").innerHTML = "";
   try {
-    const r = await fetch("/api/publish-site", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ html: currentHtml, projectName: currentName }),
+    const r = await fetch("/api/publish-site",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({html:currentHtml,projectName:currentName}),
     });
     const data = await r.json();
-    if (!r.ok) throw new Error(data.detail || data.error || "Falha");
+    if(!r.ok) throw new Error(data.detail||data.error||"Falha");
     publishedProject = data.projectName;
     document.getElementById("publishResult").innerHTML =
-      '<div style="background:#064e3b;border:1px solid #059669;color:#a7f3d0;padding:10px 12px;border-radius:9px;font-size:13px">✓ Site no ar!<br/><a href="'+data.url+'" target="_blank" style="color:#6ee7b7;word-break:break-all">'+data.url+'</a></div>';
+      '<div class="success-box">✓ Site no ar!<br/><a href="'+data.url+'" target="_blank" style="color:#6ee7b7;word-break:break-all">'+data.url+'</a></div>';
     document.getElementById("domainBox").style.display = "block";
   } catch(e){
     document.getElementById("publishResult").innerHTML =
-      '<div style="background:#7f1d1d;border:1px solid #b91c1c;color:#fecaca;padding:10px 12px;border-radius:9px;font-size:13px">Não consegui publicar: '+e.message+'</div>';
+      '<div class="err">Não consegui publicar: '+e.message+'</div>';
   } finally {
-    btn.disabled = false;
-    btn.textContent = "Publicar agora (grátis no Vercel)";
+    btn.disabled = false; btn.textContent = "Publicar agora (grátis no Vercel)";
   }
 }
 
 async function attachDomain(){
   const domain = document.getElementById("domainInput").value.trim();
-  if (!domain || !publishedProject) return;
+  if(!domain||!publishedProject) return;
   const btn = document.getElementById("domainBtn");
-  btn.disabled = true;
-  btn.textContent = "...";
+  btn.disabled = true; btn.textContent = "...";
   document.getElementById("domainResult").innerHTML = "";
   try {
-    const r = await fetch("/api/attach-domain", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectName: publishedProject, domain }),
+    const r = await fetch("/api/attach-domain",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({projectName:publishedProject,domain}),
     });
     const data = await r.json();
-    if (!r.ok) throw new Error(data.detail || data.error || "Falha");
+    if(!r.ok) throw new Error(data.detail||data.error||"Falha");
     const dns = data.dnsInstructions;
     document.getElementById("domainResult").innerHTML =
       '<div style="background:#1e3a5f;border:1px solid #2563eb;color:#bfdbfe;padding:10px 12px;border-radius:9px;font-size:12px;line-height:1.6">'+
-      '✓ Domínio adicionado: <b>'+data.domain+'</b><br/><br/>'+
-      'Peça ao cliente para adicionar no painel do domínio dele:<br/>'+
-      '• Tipo <b>'+dns.aRecord.type+'</b> · nome <b>'+dns.aRecord.name+'</b> · valor <b>'+dns.aRecord.value+'</b><br/>'+
-      '• Tipo <b>'+dns.cnameRecord.type+'</b> · nome <b>'+dns.cnameRecord.name+'</b> · valor <b>'+dns.cnameRecord.value+'</b><br/><br/>'+
-      'Pode levar de minutos a algumas horas para ficar no ar.</div>';
+      '✓ Domínio: <b>'+data.domain+'</b><br/><br/>'+
+      'DNS records:<br/>'+
+      '• '+dns.aRecord.type+' · '+dns.aRecord.name+' · '+dns.aRecord.value+'<br/>'+
+      '• '+dns.cnameRecord.type+' · '+dns.cnameRecord.name+' · '+dns.cnameRecord.value+
+      '</div>';
   } catch(e){
-    document.getElementById("domainResult").innerHTML =
-      '<div style="background:#7f1d1d;border:1px solid #b91c1c;color:#fecaca;padding:10px 12px;border-radius:9px;font-size:13px">Não consegui conectar: '+e.message+'</div>';
+    document.getElementById("domainResult").innerHTML = '<div class="err">Não consegui conectar: '+e.message+'</div>';
   } finally {
-    btn.disabled = false;
-    btn.textContent = "Conectar";
+    btn.disabled = false; btn.textContent = "Conectar";
   }
 }
 
+async function findLeads(){
+  const type = document.getElementById("leadType").value.trim();
+  const city = document.getElementById("leadCity").value.trim();
+  document.getElementById("leadsErr").innerHTML = "";
+  if(!type||!city){
+    document.getElementById("leadsErr").innerHTML = '<div class="err">Preencha o tipo e a cidade.</div>';
+    return;
+  }
+  const btn = document.getElementById("findBtn");
+  btn.disabled = true; btn.textContent = "Buscando...";
+  document.getElementById("leadsResult").innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">Procurando negócios...</div>';
+  try {
+    const r = await fetch("/api/find-leads",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({businessType:type,city:city,onlyNoWebsite:leadFilter==="no"}),
+    });
+    const data = await r.json();
+    if(!r.ok) throw new Error(data.detail||data.error||"Falha");
+    if(!data.leads||data.leads.length===0){
+      document.getElementById("leadsResult").innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px">Nenhum negócio encontrado.</div>';
+      return;
+    }
+    let html = '<div style="margin-bottom:12px;color:#cbd5e1;font-size:14px;font-weight:700">'+data.total+' negócios encontrados 🎯</div>';
+    for(const l of data.leads){
+      const badge = l.hasWebsite
+        ? '<span class="badge has">JÁ TEM SITE</span>'
+        : '<span class="badge">SEM SITE</span>';
+      html += '<div class="leadcard"><div class="info">'+
+        '<div class="nm">'+l.name+' '+badge+'</div>'+
+        '<div class="meta">'+
+        (l.phone?'📞 '+l.phone+'<br/>':'')+
+        (l.address?'📍 '+l.address+'<br/>':'')+
+        (l.rating?'⭐ '+l.rating+(l.reviews?' ('+l.reviews+' avaliações)':''):'')+
+        '</div></div>'+
+        '<button class="smallbtn primary" onclick=\'useLead('+JSON.stringify(JSON.stringify(l))+')\'>Criar site →</button>'+
+        '</div>';
+    }
+    document.getElementById("leadsResult").innerHTML = html;
+  } catch(e){
+    document.getElementById("leadsResult").innerHTML = '<div class="err">Erro: '+e.message+'</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = "🔍 Buscar clientes";
+  }
+}
+
+function useLead(jsonStr){
+  let l; try{ l=JSON.parse(jsonStr); }catch(e){ return; }
+  const type = document.getElementById("leadType").value||"";
+  document.getElementById("businessName").value = l.name||"";
+  document.getElementById("businessType").value = type;
+  document.getElementById("city").value = document.getElementById("leadCity").value||"";
+  document.getElementById("phone").value = l.phone||"";
+  document.getElementById("address").value = l.address||"";
+  if(l.rating) document.getElementById("rating").value = l.rating;
+  if(l.reviews) document.getElementById("reviewCount").value = l.reviews;
+  switchTab("builder");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
 function download(){
-  const blob = new Blob([currentHtml], { type: "text/html" });
+  const blob = new Blob([currentHtml],{type:"text/html"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = currentName + ".html";
-  a.click();
+  a.href=url; a.download=currentName+".html"; a.click();
   URL.revokeObjectURL(url);
 }
 
 function openFull(){
-  const blob = new Blob([currentHtml], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank");
+  const blob = new Blob([currentHtml],{type:"text/html"});
+  window.open(URL.createObjectURL(blob),"_blank");
 }
 </script>
 </body>
