@@ -1,6 +1,3 @@
-// API endpoint: Extract Business Data
-// Recebe link do Google Maps (ou place_id) e extrai TODOS os dados do negócio
-// incluindo fotos, horários, cardápio, avaliações, etc.
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -15,7 +12,6 @@ export default async function handler(req, res) {
 
   try {
     const { googleMapsUrl = "", instagramUrl = "" } = req.body || {};
-
     if (!googleMapsUrl && !instagramUrl) {
       return res.status(400).json({ error: "Provide at least a Google Maps URL" });
     }
@@ -23,53 +19,86 @@ export default async function handler(req, res) {
     let placeId = "";
     let businessData = {};
 
-    // 1) Extrai place_id do link do Google Maps
     if (googleMapsUrl) {
-      // Tenta extrair place_id direto da URL (formato: place_id=...)
+
+      // 1) Tenta extrair place_id direto da URL
       const pidMatch = googleMapsUrl.match(/place_id[=:]([A-Za-z0-9_-]+)/);
       if (pidMatch) {
         placeId = pidMatch[1];
-      } else {
-        // Tenta extrair o nome do negócio da URL e buscar via Text Search
-        // URLs tipo: /maps/place/NOME+DO+NEGOCIO/
-        const nameMatch = googleMapsUrl.match(/\/place\/([^\/\?@]+)/);
-        if (nameMatch) {
-          const searchQuery = decodeURIComponent(nameMatch[1].replace(/\+/g, " "));
-          const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${GOOGLE_KEY}`;
-          const sRes = await fetch(searchUrl);
-          const sData = await sRes.json();
-          if (sData.results && sData.results[0]) {
-            placeId = sData.results[0].place_id;
-          }
-        }
+      }
 
-        // URL tipo maps.app.goo.gl (short link) - resolve o redirect
-        if (!placeId && (googleMapsUrl.includes("goo.gl") || googleMapsUrl.includes("maps.app"))) {
-          try {
-            const redirectRes = await fetch(googleMapsUrl, { redirect: "follow" });
-            const finalUrl = redirectRes.url;
-            const pidFromRedirect = finalUrl.match(/place_id[=:]([A-Za-z0-9_-]+)/);
-            if (pidFromRedirect) {
-              placeId = pidFromRedirect[1];
-            } else {
-              const nameFromRedirect = finalUrl.match(/\/place\/([^\/\?@]+)/);
-              if (nameFromRedirect) {
-                const searchQuery = decodeURIComponent(nameFromRedirect[1].replace(/\+/g, " "));
-                const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${GOOGLE_KEY}`;
-                const sRes = await fetch(searchUrl);
-                const sData = await sRes.json();
-                if (sData.results && sData.results[0]) {
-                  placeId = sData.results[0].place_id;
-                }
-              }
+      // 2) Tenta extrair coordenadas do link longo (@lat,lng)
+      if (!placeId) {
+        const coordMatch = googleMapsUrl.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+        const nameMatch = googleMapsUrl.match(/\/place\/([^\/\?@]+)/);
+
+        if (coordMatch && nameMatch) {
+          const lat = coordMatch[1];
+          const lng = coordMatch[2];
+          const searchName = decodeURIComponent(nameMatch[1].replace(/\+/g, " "));
+
+          // Busca com localização usando coordenadas
+          const nearbyUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=100&keyword=${encodeURIComponent(searchName)}&key=${GOOGLE_KEY}`;
+          const nearbyRes = await fetch(nearbyUrl);
+          const nearbyData = await nearbyRes.json();
+
+          if (nearbyData.results && nearbyData.results[0]) {
+            placeId = nearbyData.results[0].place_id;
+          }
+
+          // Se não achou por nearby, tenta textsearch com localização
+          if (!placeId) {
+            const textUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchName)}&location=${lat},${lng}&radius=500&key=${GOOGLE_KEY}`;
+            const textRes = await fetch(textUrl);
+            const textData = await textRes.json();
+            if (textData.results && textData.results[0]) {
+              placeId = textData.results[0].place_id;
             }
-          } catch(e) {
-            // ignore redirect errors
+          }
+        } else if (nameMatch) {
+          // Sem coordenadas, busca só pelo nome
+          const searchName = decodeURIComponent(nameMatch[1].replace(/\+/g, " "));
+          const textUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchName)}&key=${GOOGLE_KEY}`;
+          const textRes = await fetch(textUrl);
+          const textData = await textRes.json();
+          if (textData.results && textData.results[0]) {
+            placeId = textData.results[0].place_id;
           }
         }
       }
 
-      // 2) Busca detalhes completos do lugar
+      // 3) Resolve links curtos (goo.gl, maps.app.goo.gl, share.google)
+      if (!placeId && (googleMapsUrl.includes("goo.gl") || googleMapsUrl.includes("maps.app") || googleMapsUrl.includes("share.google"))) {
+        try {
+          const redirectRes = await fetch(googleMapsUrl, { redirect: "follow" });
+          const finalUrl = redirectRes.url;
+
+          const pidFromRedirect = finalUrl.match(/place_id[=:]([A-Za-z0-9_-]+)/);
+          if (pidFromRedirect) {
+            placeId = pidFromRedirect[1];
+          } else {
+            const coordFromRedirect = finalUrl.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+            const nameFromRedirect = finalUrl.match(/\/place\/([^\/\?@]+)/);
+
+            if (coordFromRedirect && nameFromRedirect) {
+              const lat = coordFromRedirect[1];
+              const lng = coordFromRedirect[2];
+              const searchName = decodeURIComponent(nameFromRedirect[1].replace(/\+/g, " "));
+
+              const nearbyUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=100&keyword=${encodeURIComponent(searchName)}&key=${GOOGLE_KEY}`;
+              const nearbyRes = await fetch(nearbyUrl);
+              const nearbyData = await nearbyRes.json();
+              if (nearbyData.results && nearbyData.results[0]) {
+                placeId = nearbyData.results[0].place_id;
+              }
+            }
+          }
+        } catch(e) {
+          // ignore redirect errors
+        }
+      }
+
+      // 4) Busca detalhes completos com o place_id
       if (placeId) {
         const fields = [
           "name", "formatted_phone_number", "website", "formatted_address",
@@ -83,21 +112,15 @@ export default async function handler(req, res) {
         const dData = await dRes.json();
         const r = dData.result || {};
 
-        // Monta URLs das fotos (máx 6)
         const photoUrls = (r.photos || []).slice(0, 6).map(p =>
           `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${p.photo_reference}&key=${GOOGLE_KEY}`
         );
 
-        // Formata horários
         const hoursText = r.opening_hours?.weekday_text?.join(" | ") || "";
 
-        // Pega avaliações reais (máx 3)
         const reviewsText = (r.reviews || []).slice(0, 3).map(rv =>
           `"${rv.text}" — ${rv.author_name} (${rv.rating}★)`
         ).join("\n");
-
-        // Detecta tipo de negócio
-        const types = (r.types || []).join(", ");
 
         businessData = {
           name: r.name || "",
@@ -107,20 +130,24 @@ export default async function handler(req, res) {
           rating: r.rating || "",
           reviewCount: r.user_ratings_total || "",
           hours: hoursText,
-          types: types,
+          types: (r.types || []).join(", "),
           summary: r.editorial_summary?.overview || "",
-          photoUrls: photoUrls,
+          photoUrls,
           realReviews: reviewsText,
           googleMapsEmbed: placeId ? `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_KEY}&q=place_id:${placeId}` : "",
-          placeId: placeId,
+          placeId,
         };
       }
     }
 
-    // 3) Usa Claude pra enriquecer os dados e estruturar o conteúdo do site
-    const enrichPrompt = `You are a web content strategist. Based on the business data below, create a complete structured brief for building a premium website.
+    if (!businessData.name) {
+      return res.status(404).json({ error: "Não consegui encontrar esse negócio. Tente copiar o link completo do Google Maps no navegador do computador." });
+    }
 
-BUSINESS DATA FROM GOOGLE:
+    // 5) Claude enriquece os dados
+    const enrichPrompt = `You are a web content strategist. Based on the business data below, create a structured brief for a premium website.
+
+BUSINESS DATA:
 Name: ${businessData.name}
 Type: ${businessData.types}
 Address: ${businessData.address}
@@ -128,26 +155,26 @@ Phone: ${businessData.phone}
 Rating: ${businessData.rating} (${businessData.reviewCount} reviews)
 Hours: ${businessData.hours}
 Summary: ${businessData.summary}
-Real customer reviews: ${businessData.realReviews}
+Real reviews: ${businessData.realReviews}
 Instagram: ${instagramUrl || "not provided"}
 
-OUTPUT a JSON object (no markdown, no code fences) with these exact keys:
+OUTPUT only a JSON object (no markdown, no code fences) with these keys:
 {
   "businessName": "exact name",
-  "businessType": "single category like: Burger Restaurant, Barbershop, Pub, Hair Salon, Tattoo Studio, etc",
-  "city": "city and country",
+  "businessType": "single category: Burger Restaurant, Barbershop, Pub, Hair Salon, Tattoo Studio, Cafe, etc",
+  "city": "city and country only",
   "phone": "phone number",
   "address": "full address",
   "rating": "rating number",
-  "reviewCount": "number of reviews",
-  "hours": "formatted opening hours",
-  "vibe": "3 adjectives describing the atmosphere based on reviews and type",
-  "services": "6 specific menu items or services with realistic prices in EUR format: Item €price | Item €price",
-  "heroHeadline": "bold compelling headline specific to this business (not generic)",
-  "heroSubtitle": "one sentence that captures what makes this place special",
-  "aboutText": "2 sentences about this specific business that sound authentic and local",
-  "suggestedColors": "specific color palette that fits this business type and vibe",
-  "suggestedFonts": "Google Fonts pairing that fits this business personality"
+  "reviewCount": "number",
+  "hours": "formatted hours",
+  "vibe": "3 adjectives describing the atmosphere",
+  "services": "6 specific items with realistic EUR prices: Item €price | Item €price",
+  "heroHeadline": "bold compelling headline specific to this business",
+  "heroSubtitle": "one sentence capturing what makes this place special",
+  "aboutText": "2 authentic sentences about this specific business",
+  "suggestedColors": "specific hex color palette fitting this business",
+  "suggestedFonts": "Google Fonts pairing fitting this business personality"
 }`;
 
     const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -171,14 +198,13 @@ OUTPUT a JSON object (no markdown, no code fences) with these exact keys:
       text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
       enriched = JSON.parse(text);
     } catch(e) {
-      // se falhar o parse, usa dados brutos
       enriched = {
         businessName: businessData.name,
         businessType: businessData.types,
         city: businessData.address,
         phone: businessData.phone,
-        rating: businessData.rating,
-        reviewCount: businessData.reviewCount,
+        rating: String(businessData.rating),
+        reviewCount: String(businessData.reviewCount),
         hours: businessData.hours,
       };
     }
