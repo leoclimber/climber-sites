@@ -218,7 +218,6 @@ export default async function handler(req, res) {
       generic: "Background #0f172a, Accent #3b82f6 (blue), Text #e2e8f0, Cards #1e293b",
     };
 
-    // Reference sites by category
     const referenceSitesByCat = {
       restaurant: "https://www.theoneburgerbcn.com",
       pub: "https://www.mulligans.ie",
@@ -239,39 +238,37 @@ export default async function handler(req, res) {
 
     const heroSection = heroVideoBase64
       ? `HERO TYPE: VIDEO HERO (3D PREMIUM)
-The hero must use a full-screen HTML5 <video> tag with these attributes: autoplay muted loop playsinline
-Use the video as a data URL embedded directly: src="${heroVideoBase64}"
-The video covers 100vw / 100vh, object-fit: cover, position absolute behind content.
-Overlay a dark gradient on top (rgba 0,0,0,0.5).
-On top: bold headline, subtitle, 2 CTA buttons, rating badge.`
+Use a full-screen HTML5 <video> tag: autoplay muted loop playsinline
+src="${heroVideoBase64}"
+Video: 100vw / 100vh, object-fit: cover, position absolute.
+Dark gradient overlay rgba(0,0,0,0.5) on top.
+Overlay content: bold headline, subtitle, 2 CTA buttons, rating badge.`
       : `HERO TYPE: PHOTO HERO
 Hero background-image: ${photos.hero}
-Use as CSS background-image with dark overlay rgba(0,0,0,0.55), background-size:cover, background-position:center.`;
+CSS background-image with dark overlay rgba(0,0,0,0.55), background-size:cover, background-position:center.`;
 
-    const systemPrompt = `You are the lead designer at a premium digital agency in Dublin, Ireland. You build websites that look like they cost €5,000 — custom, specific to each client, never AI-generated looking.
+    const systemPrompt = `You are the lead designer at a premium digital agency in Dublin. You build websites that look like they cost €5,000 — custom, specific, never AI-generated looking.
 
-DESIGN PHILOSOPHY:
-- Every site must look like it was hand-crafted for THIS specific business
-- Typography carries personality — import Google Fonts that match the vibe
-- Color palette is specific to the business category and brand
-- Hero section is the most impactful moment — make it unforgettable
-- If a VIDEO is provided, it is the #1 hero element — full screen, autoplay, no compromise
-- Scroll animations using IntersectionObserver on every section
-- Micro-interactions: hover effects, card lifts, image zooms, button transforms
-- Mobile-first — the client will see this on their phone during a sales pitch
-- Copy sounds LOCAL and SPECIFIC — never "quality you can trust" or "best in town"
-${effectiveReferenceUrl ? `- Use this site as visual inspiration for layout quality and premium feel: ${effectiveReferenceUrl}` : ""}
+DESIGN RULES:
+- Typography with personality — import Google Fonts matching the vibe
+- Color palette specific to this business category
+- Hero section is unforgettable — bold, specific, memorable
+- If VIDEO provided: full screen video hero is #1 priority
+- Scroll animations with IntersectionObserver on every section
+- Micro-interactions: hover effects, card lifts, image zooms
+- Mobile-first — client sees this on phone during sales pitch
+- Copy sounds LOCAL and SPECIFIC — never generic marketing speak
+${effectiveReferenceUrl ? `- Use this as visual inspiration for layout quality: ${effectiveReferenceUrl}` : ""}
 
-FORBIDDEN (makes it look AI-generated):
+NEVER:
 - Generic centered hero with flat gradient
 - Numbered section markers (01/02/03)
-- Excessive rounded corners on everything
-- Generic stock-photo vibes in the copy
+- Excessive rounded corners everywhere
 - Same layout for every business type
 
-Output ONLY a complete self-contained HTML file. No markdown, no code fences. Start with <!DOCTYPE html>.
+Output ONLY complete self-contained HTML. No markdown, no code fences. Start with <!DOCTYPE html>.
 
-TECHNICAL RULES:
+TECHNICAL:
 - Inline all CSS and JS
 - Section ids: about, services, gallery, reviews, faq, contact
 - html { scroll-behavior: smooth; scroll-padding-top: 80px; }
@@ -280,12 +277,12 @@ TECHNICAL RULES:
 
     let userPrompt;
     if (editInstruction && previousHtml) {
-      userPrompt = `Current HTML:\n${previousHtml}\n\nApply this specific edit and return complete updated HTML:\n"${editInstruction}"`;
+      userPrompt = `Current HTML:\n${previousHtml}\n\nApply this edit and return complete updated HTML:\n"${editInstruction}"`;
     } else {
-      userPrompt = `Build a PREMIUM one-page website that needs to close a €699 sale on a phone screen.
+      userPrompt = `Build a PREMIUM one-page website that closes a €699 sale on a phone screen.
 
 PALETTE: ${suggestedColors || paletteByCat[category]}
-FONTS: ${suggestedFonts || "Choose Google Fonts that match this business perfectly"}
+FONTS: ${suggestedFonts || "Choose Google Fonts perfectly matching this business"}
 
 ${heroSection}
 
@@ -298,80 +295,99 @@ Gallery 4: ${photos.g4}
 
 BOOKING: href="${bookingCta}" label="${bookingLabel}"
 
-BUSINESS DETAILS:
+BUSINESS:
 Name: ${businessName}
 Type: ${businessType}
 City: ${city || "Dublin, Ireland"}
 Phone: ${phone || "+353 1 000 0000"}
-Email: ${email || "info@" + businessName.toLowerCase().replace(/\s+/g, "") + ".ie"}
+Email: ${email || "info@" + businessName.toLowerCase().replace(/\s+/g,"") + ".ie"}
 Address: ${address || "Dublin, Ireland"}
-Services/Menu: ${defaultServices}
+Services: ${defaultServices}
 Rating: ${rating || "4.9"} (${reviewCount || "100+"} reviews)
 Hours: ${defaultHours}
 Vibe: ${vibe || "modern, welcoming, premium"}
 Logo: ${logoUrl || businessName.toUpperCase()}
 ${heroHeadline ? `Hero Headline: ${heroHeadline}` : ""}
 ${heroSubtitle ? `Hero Subtitle: ${heroSubtitle}` : ""}
-${aboutText ? `About text: ${aboutText}` : ""}
-${realReviews ? `Real customer reviews to use: ${realReviews}` : ""}
-${googleMapsEmbed ? `Google Maps embed URL: ${googleMapsEmbed}` : ""}
-${extraInfo ? `Extra info: ${extraInfo}` : ""}
+${aboutText ? `About: ${aboutText}` : ""}
+${realReviews ? `Real reviews: ${realReviews}` : ""}
+${googleMapsEmbed ? `Maps embed: ${googleMapsEmbed}` : ""}
+${extraInfo ? `Extra: ${extraInfo}` : ""}
 
-REQUIRED SECTIONS:
-1. Sticky header: logo left, nav (About/Menu/Gallery/Reviews/FAQ/Contact), booking CTA right — styled to match business personality
-2. Hero: FULL SCREEN — follow HERO TYPE above exactly. Headline, subtitle, 2 CTAs, rating badge
-3. <section id="about">: 2-column layout — image left, story right (3 paragraphs, LOCAL and specific, not generic)
-4. <section id="services">: 6 cards — emoji + name + price. Design cards to match business palette
-5. <section id="gallery">: 4-photo grid with hover zoom. CSS grid, no gaps or minimal gaps
-6. <section id="reviews">: Large rating display + 3 testimonial cards. ${realReviews ? "Use the real reviews provided above." : "Invent realistic reviews with Irish names."}
-7. <section id="faq">: 4 FAQ accordion (click to open/close) — questions specific to this business type
-8. <section id="contact">: Address + phone + email + hours table + ${googleMapsEmbed ? `Google Maps iframe src="${googleMapsEmbed}"` : "Google Maps iframe (use address)"} + booking CTA
-9. Footer: business name, tagline, copyright
-10. Fixed floating WhatsApp button bottom-right (green, 58px circle) → ${bookingCta}
+SECTIONS:
+1. Sticky header: logo left, nav (About/Menu/Gallery/Reviews/FAQ/Contact), booking CTA right
+2. Hero: FULL SCREEN per HERO TYPE above. Headline, subtitle, 2 CTAs, rating badge
+3. <section id="about">: 2-column — image left, 3 paragraphs right, LOCAL specific copy
+4. <section id="services">: 6 cards — emoji + name + price, styled to palette
+5. <section id="gallery">: 4-photo grid with hover zoom
+6. <section id="reviews">: large rating + 3 testimonials with Irish names${realReviews ? " — use real reviews provided" : ""}
+7. <section id="faq">: 4 FAQ accordion (click open/close) specific to this business
+8. <section id="contact">: address + phone + email + hours + ${googleMapsEmbed ? `Maps iframe src="${googleMapsEmbed}"` : "Maps iframe"} + booking CTA
+9. Footer: name, tagline, copyright
+10. Fixed WhatsApp button bottom-right (green, 58px) → ${bookingCta}
 
-Add IntersectionObserver scroll animations (fadeInUp) on sections.
-Add hover micro-interactions appropriate to this business.
+Add IntersectionObserver fadeInUp animations on sections.
+Add hover micro-interactions per section.
 
-Output ONLY raw HTML starting with <!DOCTYPE html> ending with </html>.`;
+Output ONLY raw HTML starting <!DOCTYPE html> ending </html>.`;
     }
 
-    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-opus-4-8",
-        max_tokens: 16000,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
-      }),
-    });
+    // Tenta Opus 4.8 primeiro, fallback para Sonnet 4.6
+    const models = ["claude-opus-4-8", "claude-sonnet-4-6"];
+    let html = "";
+    let lastError = "";
 
-    if (!anthropicRes.ok) {
-      const errText = await anthropicRes.text();
-      return res.status(502).json({ error: "AI generation failed", detail: errText });
+    for (const model of models) {
+      try {
+        const body = {
+          model,
+          max_tokens: 16000,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userPrompt }],
+        };
+
+        const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": ANTHROPIC_KEY,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (!anthropicRes.ok) {
+          const errText = await anthropicRes.text();
+          lastError = errText;
+          continue; // tenta próximo modelo
+        }
+
+        const data = await anthropicRes.json();
+        let candidate = (data.content || [])
+          .map((b) => (b.type === "text" ? b.text : ""))
+          .join("")
+          .trim();
+
+        candidate = candidate.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+
+        if (candidate.toLowerCase().includes("<!doctype") || candidate.toLowerCase().includes("<html")) {
+          if (candidate.toLowerCase().includes("</html>")) {
+            html = candidate;
+            break; // sucesso, sai do loop
+          }
+        }
+      } catch(e) {
+        lastError = String(e);
+        continue;
+      }
     }
 
-    const data = await anthropicRes.json();
-    let html = (data.content || [])
-      .map((b) => (b.type === "text" ? b.text : ""))
-      .join("")
-      .trim();
-
-    html = html.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
-
-    if (!html.toLowerCase().includes("<!doctype") && !html.toLowerCase().includes("<html")) {
-      return res.status(502).json({ error: "AI did not return valid HTML" });
-    }
-
-    if (!html.toLowerCase().includes("</html>")) {
-      return res.status(502).json({ error: "Generation incomplete, please try again" });
+    if (!html) {
+      return res.status(502).json({ error: "AI generation failed", detail: lastError });
     }
 
     return res.status(200).json({ html });
+
   } catch (e) {
     return res.status(500).json({ error: "Server error", detail: String(e) });
   }
