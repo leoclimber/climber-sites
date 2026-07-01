@@ -333,7 +333,7 @@ Output ONLY raw HTML starting <!DOCTYPE html> ending </html>.`;
     }
 
     // Tenta Opus 4.8 primeiro, fallback para Sonnet 4.6
-    const models = ["claude-opus-4-8", "claude-sonnet-4-6"];
+    const models = ["claude-sonnet-4-6", "claude-sonnet-4-6"];
     let html = "";
     let lastError = "";
 
