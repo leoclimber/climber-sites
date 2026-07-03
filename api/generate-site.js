@@ -199,9 +199,13 @@ export default async function handler(req, res) {
     // ---------- BANCO DE IMAGENS POR NICHO (hospedado no próprio GitHub) ----------
     // Quando o cliente não tem fotos (ou tem poucas), o gerador usa o banco premium
     // do nicho. As imagens ficam em /banco/<nicho>/ no repositório e são servidas
-    // pelo raw.githubusercontent. Padrão de nomes por nicho:
-    //   hero.jpg  1.jpg 2.jpg 3.jpg 4.jpg  ambiente.jpg
-    // IMPORTANTE: troque "leoclimber/climber-sites" e o branch se o repo mudar.
+    // pelo raw.githubusercontent.
+    //
+    // CONVENÇÃO DE NOMES (importante — suba os arquivos EXATAMENTE com estes nomes):
+    //   hero.jpg  1.jpg  2.jpg  3.jpg  4.jpg  ambiente.jpg
+    // Use sempre a extensão .jpg no NOME do arquivo (mesmo que a imagem tenha vindo
+    // como .png, basta renomear a extensão para .jpg ao subir — funciona normalmente).
+    // Se preferir, o HTML gerado também tenta .png automaticamente como fallback.
     const BANK_REPO = "leoclimber/climber-sites";
     const BANK_BRANCH = "main";
     const bankBase = `https://raw.githubusercontent.com/${BANK_REPO}/${BANK_BRANCH}/banco/${category}`;
@@ -248,6 +252,7 @@ ${photoList.map((u, i) => `${i + 1}. ${u}`).join("\n")}
 ABSOLUTE IMAGE RULES:
 - Use ONLY the URLs listed above. NEVER invent, guess, or pull any other image URL (no Unsplash/Pexels/stock searches, no placeholder services). Any image not in this list is forbidden.
 - Every <img> src must be EXACTLY one of the URLs above, copied verbatim.
+- For robustness, add onerror fallback that swaps .jpg for .png on each bank image, e.g. onerror="if(this.src.endsWith('.jpg')){this.src=this.src.replace('.jpg','.png');}". This way images load whether stored as .jpg or .png.
 - If you have fewer images than a layout wants, reuse the ones above in different crops, or replace image slots with typographic/color panels. NEVER leave a broken or empty image.
 - All images: object-fit: cover, descriptive alt text, no stretching.
 - Do not introduce images that clash in style — the list above is already curated to be coherent.`;
