@@ -344,7 +344,12 @@ Build it to win an award. Every color and type choice must come from the art dir
     // gera o site inteiro, e o proxy da Vercel corta a conexão por inatividade (504) antes
     // mesmo de bater o maxDuration configurado. Com streaming, mandamos heartbeats conforme
     // os dados chegam, então a conexão nunca fica "morta".
-    const useModel = (editInstruction && previousHtml) ? "claude-sonnet-4-6" : "claude-opus-4-8";
+    const isEdit = editInstruction && previousHtml;
+    const useModel = isEdit ? "claude-sonnet-4-6" : "claude-opus-4-8";
+    // Teto máximo nos dois casos. Você paga só pelos tokens realmente gerados,
+    // então um teto alto não custa mais — apenas garante que nenhum site (grande
+    // ou pequeno) seja cortado no meio, na criação OU na edição.
+    const maxTokens = 32000;
 
     const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -355,7 +360,7 @@ Build it to win an award. Every color and type choice must come from the art dir
       },
       body: JSON.stringify({
         model: useModel,
-        max_tokens: 32000,
+        max_tokens: maxTokens,
         stream: true,
         messages: [{ role: "user", content: userPrompt }],
       }),
