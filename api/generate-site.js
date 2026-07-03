@@ -287,10 +287,14 @@ Section ids required: about, services, gallery, reviews, faq, contact.
 Build it to win an award. Every color and type choice must come from the art direction above.`;
     }
 
-    // ---------- CHAMADA À API (Opus para criação, Sonnet para edição) ----------
+    // ---------- CHAMADA À API COM STREAMING (Opus para criação, Sonnet para edição) ----------
+    // Streaming é essencial aqui: sem ele, a função fica "muda" por minutos enquanto o Opus
+    // gera o site inteiro, e o proxy da Vercel corta a conexão por inatividade (504) antes
+    // mesmo de bater o maxDuration configurado. Com streaming, mandamos heartbeats conforme
+    // os dados chegam, então a conexão nunca fica "morta".
     const useModel = (editInstruction && previousHtml) ? "claude-sonnet-4-6" : "claude-opus-4-8";
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -300,17 +304,69 @@ Build it to win an award. Every color and type choice must come from the art dir
       body: JSON.stringify({
         model: useModel,
         max_tokens: 32000,
+        stream: true,
         messages: [{ role: "user", content: userPrompt }],
       }),
     });
 
-    if (!response.ok) {
-      const err = await response.text();
+    if (!anthropicResponse.ok) {
+      const err = await anthropicResponse.text();
       return res.status(502).json({ error: "AI failed", detail: err.substring(0, 500) });
     }
 
-    const data = await response.json();
-    let html = (data.content || []).map(b => b.type === "text" ? b.text : "").join("").trim();
+    // A partir daqui já começamos a manter a conexão viva. Headers primeiro.
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+
+    // Heartbeat por timer (rede de segurança) + heartbeat a cada pedaço recebido do Opus.
+    // Espaços em branco são JSON-válidos como whitespace antes do objeto final,
+    // então o JSON.parse do cliente ignora tudo isso automaticamente.
+    const heartbeat = setInterval(() => {
+      try { res.write(" "); } catch (_) {}
+    }, 10000);
+
+    let html = "";
+    let streamError = "";
+
+    try {
+      const reader = anthropicResponse.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        try { res.write(" "); } catch (_) {} // heartbeat a cada pedaço recebido
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop(); // guarda linha incompleta pro próximo pedaço
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (!jsonStr || jsonStr === "[DONE]") continue;
+          try {
+            const evt = JSON.parse(jsonStr);
+            if (evt.type === "content_block_delta" && evt.delta && evt.delta.type === "text_delta") {
+              html += evt.delta.text;
+            } else if (evt.type === "error") {
+              streamError = (evt.error && evt.error.message) || "Stream error";
+            }
+          } catch (_) { /* linha parcial, ignora e espera o resto */ }
+        }
+      }
+    } catch (e) {
+      streamError = streamError || String(e).substring(0, 200);
+    } finally {
+      clearInterval(heartbeat);
+    }
+
+    if (streamError) {
+      res.write(JSON.stringify({ error: "AI failed", detail: streamError }));
+      return res.end();
+    }
+
+    html = html.trim();
     html = html.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
 
     // Injeta o vídeo real no placeholder (evita mandar base64 gigante no prompt)
@@ -319,10 +375,12 @@ Build it to win an award. Every color and type choice must come from the art dir
     }
 
     if (!html.includes("</html>")) {
-      return res.status(502).json({ error: "Incomplete HTML, try again" });
+      res.write(JSON.stringify({ error: "Incomplete HTML, try again" }));
+      return res.end();
     }
 
-    return res.status(200).json({ html });
+    res.write(JSON.stringify({ html }));
+    return res.end();
 
   } catch (e) {
     return res.status(500).json({ error: "Server error", detail: String(e).substring(0, 200) });
