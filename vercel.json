@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/generate-site.js": {
-      "maxDuration": 180
+      "maxDuration": 260
     },
     "api/extract-business.js": {
       "maxDuration": 30
