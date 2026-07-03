@@ -196,9 +196,36 @@ export default async function handler(req, res) {
 
     const kit = kits[category] || kits.generic;
 
+    // ---------- BANCO DE IMAGENS POR NICHO (hospedado no próprio GitHub) ----------
+    // Quando o cliente não tem fotos (ou tem poucas), o gerador usa o banco premium
+    // do nicho. As imagens ficam em /banco/<nicho>/ no repositório e são servidas
+    // pelo raw.githubusercontent. Padrão de nomes por nicho:
+    //   hero.jpg  1.jpg 2.jpg 3.jpg 4.jpg  ambiente.jpg
+    // IMPORTANTE: troque "leoclimber/climber-sites" e o branch se o repo mudar.
+    const BANK_REPO = "leoclimber/climber-sites";
+    const BANK_BRANCH = "main";
+    const bankBase = `https://raw.githubusercontent.com/${BANK_REPO}/${BANK_BRANCH}/banco/${category}`;
+    const bankPhotos = [
+      `${bankBase}/hero.jpg`,
+      `${bankBase}/1.jpg`,
+      `${bankBase}/2.jpg`,
+      `${bankBase}/3.jpg`,
+      `${bankBase}/4.jpg`,
+      `${bankBase}/ambiente.jpg`,
+    ];
+
     // ---------- ASSETS DO CLIENTE ----------
-    const photoList = clientPhotos.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).slice(0, 8);
-    const hasRealPhotos = photoList.length > 0;
+    const realPhotos = clientPhotos.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).slice(0, 8);
+    const hasRealPhotos = realPhotos.length > 0;
+    const hasEnoughRealPhotos = realPhotos.length >= 4;
+    // Lógica híbrida:
+    // - 4+ fotos reais  -> usa só as reais (autenticidade total)
+    // - 1 a 3 fotos     -> usa as reais + completa com o banco do nicho
+    // - 0 fotos         -> usa 100% o banco do nicho
+    const photoList = hasEnoughRealPhotos
+      ? realPhotos
+      : [...realPhotos, ...bankPhotos].slice(0, 8);
+    const usingBank = !hasEnoughRealPhotos;
     const hasVideo = heroVideoBase64 && heroVideoBase64.startsWith("data:video");
     const bookingHref = bookingLink || (whatsapp ? `https://wa.me/${whatsapp}` : (phone ? `tel:${phone}` : "#contact"));
     const whatsappHref = whatsapp ? `https://wa.me/${whatsapp}` : (phone ? `tel:${phone}` : "#contact");
@@ -215,9 +242,15 @@ Apply this change exactly, keeping everything else intact and keeping the same p
 Return the COMPLETE updated HTML only, from <!DOCTYPE html> to </html>. No markdown, no explanation.`;
     } else {
       // ---------- BLOCOS DE CONTEXTO ----------
-      const photoBlock = hasRealPhotos
-        ? `REAL CLIENT PHOTOS (use these throughout — gallery, about, backgrounds. These are the actual business, prioritize them over any generic imagery):\n${photoList.map((u, i) => `${i + 1}. ${u}`).join("\n")}`
-        : `NO real client photos provided. Do NOT use random stock photos that scream "template". Instead, lean on strong typography, color, gradients, texture, and the signature moment. If you must use imagery, keep it minimal and abstract, never generic stock people.`;
+      const photoBlock = `APPROVED IMAGES — use ONLY these image URLs in the site (hero if no video, gallery, about, backgrounds). ${usingBank ? "These come from our curated premium image bank for this niche — they are high-quality and on-brand." : "These are the client's REAL photos — authentic and top priority."}
+${photoList.map((u, i) => `${i + 1}. ${u}`).join("\n")}
+
+ABSOLUTE IMAGE RULES:
+- Use ONLY the URLs listed above. NEVER invent, guess, or pull any other image URL (no Unsplash/Pexels/stock searches, no placeholder services). Any image not in this list is forbidden.
+- Every <img> src must be EXACTLY one of the URLs above, copied verbatim.
+- If you have fewer images than a layout wants, reuse the ones above in different crops, or replace image slots with typographic/color panels. NEVER leave a broken or empty image.
+- All images: object-fit: cover, descriptive alt text, no stretching.
+- Do not introduce images that clash in style — the list above is already curated to be coherent.`;
 
       const videoBlock = hasVideo
         ? `A 3D HERO VIDEO is provided by the client. Embed it as a full-screen autoplaying, muted, looping background video in the hero using this exact placeholder src: "HERO_VIDEO_SRC". Structure: <video autoplay muted loop playsinline> with a dark gradient overlay on top and the headline/CTA above it. This is the centerpiece — make the hero cinematic around it.`
@@ -300,12 +333,6 @@ Motion must be smooth (transform & opacity only, GPU-friendly, will-change where
 8. Floating WhatsApp/booking button bottom-right linking to ${whatsappHref}.
 9. Fully mobile responsive. Visible keyboard focus states.
 10. Copy must be specific and brand-voiced, never filler. Write like a copywriter, in ${city.includes("Ireland") ? "English" : "the appropriate local language"}.
-
-IMAGE CURATION (critical — mismatched images ruin the premium feel):
-- Use the REAL client photos provided as the primary imagery (hero, gallery, about). They are the actual business.
-- Do NOT pull random stock images that clash in style, lighting, or subject. A pristine studio shot next to a phone snapshot looks amateur. If you need filler and have real photos, REUSE the real photos in different crops rather than introducing off-brand stock.
-- NEVER reference an image you're unsure resolves. Every <img> must have a real, working src from the provided photos. Do not invent placeholder srcs or leave broken images. If you lack enough images for a grid, design a smaller grid or use typographic/color panels instead of empty/broken image slots.
-- All images need descriptive alt text and object-fit: cover so nothing stretches.
 
 Section ids required: about, services, gallery, reviews, faq, contact.
 
