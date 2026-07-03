@@ -270,21 +270,46 @@ ${photoBlock}
 ${refBlock}
 ${aboutHint}
 
+═══════════ MOTION SYSTEM (this is what separates award-winners from templates) ═══════════
+The site must feel ALIVE and cinematic — not a static page. Build ALL of the following, orchestrated and tasteful (never gimmicky). Everything must respect prefers-reduced-motion (wrap motion in a media query and disable it there).
+
+A. PAGE LOAD SEQUENCE: On load, the hero animates in as a choreographed sequence, not all at once. Eyebrow fades+slides first, then the big headline reveals line-by-line (each line clip-masked, rising up with a slight stagger ~120ms apart), then subtext, then CTAs, then stats. Use a smooth cubic-bezier ease (e.g. cubic-bezier(0.16, 1, 0.3, 1)). This first ~1.2s is the "wow".
+
+B. HERO PARALLAX & DEPTH: The hero background image/video must have depth. On mouse move (desktop), the hero image shifts subtly (translate a few px, opposite to cursor) for a living parallax. On scroll, the hero image moves slower than the text (parallax layers) and can subtly scale up (1.0→1.08) as you scroll past. The headline can drift up slightly faster than the image. This layered depth is critical — a flat hero reads as cheap.
+
+C. SCROLL-TRIGGERED REVEALS: Every section's content animates in as it enters the viewport (IntersectionObserver, trigger ~15% visible, animate once). Vary the reveal per element type: headings clip-reveal upward, body text fades+rises, images/cards fade+rise+slight-scale (from 0.96), and stagger children so items in a row appear one after another (~80-100ms apart), never all together.
+
+D. NUMBER COUNTERS: Any stat/number (rating, review count, years, "100%") counts up from 0 to its value when it scrolls into view (~1.2s, ease-out). This always reads as premium.
+
+E. SIGNATURE SCROLL MOMENT: Deliver the signature concept from the art direction as a real scroll-driven moment. For product businesses, the hero/feature image can scale, rotate slightly, or have layered elements move at different speeds as you scroll through the section (scroll-linked, using scroll progress). For the construction/real-estate kit specifically, implement the build-up: swap/cross-fade through stages as the user scrolls the section. Make this ONE moment genuinely impressive.
+
+F. MICRO-INTERACTIONS: Buttons have a refined hover (subtle lift + shadow bloom, or a fill-sweep). Gallery images zoom slightly (scale 1.05) with an overlay tint on hover. Nav links have an animated underline. The sticky nav shrinks/gains a backdrop blur + solid background after scrolling ~80px. A slim scroll-progress bar at the very top is welcome.
+
+G. If a HERO VIDEO is present, it plays behind a gradient scrim with the load sequence layered on top; the parallax applies to the scrim/text, and the video stays cinematic (object-fit cover, full-bleed).
+
+Motion must be smooth (transform & opacity only, GPU-friendly, will-change where needed), never janky, never blocking scroll. If in doubt, make it subtle — restraint reads as expensive.
+
 ═══════════ NON-NEGOTIABLE QUALITY RULES ═══════════
 1. NEVER use emoji as service/feature icons. This is the #1 tell of AI sites. Use clean inline SVG line icons, or numbered/typographic markers, or no icons at all.
 2. Typography is the personality. Import the right Google Fonts. Set a real type scale with intentional weights, tight letter-spacing on big display, generous line-height on body. Big confident headlines.
 3. Generous negative space. Premium sites breathe. Cheap sites cram. Use large section padding.
-4. One signature motion moment done well (scroll-triggered reveal or the signature concept above) beats scattered effects. Use IntersectionObserver for scroll reveals. Respect prefers-reduced-motion.
+4. The MOTION SYSTEM above is mandatory and orchestrated — but tasteful. An elegant, coherent set of motions beats scattered flashy effects. Everything transform/opacity based and respecting prefers-reduced-motion.
 5. Avoid the generic AI look: do NOT default to cream background + serif + terracotta (#D97757) unless the palette above says so.
-6. Sticky nav that turns solid on scroll. Smooth scroll to anchors.
+6. Sticky nav that turns solid + backdrop-blur on scroll. Smooth scroll to anchors.
 7. Real hierarchy: hero → brand story/about (with soul, not "founded in 2010") → services (premium cards, no emoji) → gallery → reviews (3 testimonials, realistic Irish names) → FAQ (accordion, 4 items) → contact (with address, hours, map embed via Google Maps iframe using the address, and the booking CTA).
 8. Floating WhatsApp/booking button bottom-right linking to ${whatsappHref}.
 9. Fully mobile responsive. Visible keyboard focus states.
 10. Copy must be specific and brand-voiced, never filler. Write like a copywriter, in ${city.includes("Ireland") ? "English" : "the appropriate local language"}.
 
+IMAGE CURATION (critical — mismatched images ruin the premium feel):
+- Use the REAL client photos provided as the primary imagery (hero, gallery, about). They are the actual business.
+- Do NOT pull random stock images that clash in style, lighting, or subject. A pristine studio shot next to a phone snapshot looks amateur. If you need filler and have real photos, REUSE the real photos in different crops rather than introducing off-brand stock.
+- NEVER reference an image you're unsure resolves. Every <img> must have a real, working src from the provided photos. Do not invent placeholder srcs or leave broken images. If you lack enough images for a grid, design a smaller grid or use typographic/color panels instead of empty/broken image slots.
+- All images need descriptive alt text and object-fit: cover so nothing stretches.
+
 Section ids required: about, services, gallery, reviews, faq, contact.
 
-Build it to win an award. Every color and type choice must come from the art direction above.`;
+Build it to win an award. Every color and type choice must come from the art direction above. Every section must move.`;
     }
 
     // ---------- CHAMADA À API COM STREAMING (Opus para criação, Sonnet para edição) ----------
