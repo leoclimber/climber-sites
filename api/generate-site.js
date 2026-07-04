@@ -369,13 +369,25 @@ F. MICRO-INTERACTIONS: Buttons have a refined hover (subtle lift + shadow bloom,
 
 G. If a HERO VIDEO is present, it plays behind a gradient scrim with the load sequence layered on top; the parallax applies to the scrim/text, and the video stays cinematic (object-fit cover, full-bleed).
 
+═══════════ AWARD-TIER DIFFERENTIATORS (these push it from "very good" to top-tier — implement ALL) ═══════════
+
+H. CUSTOM CURSOR (desktop only, ≥1024px): Replace the default cursor with a bespoke one that fits the brand — a soft glowing circle/ember that trails the pointer with slight lag (lerp easing). It subtly grows and intensifies when hovering interactive elements (links, buttons, gallery images). Hide it on touch devices and fall back to the normal cursor there. Keep it tasteful and on-palette (use the accent color glow). This is a signature touch that makes the site feel bespoke.
+
+I. SECTION COLOR JOURNEY: The page background should shift gradually as the user scrolls, telling a story through color — moving between the palette's tones (e.g. deep dark → warm ember-tinted dark → back to dark) as they pass through sections. Use scroll-linked smooth transitions on the body/section backgrounds (long, subtle transitions, never abrupt). It should feel like walking deeper into the space. Keep contrast readable at all times.
+
+J. NUMBER COUNTERS ARE MANDATORY, NOT OPTIONAL: EVERY numeric stat (rating like 4.9, review counts like 170, percentages like 100%, years) MUST animate counting up from 0 to its final value when it first scrolls into view (~1.2s ease-out). This is required on every generation — never skip it. Preserve decimals (4.9 counts to 4.9, not 5). Trigger via IntersectionObserver, once.
+
+K. REFINED MARQUEE: If a scrolling marquee of menu items / keywords is used, make it ELEGANT not cheap: slow, smooth, seamless infinite loop, subtle (lower opacity or thin refined type), pauses on hover. It should feel like a premium detail, never like a promo banner. If it can't be elegant, omit it.
+
+L. COHESIVE POLISH: Section transitions connect rather than just appear. The whole thing should feel like ONE cinematic piece, not stacked blocks. Every interactive element has a considered hover state. Nothing is left at browser defaults.
+
 Motion must be smooth (transform & opacity only, GPU-friendly, will-change where needed), never janky, never blocking scroll. If in doubt, make it subtle — restraint reads as expensive.
 
 ═══════════ NON-NEGOTIABLE QUALITY RULES ═══════════
 1. NEVER use emoji as service/feature icons. This is the #1 tell of AI sites. Use clean inline SVG line icons, or numbered/typographic markers, or no icons at all.
 2. Typography is the personality. Import the right Google Fonts. Set a real type scale with intentional weights, tight letter-spacing on big display, generous line-height on body. Big confident headlines.
 3. Generous negative space. Premium sites breathe. Cheap sites cram. Use large section padding.
-4. The MOTION SYSTEM above is mandatory and orchestrated — but tasteful. An elegant, coherent set of motions beats scattered flashy effects. Everything transform/opacity based and respecting prefers-reduced-motion.
+4. The MOTION SYSTEM and AWARD-TIER DIFFERENTIATORS above are mandatory and orchestrated on EVERY generation — but tasteful. The custom cursor, section color journey, and animated number counters must ALWAYS be present (never skip them). An elegant, coherent set of motions beats scattered flashy effects. Everything transform/opacity based and respecting prefers-reduced-motion.
 5. Avoid the generic AI look: do NOT default to cream background + serif + terracotta (#D97757) unless the palette above says so.
 6. Sticky nav that turns solid + backdrop-blur on scroll. Smooth scroll to anchors.
 7. Real hierarchy: hero → brand story/about (with soul, not "founded in 2010") → services (premium cards, no emoji) → gallery → reviews (3 testimonials, realistic Irish names) → FAQ (accordion, 4 items) → contact (with address, hours, map embed via Google Maps iframe using the address, and the booking CTA).
