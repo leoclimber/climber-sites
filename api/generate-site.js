@@ -43,25 +43,53 @@ export default async function handler(req, res) {
     // ---------- CATEGORIZAÇÃO ----------
     const t = businessType.toLowerCase();
     let category = "generic";
+    // ===== ALIMENTAÇÃO =====
     if (t.includes("burger") || t.includes("smash") || t.includes("hamburg")) category = "burger";
-    else if (t.includes("sushi") || t.includes("japan") || t.includes("ramen")) category = "japanese";
     else if (t.includes("pizza")) category = "pizza";
+    else if (t.includes("sushi") || t.includes("japan") || t.includes("ramen") || t.includes("japon")) category = "japanese";
+    else if (t.includes("arab") || t.includes("lebanes") || t.includes("kebab") || t.includes("shawarma") || t.includes("árab")) category = "arabic";
+    else if (t.includes("africa") || t.includes("afric")) category = "african";
+    else if (t.includes("brazil") || t.includes("brasil")) category = "brazilian";
+    else if (t.includes("ital") || t.includes("pasta") || t.includes("trattoria")) category = "italian";
     else if (t.includes("steak") || t.includes("grill") || t.includes("bbq") || t.includes("churrasc")) category = "steak";
-    else if (t.includes("restaurant") || t.includes("food") || t.includes("bistro") || t.includes("dining")) category = "restaurant";
+    else if (t.includes("cafe") || t.includes("coffee") || t.includes("bakery") || t.includes("padaria") || t.includes("café")) category = "cafe";
+    else if (t.includes("confeit") || t.includes("doce") || t.includes("dessert") || t.includes("patisser") || t.includes("cake")) category = "confectionery";
+    else if (t.includes("food truck") || t.includes("foodtruck")) category = "foodtruck";
     else if (t.includes("pub") || t.includes("bar")) category = "pub";
+    else if (t.includes("fine dining") || t.includes("restaurant") || t.includes("food") || t.includes("bistro") || t.includes("dining") || t.includes("restaurante")) category = "restaurant";
+    // ===== BELEZA & ESTÉTICA =====
     else if (t.includes("barb")) category = "barber";
-    else if (t.includes("cafe") || t.includes("coffee") || t.includes("bakery") || t.includes("padaria")) category = "cafe";
-    else if (t.includes("nail")) category = "nail";
-    else if (t.includes("salon") || t.includes("hair") || t.includes("beauty")) category = "salon";
-    else if (t.includes("tattoo")) category = "tattoo";
-    else if (t.includes("gym") || t.includes("fitness") || t.includes("crossfit")) category = "gym";
+    else if (t.includes("nail") || t.includes("unha")) category = "nail";
+    else if (t.includes("brow") || t.includes("sobrancelha") || t.includes("lash") || t.includes("cílios") || t.includes("cilios")) category = "brows";
+    else if (t.includes("tan") || t.includes("bronze")) category = "tanning";
+    else if (t.includes("aesthet") || t.includes("botox") || t.includes("skin") || t.includes("estetic") || t.includes("estétic") || t.includes("harmoniz") || t.includes("facial")) category = "aesthetic";
+    else if (t.includes("body") || t.includes("drenag") || t.includes("criolip") || t.includes("corporal")) category = "bodyaesthetic";
+    else if (t.includes("salon") || t.includes("hair") || t.includes("beauty") || t.includes("cabelo") || t.includes("salão") || t.includes("salao")) category = "salon";
     else if (t.includes("spa") || t.includes("massage") || t.includes("massag")) category = "spa";
-    else if (t.includes("aesthet") || t.includes("botox") || t.includes("skin") || t.includes("estetic") || t.includes("harmoniz")) category = "aesthetic";
-    else if (t.includes("dental") || t.includes("dentist")) category = "dental";
-    else if (t.includes("clinic") || t.includes("physio") || t.includes("health")) category = "clinic";
-    else if (t.includes("auto") || t.includes("garage") || t.includes("mechanic") || t.includes("car")) category = "auto";
-    else if (t.includes("pet") || t.includes("grooming") || t.includes("vet")) category = "pet";
-    else if (t.includes("construction") || t.includes("build") || t.includes("real estate") || t.includes("imobili") || t.includes("property")) category = "construction";
+    else if (t.includes("tattoo") || t.includes("tatuage") || t.includes("tatua")) category = "tattoo";
+    // ===== SAÚDE =====
+    else if (t.includes("dental") || t.includes("dentist") || t.includes("dentista") || t.includes("odonto")) category = "dental";
+    else if (t.includes("physio") || t.includes("fisio")) category = "physio";
+    else if (t.includes("nutri")) category = "nutrition";
+    else if (t.includes("psico") || t.includes("psych") || t.includes("terap") || t.includes("therap")) category = "psychology";
+    else if (t.includes("vet") || t.includes("veterin")) category = "vet";
+    else if (t.includes("clinic") || t.includes("health") || t.includes("clínica") || t.includes("clinica")) category = "clinic";
+    // ===== FITNESS =====
+    else if (t.includes("yoga") || t.includes("pilates")) category = "yoga";
+    else if (t.includes("gym") || t.includes("fitness") || t.includes("crossfit") || t.includes("box") || t.includes("personal") || t.includes("academia")) category = "gym";
+    // ===== SERVIÇOS =====
+    else if (t.includes("laundr") || t.includes("lavand")) category = "laundry";
+    else if (t.includes("auto") || t.includes("garage") || t.includes("mechanic") || t.includes("car ") || t.includes("oficina") || t.includes("mecânic")) category = "auto";
+    else if (t.includes("groom") || t.includes("tosa") || t.includes("banho e tosa")) category = "petgrooming";
+    else if (t.includes("pet")) category = "pet";
+    else if (t.includes("locksmith") || t.includes("chaveiro")) category = "locksmith";
+    else if (t.includes("electric") || t.includes("plumb") || t.includes("eletric") || t.includes("encanad")) category = "handyman";
+    // ===== OUTROS PREMIUM =====
+    else if (t.includes("boutique") && t.includes("hotel")) category = "hotel";
+    else if (t.includes("jewel") || t.includes("joalher") || t.includes("joia")) category = "jewelry";
+    else if (t.includes("cloth") || t.includes("boutique") || t.includes("fashion") || t.includes("roupa") || t.includes("moda")) category = "clothing";
+    else if (t.includes("photo") || t.includes("fotograf") || t.includes("studio") || t.includes("estúdio")) category = "photography";
+    else if (t.includes("construction") || t.includes("build") || t.includes("real estate") || t.includes("imobili") || t.includes("property") || t.includes("construtora")) category = "construction";
 
     // ---------- KITS DE DIREÇÃO DE ARTE POR NICHO ----------
     // Cada kit: paleta (hex nomeados), tipografia (display+body+peso), mood da foto,
