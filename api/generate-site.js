@@ -43,9 +43,11 @@ export default async function handler(req, res) {
     // ---------- CATEGORIZAÇÃO ----------
     const t = businessType.toLowerCase();
     let category = "generic";
-    if (t.includes("burger") || t.includes("restaurant") || t.includes("food") || t.includes("steak") || t.includes("grill")) category = "restaurant";
+    if (t.includes("burger") || t.includes("smash") || t.includes("hamburg")) category = "burger";
     else if (t.includes("sushi") || t.includes("japan") || t.includes("ramen")) category = "japanese";
     else if (t.includes("pizza")) category = "pizza";
+    else if (t.includes("steak") || t.includes("grill") || t.includes("bbq") || t.includes("churrasc")) category = "steak";
+    else if (t.includes("restaurant") || t.includes("food") || t.includes("bistro") || t.includes("dining")) category = "restaurant";
     else if (t.includes("pub") || t.includes("bar")) category = "pub";
     else if (t.includes("barb")) category = "barber";
     else if (t.includes("cafe") || t.includes("coffee") || t.includes("bakery") || t.includes("padaria")) category = "cafe";
@@ -66,6 +68,20 @@ export default async function handler(req, res) {
     // conceito de assinatura (o "momento uau"), e tom de copy.
     // IMPORTANTE: fugir do default IA (creme + serif + terracota #D97757).
     const kits = {
+      burger: {
+        palette: "ink #12100E / ember #E4551F / cream #F3EDE1 / char #1E1A15 / gold-line #C9A24B",
+        fonts: "Display: 'Anton' or heavy condensed grotesque, tight tracking; Body: 'Inter'; huge bold display for burger names",
+        mood: "close-up cinematic smash burger, melted cheese dripping, char-grilled edges, deep shadow, warm rim light, steam, appetite-driven macro",
+        signature: "hero with the signature burger filling the screen, cheese pull / sizzle / steam, menu prices as a bold typographic list (never emoji icons)",
+        tone: "bold, hungry, unapologetic — swagger and flavor, describe the char and the crunch",
+      },
+      steak: {
+        palette: "charcoal #17130F / ember #B4472E / bone #EDE7DB / smoke #33291F / brass #B08D57",
+        fonts: "Display: strong serif or condensed grotesque with weight; Body: 'Inter'",
+        mood: "seared steak with grill marks, flame, smoke, dark moody steakhouse, warm dramatic light, premium cut close-up",
+        signature: "hero with the sizzling cut / flame-kissed sear, smoke rising, dark and premium",
+        tone: "premium, primal, confident — fire, craft, the perfect cut",
+      },
       restaurant: {
         palette: "ink #12100E / ember #E4551F / cream #F3EDE1 / char #1E1A15 / gold-line #C9A24B",
         fonts: "Display: 'Anton' or condensed grotesque, tight; Body: 'Inter'; use heavy display for food names",
