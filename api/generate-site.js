@@ -262,6 +262,18 @@ export default async function handler(req, res) {
       `${bankBase}/ambiente.jpg`,
     ];
 
+    // ---------- BANCO DE VÍDEOS POR NICHO (opcional, mesmo esquema das imagens) ----------
+    // Vídeos cinematográficos ficam em /banco/<nicho>/<nome>.mp4 no repositório.
+    // Para o burger-journey, dois vídeos Seedance são usados quando presentes:
+    //   stack.mp4  -> THE STACK (burger girando/desmontando)
+    //   sear.mp4   -> THE SEAR  (chapa selando a carne com fogo)
+    // Se ainda não estiverem no ar, a jornada cai de volta para imagens do banco
+    // automaticamente (via onerror), então o site funciona ANTES dos vídeos existirem.
+    const bankVideos = {
+      stack: `${bankBase}/stack.mp4`,
+      sear: `${bankBase}/sear.mp4`,
+    };
+
     // ---------- ASSETS DO CLIENTE ----------
     const realPhotos = clientPhotos.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).slice(0, 8);
     const hasRealPhotos = realPhotos.length > 0;
@@ -315,6 +327,86 @@ ABSOLUTE IMAGE RULES:
       const headlineHint = heroHeadline ? `Suggested hero headline: "${heroHeadline}" (refine it, don't use verbatim if you can do better).` : "";
       const aboutHint = aboutText ? `Research notes about the business for the About section: ${aboutText}` : "";
 
+      // ---------- BLOCO DA JORNADA CINEMATOGRÁFICA (SÓ BURGER) ----------
+      // Este bloco só é injetado quando category === "burger". Ele substitui a
+      // estrutura de seções padrão por uma jornada de scroll estilo docmo.agency,
+      // com 9 cenas encadeadas. Mantém todo o resto do sistema (motion, cursor de
+      // brasa, color journey, contadores) — apenas define a ARQUITETURA das seções.
+      const burgerJourneyBlock = category === "burger" ? `
+
+═══════════ CINEMATIC JOURNEY MODE (BURGER — THIS OVERRIDES THE DEFAULT SECTION LIST) ═══════════
+This is not a normal restaurant page. Build it as a single cinematic scroll journey, in the spirit of a high-end product microsite (think a luxury-car or Apple-product reveal, applied to a burger). The whole page is ONE continuous film the visitor scrolls through. Each scene flows into the next — dark background throughout, warm ember/amber light as the connective tissue, generous full-viewport (or near) scenes, huge confident condensed display type, mono/technical labels for the "spec" text.
+
+Recurring visual anchor: a glowing golden light-ring / plinth under the hero product (a thin luminous ellipse of light), echoed subtly in later scenes. This ring is the signature motif — reuse it.
+
+Section labels use a technical格式: a slash prefix + two-digit number + name, e.g. "// 01. THE CUT", "// 02. THE SEAR". Small mono eyebrow text. This encodes a real sequence, so numbering is justified.
+
+BUILD THESE SCENES IN THIS EXACT ORDER (use section ids given so nav + CTAs still work):
+
+SCENE 1 — HERO / OVERVIEW (id="hero")
+   Full-viewport. The signature burger fills the frame, sitting above the glowing golden light-ring. A tiny mono cue "SCROLL TO BEGIN" or "SCROLL NOW" at the bottom. Big brand wordmark. This is the establishing shot.
+   Use image: ${photoList[0]} (the hero burger).
+
+SCENE 2 — // 01. THE CUT (id="about")  [this doubles as the brand/about scene]
+   Spec-sheet aesthetic. On the left, technical specifications in mono type with a big "230°C" callout (this is a FIXED spec, displayed statically — NOT a counter). The burger floats above the light-ring on the right. As the user scrolls INTO this scene, the burger DECONSTRUCTS: the layers (bun, patties, cheese, tomato, lettuce, base) separate and drift apart vertically with wisps of smoke at the sides, and thin label lines point to each ingredient (SESAME BRIOCHE, DOUBLE SMASH, AGED CHEDDAR, BEEFSTEAK TOMATO, BUTTER LETTUCE, BRIOCHE BASE). Drive the separation with scroll progress over the section.
+   ${bankVideos.stack ? `PREFERRED: use the video "${bankVideos.stack}" as the deconstruction/rotation visual — a <video autoplay muted loop playsinline> sitting over the light-ring. Add onerror/onstalled fallback to the image ${photoList[0]} so if the video isn't uploaded yet, the still burger shows instead and the scroll-driven CSS separation still plays. ` : ""}Write the brand story woven into the spec copy (why this burger exists), not a generic "founded in" paragraph.
+
+SCENE 3 — // 02. THE STACK (id="stack")
+   The inverse of the previous: the layers RE-ASSEMBLE / the burger rotates and rebuilds over the light-ring as you scroll, smoke curling. Big headline "THE STACK" / "PRIME STACK". One line of copy about the build. If the ${bankVideos.stack} video is used, this is where its rotation reads best — you may reuse the same video element concept here or continue the scroll-linked motion. Keep it seamless from Scene 2.
+
+SCENE 4 — // 02. THE SEAR (id="sear")
+   The fire scene. A full-bleed grill/sear visual with live flames and smoke. Four LIVE COUNTERS across the top, each counting up from 0 when the scene enters view (mono display type, amber glow):
+     • 490G  — dry-aged patty weight
+     • 28    — days aged
+     • 258°  — flat-top sear temperature (counts 0 → 258)
+     • 7     — layers in the stack
+   Headline treatment: "THE WAGYU RESTS" / "EVERY LAYER. UNCOMPROMISED." A small "SCROLL TO RAISE HEAT" mono cue.
+   ${bankVideos.sear ? `PREFERRED: use the video "${bankVideos.sear}" as the full-bleed background of this scene — <video autoplay muted loop playsinline> with a dark scrim so the counters and headline stay readable. Add onerror fallback to image ${photoList.length > 1 ? photoList[1] : photoList[0]} so the scene still works before the video is uploaded. ` : `Use image ${photoList.length > 1 ? photoList[1] : photoList[0]} as the sear background with a fire-glow gradient. `}The four counters are MANDATORY and must animate.
+
+SCENE 5 — EVERY LAYER. UNCOMPROMISED (id="gallery")
+   A cinematic mosaic/grid of the best food shots (the "ingredient wall"). Tight grid, dark gaps, each tile fades+scales in on scroll, hover zoom. Headline "EVERY LAYER. UNCOMPROMISED." Use the remaining images: ${photoList.slice(1).join(", ") || photoList.join(", ")}. Reuse in different crops if few.
+
+SCENE 6 — // 04. THE LINE-UP (id="services")  [this is the menu]
+   Three premium build cards, dark with amber edge-glow, each with a burger image, a name, a one-line description, a price, and an "ADD TO ORDER" style button that links to ${bookingHref}:
+     • THE SMASH — €28  (or invent fitting names/prices if services given: ${services || "invent 3 realistic premium builds"})
+     • THE TRUFFLE — €48
+     • THE PRIME — €50
+   Cards reveal staggered. This is the real menu — keep prices in € (Dublin).
+
+SCENE 7 — // 05. BUILD YOUR PRIME (id="build")  ★ THE INTERACTIVE SIGNATURE ★
+   A REAL, FULLY FUNCTIONAL burger builder (not decorative). Two columns:
+   LEFT = options. Step 1 "CHOOSE YOUR SIZE" — three size cards (Single / Double / Triple) as radio-style选择, each with a price. Step 2 "ADD TOPPINGS" — a grid of toggleable topping chips (Truffle Mayo +€4, Smoked Bacon +€3, Caramelised Onion +€2, Extra Cheese +€2, Prime Pickles free, Fried Egg +€2, etc), each with a small image tile where possible.
+   RIGHT = a preview panel: the burger under the golden light-ring with rising smoke, and a live running total that UPDATES ON EVERY CLICK. Show a "TOTAL BUILD" figure that recalculates in real time (e.g. €26 → €29 → €34) with a smooth count animation on change. Below it, a primary button "ORDER THIS BUILD" that opens ${whatsappHref} with a prefilled message describing the exact build the user configured (e.g. "Hi! I'd like to build my Prime: Double + Truffle Mayo + Smoked Bacon — total €34"). Build this with real vanilla JS: clicking sizes and toppings recomputes the total and updates the WhatsApp link's text. This section MUST actually work — it is the centrepiece and a broken/fake builder ruins the whole site. No checkout/payment — the CTA hands off to WhatsApp/booking. Keep the running total accessible (aria-live="polite").
+
+SCENE 8 — // 04. THE CUT (cards) (id="reviews")  [carousel + social proof]
+   A horizontal, smooth-scrolling carousel of hero burger shots (smoke rising off each), and woven in, 3 short testimonials with realistic Irish names (rating ${rating}, ${reviewCount} reviews). The ${rating} and review number animate as counters. Drag/scroll horizontally, snap points, elegant.
+
+SCENE 9 — // 05. THE STORY (id="faq")  [story + FAQ + contact bleed]
+   An editorial "story" list — expandable article rows (accordion, 4 items) like "Why We Age Our Beef 28 Days", "The Maillard Reaction: Engineering the Perfect Sear", "Sourcing Our Brioche", "Why We Sear at 258°C". These double as the FAQ accordion. Under it, a slow elegant marquee: "FLAME-FORGED IN ${city.toUpperCase().replace(", IRELAND", "").replace("IRELAND", "DUBLIN")} • FLAME-FORGED IN ${city.toUpperCase().replace(", IRELAND", "").replace("IRELAND", "DUBLIN")} •" repeating.
+
+FINAL — CONTACT (id="contact")
+   The closing scene: address (${address || city}), hours (${hours || "Mon–Sun, kitchen hours"}), phone/email, a Google Maps iframe for the address, and the booking CTA to ${bookingHref}. Dark, cinematic, with the light-ring motif one last time as a footer flourish.
+
+JOURNEY MOTION RULES (on top of the global motion system below):
+- Scenes should feel connected — no hard white breaks. Transitions cross-fade or share the dark background; the ember/amber color-journey glow moves scene to scene (cool → hot at THE SEAR → cooling into THE STORY).
+- The burger deconstruction (Scene 2) and reassembly (Scene 3) are the scroll-linked showpieces alongside the SEAR counters and the BUILD YOUR PRIME builder. Make these four moments genuinely impressive; keep everything else disciplined.
+- Every numeric value (230°C is static; but 490G, 28, 258°, 7, the rating, the review count, and the live build total) — all the NON-static ones animate.
+- Respect prefers-reduced-motion: disable scroll-linked separation and heavy motion, but keep the site fully usable and the builder fully functional.
+
+NOTE: The section ids above (about, services, gallery, reviews, faq, contact) are intentionally mapped onto the journey scenes so the nav and CTAs still resolve. Use those exact ids. Nav labels can read as the scene names (THE CUT, THE SEAR, THE LINE-UP, BUILD, THE STORY).
+` : "";
+
+      // Para burger, a lista rígida de seções do bloco de regras não se aplica —
+      // a jornada acima define a arquitetura. Para todos os outros nichos, mantém
+      // exatamente a hierarquia original.
+      const sectionHierarchyRule = category === "burger"
+        ? `7. Follow the CINEMATIC JOURNEY MODE scene architecture defined above for the section structure (it replaces the standard hierarchy). Keep the required section ids (about, services, gallery, reviews, faq, contact) mapped onto the scenes as specified, plus the extra journey ids (stack, sear, build).`
+        : `7. Real hierarchy: hero → brand story/about (with soul, not "founded in 2010") → services (premium cards, no emoji) → gallery → reviews (3 testimonials, realistic Irish names) → FAQ (accordion, 4 items) → contact (with address, hours, map embed via Google Maps iframe using the address, and the booking CTA).`;
+
+      const sectionIdsLine = category === "burger"
+        ? `Section ids required: about, services, gallery, reviews, faq, contact (mapped onto the journey scenes), plus stack, sear, build.`
+        : `Section ids required: about, services, gallery, reviews, faq, contact.`;
+
       userPrompt = `You are the design lead at an award-winning web studio (Awwwards Site of the Day level). A client is paying premium for a website that must look like a €50,000 agency build — NOT like an AI template. Build a complete, single-page, production-ready website.
 
 Output ONLY raw HTML from <!DOCTYPE html> to </html>. No markdown, no code fences, no explanation. All CSS and JS inline.
@@ -351,6 +443,7 @@ ${photoBlock}
 
 ${refBlock}
 ${aboutHint}
+${burgerJourneyBlock}
 
 ═══════════ MOTION SYSTEM (this is what separates award-winners from templates) ═══════════
 The site must feel ALIVE and cinematic — not a static page. Build ALL of the following, orchestrated and tasteful (never gimmicky). Everything must respect prefers-reduced-motion (wrap motion in a media query and disable it there).
@@ -393,12 +486,12 @@ Motion must be smooth (transform & opacity only, GPU-friendly, will-change where
 4. The MOTION SYSTEM and AWARD-TIER DIFFERENTIATORS above are mandatory and orchestrated on EVERY generation — but tasteful. The custom cursor, section color journey, and animated number counters must ALWAYS be present (never skip them). An elegant, coherent set of motions beats scattered flashy effects. Everything transform/opacity based and respecting prefers-reduced-motion.
 5. Avoid the generic AI look: do NOT default to cream background + serif + terracotta (#D97757) unless the palette above says so.
 6. Sticky nav that turns solid + backdrop-blur on scroll. Smooth scroll to anchors.
-7. Real hierarchy: hero → brand story/about (with soul, not "founded in 2010") → services (premium cards, no emoji) → gallery → reviews (3 testimonials, realistic Irish names) → FAQ (accordion, 4 items) → contact (with address, hours, map embed via Google Maps iframe using the address, and the booking CTA).
+${sectionHierarchyRule}
 8. Floating WhatsApp/booking button bottom-right linking to ${whatsappHref}.
 9. Fully mobile responsive. Visible keyboard focus states.
 10. Copy must be specific and brand-voiced, never filler. Write like a copywriter, in ${city.includes("Ireland") ? "English" : "the appropriate local language"}.
 
-Section ids required: about, services, gallery, reviews, faq, contact.
+${sectionIdsLine}
 
 Build it to win an award. Every color and type choice must come from the art direction above. Every section must move.`;
     }
