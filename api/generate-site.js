@@ -334,77 +334,74 @@ ABSOLUTE IMAGE RULES:
       // brasa, color journey, contadores) — apenas define a ARQUITETURA das seções.
       const burgerJourneyBlock = category === "burger" ? `
 
-═══════════ CINEMATIC JOURNEY MODE (BURGER — THIS OVERRIDES THE DEFAULT SECTION LIST) ═══════════
-This is not a normal restaurant page. Build it as a single cinematic scroll journey, in the spirit of a high-end product microsite (think a luxury-car or Apple-product reveal, applied to a burger). The whole page is ONE continuous film the visitor scrolls through. Each scene flows into the next — dark background throughout, warm ember/amber light as the connective tissue, generous full-viewport (or near) scenes, huge confident condensed display type, mono/technical labels for the "spec" text.
+═══════════ BURGER PREMIUM PAGE — CLEAN EDITORIAL LAYOUT + CINEMATIC MOMENTS ═══════════
+Build a premium single-page site that is CLEAN, ELEGANT and BREATHABLE as its foundation — generous negative space, confident condensed display typography, strong section rhythm, dark warm palette (ink/ember/cream/gold) — AND injects four genuine "wow" cinematic moments at the right places. The goal is a site that is BOTH elegant AND impressive: an award-winner that never feels cluttered. Do not overload scenes; let each one breathe. Clean layout is the base; the cinematic moments are the seasoning, not the whole meal.
 
-Recurring visual anchor: a glowing golden light-ring / plinth under the hero product (a thin luminous ellipse of light), echoed subtly in later scenes. This ring is the signature motif — reuse it.
+Section eyebrows use small mono labels (e.g. "// THE CUT", "// THE SEAR"). Dark background throughout, warm ember/amber glow as connective tissue between sections. A subtle glowing golden light-ring motif can sit under key product shots.
 
-Section labels use a technical格式: a slash prefix + two-digit number + name, e.g. "// 01. THE CUT", "// 02. THE SEAR". Small mono eyebrow text. This encodes a real sequence, so numbering is justified.
+BUILD THESE SECTIONS IN THIS EXACT ORDER (use the section ids given so nav + CTAs resolve):
 
-BUILD THESE SCENES IN THIS EXACT ORDER (use section ids given so nav + CTAs still work):
+★ CINEMATIC MOMENT 1 ★ — SECTION 1: HERO WITH THE STACK VIDEO (id="hero")
+   The hero opens with the STACK VIDEO (the exploding/rebuilding burger) playing immediately, LARGE, as the star of the first screen. ${bankVideos.stack ? `Use the video "${bankVideos.stack}" as the hero centerpiece: <video autoplay muted loop playsinline> occupying the dominant portion of the hero (large, cinematic, the burger front and center). Add MANDATORY onerror AND onstalled fallback that swaps the video to the hero burger image ${photoList[0]} (NEVER a fries image) so the hero always shows a big burger even if the video fails.` : `Use the hero burger image ${photoList[0]} large and cinematic.`}
+   Text placement (CRITICAL — do not cover the burger/video): eyebrow ("// STONEYBATTER · DUBLIN"), a moderate-sized confident headline, a short subtitle, two CTAs (primary "CALL TO ORDER" → ${bookingHref}, secondary "SEE THE MENU" → #services), and a row of animated stat counters (${rating}★ rating · ${reviewCount} reviews · 100% fresh) — all anchored to the LEFT side / lower-left, over a soft gradient scrim, with the video/burger occupying the right and center. The food is the hero; type supports it. A tiny "SCROLL TO BEGIN" cue at the bottom. Big brand wordmark in the nav.
 
-SCENE 1 — HERO / OVERVIEW (id="hero")
-   Full-viewport. The signature burger fills the frame, sitting above the glowing golden light-ring. A tiny mono cue "SCROLL TO BEGIN" or "SCROLL NOW" at the bottom. Big brand wordmark. This is the establishing shot.
-   Use image: ${photoList[0]} (the hero burger).
+SECTION 2: THE STORY (id="about")  [clean editorial — this is the elegant base]
+   Just above or below this section, add an ELEGANT MARQUEE (the moving strip Leo liked): a slow, smooth, seamless infinite horizontal loop of short flavour keywords separated by small dots, e.g. "Smoky Bacon • Cheese Pull • Loaded Fries • Vegan & Proud • Smash Burgers • Char-Grilled •" repeating. Keep it refined — thin/medium weight, tasteful, lower-key (not a loud promo banner), pauses on hover. This is a premium detail.
+   Two-column editorial story. LEFT: mono eyebrow "// THE STORY", a strong headline with one phrase in ember accent, then 2 short warm paragraphs about the place (soul, not "founded in"). RIGHT: the interior/ambience image (${photoList.length > 5 ? photoList[5] : photoList[photoList.length-1]}) with a small ember-orange address badge overlapping a corner (e.g. "55 PRUSSIA ST · D07"). Generous whitespace. Calm, premium, confident. This clean section is the backbone — keep it uncluttered.
 
-SCENE 2 — // 01. THE CUT (id="about")  [this doubles as the brand/about scene]
-   Spec-sheet aesthetic. On the left, technical specifications in mono type with a big "230°C" callout (this is a FIXED spec, displayed statically — NOT a counter). The burger floats above the light-ring on the right. As the user scrolls INTO this scene, the burger DECONSTRUCTS: the layers (bun, patties, cheese, tomato, lettuce, base) separate and drift apart vertically with wisps of smoke at the sides, and thin label lines point to each ingredient (SESAME BRIOCHE, DOUBLE SMASH, AGED CHEDDAR, BEEFSTEAK TOMATO, BUTTER LETTUCE, BRIOCHE BASE). Drive the separation with scroll progress over the section.
-   ${bankVideos.stack ? `PREFERRED: use the video "${bankVideos.stack}" as the deconstruction/rotation visual — a <video autoplay muted loop playsinline> sitting over the light-ring. Add onerror/onstalled fallback to the image ${photoList[0]} so if the video isn't uploaded yet, the still burger shows instead and the scroll-driven CSS separation still plays. ` : ""}Write the brand story woven into the spec copy (why this burger exists), not a generic "founded in" paragraph.
+★ CINEMATIC MOMENT 2 ★ — SECTION 3: // THE CUT (id="cut")
+   The 3D deconstruction moment. Mono eyebrow "// THE CUT". LEFT: a big static "230°C" callout in ember + a spec table (Patty/Grind, Sear/Surface · 230°C, Cheese, Bun, Origin) in mono type + one line of copy. RIGHT: the hero burger ${photoList[0]} that DECONSTRUCTS as the user scrolls into the section — layers (bun, patties, cheese, tomato, lettuce, base) separate and drift apart vertically with wisps of smoke, thin label lines pointing to each ingredient (SESAME BRIOCHE, DOUBLE SMASH, AGED CHEDDAR, BEEFSTEAK TOMATO, BUTTER LETTUCE, BRIOCHE BASE). Drive the separation with scroll progress over the section. Keep the layout clean around it — the deconstruction is the star, lots of dark space around it.
 
-SCENE 3 — // 02. THE STACK (id="stack")
-   The inverse of the previous: the layers RE-ASSEMBLE / the burger rotates and rebuilds over the light-ring as you scroll, smoke curling. Big headline "THE STACK" / "PRIME STACK". One line of copy about the build. If the ${bankVideos.stack} video is used, this is where its rotation reads best — you may reuse the same video element concept here or continue the scroll-linked motion. Keep it seamless from Scene 2.
+★ CINEMATIC MOMENT 3 ★ — SECTION 4: // THE SEAR (id="sear")
+   The fire scene with the sear video + the heat gauge. ${bankVideos.sear ? `Use the video "${bankVideos.sear}" as a TRUE FULL-BLEED background of this section: <video autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"> covering the whole section edge-to-edge, dark scrim on top for readability. MANDATORY onerror/onstalled fallback to a grill/meat image (${photoList[0]}, NEVER fries).` : `Full-bleed grill background using ${photoList[0]} with a fire-glow gradient.`}
+   Over the video: four LIVE COUNTERS across the top counting up from 0 on enter (mono, amber glow): 490G (patty weight) · 28 (days aged) · 258° (sear temp) · 7 (layers). Headline "EVERY LAYER. UNCOMPROMISED." Small "SCROLL TO RAISE THE HEAT" cue.
+   ★ SCROLL-LINKED HEAT GAUGE (MANDATORY — do not skip): On the RIGHT side, a large temperature number tied to SCROLL PROGRESS through this section (NOT a one-shot counter): as the user scrolls down through SEAR it climbs 0 → 258 and back down on scroll up. Beside it a thin VERTICAL BAR (slim track, amber/orange fill) whose height goes 0%→100% in sync, glowing hotter (yellow-white) near the top — a rising thermometer. Map the section scroll progress (0→1) to the number 0→258 and the bar height 0%→100%. This makes "SCROLL TO RAISE THE HEAT" literal. (prefers-reduced-motion: snap to 258.)
 
-SCENE 4 — // 02. THE SEAR (id="sear")
-   The fire scene. A full-bleed grill/sear visual with live flames and smoke. Four LIVE COUNTERS across the top, each counting up from 0 when the scene enters view (mono display type, amber glow):
-     • 490G  — dry-aged patty weight
-     • 28    — days aged
-     • 258°  — flat-top sear temperature (counts 0 → 258)
-     • 7     — layers in the stack
-   Headline treatment: "THE WAGYU RESTS" / "EVERY LAYER. UNCOMPROMISED." A small "SCROLL TO RAISE HEAT" mono cue.
-   ${bankVideos.sear ? `PREFERRED: use the video "${bankVideos.sear}" as the full-bleed background of this scene — <video autoplay muted loop playsinline> with a dark scrim so the counters and headline stay readable. Add onerror fallback to image ${photoList.length > 1 ? photoList[1] : photoList[0]} so the scene still works before the video is uploaded. ` : `Use image ${photoList.length > 1 ? photoList[1] : photoList[0]} as the sear background with a fire-glow gradient. `}The four counters are MANDATORY and must animate.
+SECTION 5: THE MENU (id="services")  [clean typographic menu — elegant base]
+   A refined TYPOGRAPHIC menu list, NOT bulky cards. Each item is a full-width row: a small index number (01, 02, 03…), the item name in strong display type on the left, a one-line description under it, and the price in ember on the far right, with a thin divider line between rows. Hover highlights the row. Items (or from services if given: ${services || "invent realistic items"}): e.g. 01 Classic Smash €12, 02 Vegan Burger €12, 03 Bacon Cheeseburger €14, 04 Loaded Cheese Fries €6, 05 Bacon & Cheese Fries €7. Keep prices in € (Dublin). This clean list reads as premium and confident — lots of breathing room.
 
-SCENE 5 — EVERY LAYER. UNCOMPROMISED (id="gallery")
-   A cinematic mosaic/grid of the best food shots (the "ingredient wall"). Tight grid, dark gaps, each tile fades+scales in on scroll, hover zoom. Headline "EVERY LAYER. UNCOMPROMISED." Use the remaining images: ${photoList.slice(1).join(", ") || photoList.join(", ")}. Reuse in different crops if few.
-
-SCENE 6 — // 04. THE LINE-UP (id="services")  [this is the menu]
-   Three premium build cards, dark with amber edge-glow, each with a burger image, a name, a one-line description, a price, and an "ADD TO ORDER" style button that links to ${bookingHref}:
-     • THE SMASH — €28  (or invent fitting names/prices if services given: ${services || "invent 3 realistic premium builds"})
-     • THE TRUFFLE — €48
-     • THE PRIME — €50
-   Cards reveal staggered. This is the real menu — keep prices in € (Dublin).
-
-SCENE 7 — // 05. BUILD YOUR PRIME (id="build")  ★ THE INTERACTIVE SIGNATURE ★
+★ CINEMATIC MOMENT 4 ★ — SECTION 6: BUILD YOUR PRIME (id="build")  [the interactive signature → WhatsApp]
    A REAL, FULLY FUNCTIONAL burger builder (not decorative). Two columns:
-   LEFT = options. Step 1 "CHOOSE YOUR SIZE" — three size cards (Single / Double / Triple) as radio-style选择, each with a price. Step 2 "ADD TOPPINGS" — a grid of toggleable topping chips (Truffle Mayo +€4, Smoked Bacon +€3, Caramelised Onion +€2, Extra Cheese +€2, Prime Pickles free, Fried Egg +€2, etc), each with a small image tile where possible.
-   RIGHT = a preview panel: the burger under the golden light-ring with rising smoke, and a live running total that UPDATES ON EVERY CLICK. Show a "TOTAL BUILD" figure that recalculates in real time (e.g. €26 → €29 → €34) with a smooth count animation on change. Below it, a primary button "ORDER THIS BUILD" that opens ${whatsappHref} with a prefilled message describing the exact build the user configured (e.g. "Hi! I'd like to build my Prime: Double + Truffle Mayo + Smoked Bacon — total €34"). Build this with real vanilla JS: clicking sizes and toppings recomputes the total and updates the WhatsApp link's text. This section MUST actually work — it is the centrepiece and a broken/fake builder ruins the whole site. No checkout/payment — the CTA hands off to WhatsApp/booking. Keep the running total accessible (aria-live="polite").
+   LEFT = options. Step 1 "CHOOSE YOUR SIZE" — three size options (Single €12 / Double €16 / Triple €20) as selectable cards (radio behaviour). Step 2 "ADD TOPPINGS" — a grid of toggleable topping chips (Truffle Mayo +€4, Smoked Bacon +€3, Caramelised Onion +€2, Extra Cheese +€2, Prime Pickles free, Fried Egg +€2), each with a small image tile where possible.
+   RIGHT = a preview panel: a burger image under a soft light-ring with rising smoke, and a live "TOTAL BUILD" figure that UPDATES ON EVERY CLICK with a smooth count animation, plus a line listing the current build (e.g. "Triple · Smoked Bacon + Extra Cheese"). Below it, a primary button "ORDER THIS BUILD" that opens ${whatsappHref} with a PREFILLED message describing the exact configured build (e.g. "Hi! I'd like to build my Prime: Double + Truffle Mayo + Smoked Bacon — total €34"). Build with real vanilla JS: clicking sizes/toppings recomputes the total AND updates the WhatsApp link text live. This MUST actually work — it is the centerpiece. No checkout/payment — CTA hands off to WhatsApp. Running total aria-live="polite".
 
-SCENE 8 — // 04. THE CUT (cards) (id="reviews")  [carousel + social proof]
-   A horizontal, smooth-scrolling carousel of hero burger shots (smoke rising off each), and woven in, 3 short testimonials with realistic Irish names (rating ${rating}, ${reviewCount} reviews). The ${rating} and review number animate as counters. Drag/scroll horizontally, snap points, elegant.
+SECTION 7: THE GALLERY (id="gallery")  [clean mosaic — elegant base]
+   Headline "LOOK. THEN COME HUNGRY" (or similar), mono eyebrow "// THE GOODS". A cinematic MOSAIC grid of food shots — one large feature tile plus smaller ones, tight dark gaps, each tile fades+scales in on scroll, subtle hover zoom. Use images: ${photoList.slice(1).join(", ") || photoList.join(", ")}.
+   IMAGE CURATION (whole site): BURGER shots are the stars — give burgers the largest/prominent tiles. Fries/sides and drinks are SUPPORT — smaller, secondary, never the biggest tile, never repeated as a hero across multiple sections. The largest tiles must be burgers.
 
-SCENE 9 — // 05. THE STORY (id="faq")  [story + FAQ + contact bleed]
-   An editorial "story" list — expandable article rows (accordion, 4 items) like "Why We Age Our Beef 28 Days", "The Maillard Reaction: Engineering the Perfect Sear", "Sourcing Our Brioche", "Why We Sear at 258°C". These double as the FAQ accordion. Under it, a slow elegant marquee: "FLAME-FORGED IN ${city.toUpperCase().replace(", IRELAND", "").replace("IRELAND", "DUBLIN")} • FLAME-FORGED IN ${city.toUpperCase().replace(", IRELAND", "").replace("IRELAND", "DUBLIN")} •" repeating.
+SECTION 8: REVIEWS (id="reviews")  [clean 3-column — elegant base]
+   Mono eyebrow "// WORD ON PRUSSIA ST". A big headline with the rating ("${rating} STARS, ${reviewCount} REVIEWS" — the ${rating} and number animate as counters). Below, THREE clean testimonial columns (not a carousel), each: five amber stars, a short quote, a realistic Irish name + Dublin neighbourhood (e.g. Stoneybatter, Phibsborough, Smithfield). Calm, spacious, trustworthy.
 
-FINAL — CONTACT (id="contact")
-   The closing scene: address (${address || city}), hours (${hours || "Mon–Sun, kitchen hours"}), phone/email, a Google Maps iframe for the address, and the booking CTA to ${bookingHref}. Dark, cinematic, with the light-ring motif one last time as a footer flourish.
+SECTION 9: FAQ (id="faq")  [clean minimalist accordion — elegant base]
+   Mono eyebrow "// BEFORE YOU BITE", headline "THE QUESTIONS". A minimalist accordion, 4 rows with a + toggle: "Do you take bookings?", "Is the vegan burger actually good?", "What are your opening hours?", "Where exactly are you?" — thin dividers, lots of space, smooth expand.
+
+SECTION 10: CONTACT (id="contact")  [clean close with map — elegant base]
+   Headline "FIND US. FEED YOU." LEFT: address (${address || city}), phone (${phone || "—"}), opening hours (${hours || "Mon–Sun, kitchen hours"}), and a "CALL TO ORDER" CTA → ${bookingHref}. RIGHT: a Google Maps iframe for the address. Dark, clean, confident close.
+
+LAYOUT DISCIPLINE (this is what keeps the nota 10):
+- The CLEAN sections (Story, Menu, Gallery, Reviews, FAQ, Contact) must stay uncluttered, spacious, editorial — this elegance is the foundation and must not be sacrificed. Headline + supporting content + whitespace. Do not cram.
+- The FOUR cinematic moments (hero video, THE CUT deconstruction, THE SEAR video+gauge, BUILD YOUR PRIME) are the highlights — make each genuinely impressive but self-contained, surrounded by calm.
+- Every non-static number animates (stats, rating, review count, build total, sear counters, heat gauge). The 230°C is static.
+- The result should feel like ONE cohesive premium piece: clean and breathable, punctuated by four unforgettable moments. Elegant first, cinematic second.
 
 JOURNEY MOTION RULES (on top of the global motion system below):
-- Scenes should feel connected — no hard white breaks. Transitions cross-fade or share the dark background; the ember/amber color-journey glow moves scene to scene (cool → hot at THE SEAR → cooling into THE STORY).
-- The burger deconstruction (Scene 2) and reassembly (Scene 3) are the scroll-linked showpieces alongside the SEAR counters and the BUILD YOUR PRIME builder. Make these four moments genuinely impressive; keep everything else disciplined.
+- Sections connect via the shared dark background and a warm ember glow that shifts scene to scene (cooler → hot at THE SEAR → cooling after).
+- The deconstruction (THE CUT), the sear video + heat gauge (THE SEAR), the hero video, and the BUILD builder are the four showpieces. Make them impressive; keep everything else clean and disciplined.
 - Every numeric value (230°C is static; but 490G, 28, 258°, 7, the rating, the review count, and the live build total) — all the NON-static ones animate.
 - Respect prefers-reduced-motion: disable scroll-linked separation and heavy motion, but keep the site fully usable and the builder fully functional.
 
-NOTE: The section ids above (about, services, gallery, reviews, faq, contact) are intentionally mapped onto the journey scenes so the nav and CTAs still resolve. Use those exact ids. Nav labels can read as the scene names (THE CUT, THE SEAR, THE LINE-UP, BUILD, THE STORY).
+NOTE: Required section ids: hero, about (story), cut, sear, services (menu), build, gallery, reviews, faq, contact. Use those exact ids so nav and CTAs resolve. Nav labels can read: STORY, MENU, GALLERY, REVIEWS, VISIT, plus the cinematic anchors (THE CUT, THE SEAR, BUILD).
 ` : "";
 
       // Para burger, a lista rígida de seções do bloco de regras não se aplica —
       // a jornada acima define a arquitetura. Para todos os outros nichos, mantém
       // exatamente a hierarquia original.
       const sectionHierarchyRule = category === "burger"
-        ? `7. Follow the CINEMATIC JOURNEY MODE scene architecture defined above for the section structure (it replaces the standard hierarchy). Keep the required section ids (about, services, gallery, reviews, faq, contact) mapped onto the scenes as specified, plus the extra journey ids (stack, sear, build).`
+        ? `7. Follow the BURGER PREMIUM PAGE architecture defined above (clean editorial layout + four cinematic moments). Keep the required section ids: hero, about, cut, sear, services, build, gallery, reviews, faq, contact.`
         : `7. Real hierarchy: hero → brand story/about (with soul, not "founded in 2010") → services (premium cards, no emoji) → gallery → reviews (3 testimonials, realistic Irish names) → FAQ (accordion, 4 items) → contact (with address, hours, map embed via Google Maps iframe using the address, and the booking CTA).`;
 
       const sectionIdsLine = category === "burger"
-        ? `Section ids required: about, services, gallery, reviews, faq, contact (mapped onto the journey scenes), plus stack, sear, build.`
+        ? `Section ids required: hero, about, cut, sear, services, build, gallery, reviews, faq, contact.`
         : `Section ids required: about, services, gallery, reviews, faq, contact.`;
 
       userPrompt = `You are the design lead at an award-winning web studio (Awwwards Site of the Day level). A client is paying premium for a website that must look like a €50,000 agency build — NOT like an AI template. Build a complete, single-page, production-ready website.
@@ -466,8 +463,15 @@ G. If a HERO VIDEO is present, it plays behind a gradient scrim with the load se
 
 H. CUSTOM CURSOR — EMBER WITH A SMOKE TRAIL (desktop only, ≥1024px): Replace the default cursor with a glowing ember that leaves a SMOKE TRAIL as it moves. Two parts:
    (1) The ember tip: a small bright hot core (pale gold/near-white) wrapped in a soft warm amber radial glow that bleeds outward — like a live coal, not a flat dot.
-   (2) The smoke trail: as the pointer moves, it continuously emits soft smoke particles along its recent path that drift slightly upward, fade out, and dissipate over ~0.6-1s. Implement by spawning small blurred greyish/warm semi-transparent particle divs (or canvas puffs) at the pointer position on mousemove, each animating opacity 0.5→0 + slight upward/outward drift + scale up, then removed. The faster the mouse moves, the more trail. Keep it subtle and elegant — a wispy smoke trail following the cursor, evoking a hot grill. Throttle particle creation for performance (e.g. cap active particles ~30). On hover over interactive elements, the ember core brightens/grows.
-   Hide the whole effect on touch devices (fall back to normal cursor). This smoke-trail ember is THE signature bespoke touch — make it genuinely evocative of grill smoke, tasteful, never distracting from content.
+   (2) The smoke trail: as the pointer moves, it emits soft smoke particles along its recent path that drift slightly upward, fade out, and dissipate over ~0.6-1s. Spawn small blurred warm semi-transparent particle divs at the pointer position, each animating opacity 0.5→0 + slight upward/outward drift + scale up, then removed.
+   ★ PERFORMANCE IS CRITICAL — the cursor MUST NOT cause jank or lag (a laggy cursor ruins the premium feel). Implement these optimizations, all mandatory:
+     - Do NOT create a particle on every mousemove event. THROTTLE hard: spawn a particle at most every ~60-80ms (track last-spawn timestamp; skip if too soon). This alone prevents most lag.
+     - Update the ember core position inside a requestAnimationFrame loop, NOT directly in the mousemove handler. The mousemove handler only stores the latest x/y; a single rAF loop reads it and moves the ember. Never do layout work in mousemove.
+     - Move everything with transform: translate3d() (GPU-composited), never top/left. Set will-change: transform, opacity on the ember and particles.
+     - Cap ACTIVE particles low — around 12-15 max, not 30. If at cap, skip spawning until some expire. Fewer, softer particles read as more elegant anyway.
+     - Give each particle a CSS animation that removes it via animationend (don't poll with setInterval). Use pointer-events: none on all cursor elements.
+     - Wrap the whole effect so it only initializes on devices with a fine pointer AND width >= 1024px: only run if window.matchMedia('(pointer: fine)').matches && innerWidth >= 1024. On touch/coarse pointers, do nothing and keep the normal cursor.
+   The result must feel silky at 60fps even on a mid-range laptop. If there's any doubt, fewer particles and more throttle — smoothness beats density. This smoke-trail ember is THE signature bespoke touch — evocative of grill smoke, tasteful, and above all SMOOTH.
 
 I. SECTION COLOR JOURNEY — MAKE IT FELT: The background must visibly shift as the user scrolls — not a subtle near-invisible change. Since the base is dark, use PERCEPTIBLE warm ambient glows: as the user enters key sections, introduce a visible radial glow/gradient of the accent color (ember/amber) bleeding from an edge or behind content, then receding. Think of light sources warming the room as you move through it. The shift between sections should be noticeable (a warm amber wash appearing behind the story section, cooling again, etc.) while keeping text readable. If the change isn't clearly felt when scrolling, it's too weak — make it stronger.
 
