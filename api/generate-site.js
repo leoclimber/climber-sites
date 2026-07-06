@@ -534,10 +534,15 @@ CLEAN MODE DISCIPLINE:
 - Elegant, restrained, WARM version. Every section uncluttered, spacious, editorial — headline + supporting content + whitespace, with BIG cozy coffee photos throughout.
 - Animated number counters stay. The custom cursor and section color journey stay (lightweight, premium) — tune the color journey to warm golden/caramel washes fitting coffee. But NO hero video treatment, NO cup gauge, NO builder — those belong to cinematic mode.
 - Nav labels: STORY, MENU, GALLERY, REVIEWS, VISIT. Required section ids: hero, about, services, gallery, reviews, faq, contact.
-` : "";
 
-      // ---------- BLOCO CINEMATOGRÁFICO (CAFÉ + MODO CINEMATOGRÁFICO) ----------
-      // Ativado quando category === "cafe" E mode === "cinematic". Jornada premium
+★★★ PREMIUM POLISH — PUSH THIS CLEAN BUILD TOWARD PERFECT (do all, tastefully):
+- STRONG SCROLL REVEALS: make the "content appears as you scroll" effect clearly felt (this is what elevates it). Gallery tiles and images should fade + rise (from ~28px) + slightly scale (from 0.94) as they enter, staggered one-by-one (~90ms apart) so the mosaic assembles gracefully, not all at once. Headings clip-reveal upward line by line. Use a smooth cubic-bezier(0.16,1,0.3,1). It should feel choreographed and alive.
+- HERO PARALLAX: the hero coffee photo drifts slightly slower than the text on scroll, and shifts a few px on mouse move (desktop) for living depth — a flat hero reads cheaper.
+- IMAGE HOVER: gallery images get a slow, refined zoom (scale ~1.05 over ~600ms) with a subtle warm overlay lift on hover.
+- NAV: sticky nav gains a solid warm backdrop-blur after ~80px scroll; animated underline on links; a slim top scroll-progress bar in accent colour is welcome.
+- STEAM/AMBIENCE: a very subtle, slow, tasteful steam or warm light drift near the hero cup adds life (CSS only, low opacity, never distracting).
+- MICRO-DETAILS: buttons have a refined hover (slight lift + soft shadow bloom or fill-sweep). Everything transform/opacity based, 60fps, respect prefers-reduced-motion. These 2% details are what separate "very good" from "perfect" — do them with restraint.
+` : "";
       // de 4 momentos, feita UMA vez para todos os cafés (igual ao burger):
       //   1) HERO com vídeo do POUR (leite/latte art se formando)
       //   2) THE ORIGIN — grãos + contadores (altitude/torra/origem)
@@ -630,6 +635,18 @@ LAYOUT DISCIPLINE (keeps the nota 10):
         ? `Section ids required: hero, about, services, gallery, reviews, faq, contact.`
         : `Section ids required: about, services, gallery, reviews, faq, contact.`;
 
+      // CURSOR POR NICHO: a "brasa com fumaça" é a assinatura do burger (evoca grelha).
+      // Em nichos onde fogo/brasa não combina (café, etc.), usar um cursor mais neutro
+      // e elegante — ou o cursor normal. Cada nicho tem sua identidade.
+      const cursorBlock = (category === "burger")
+        ? `H. CUSTOM CURSOR — EMBER WITH A SMOKE TRAIL (desktop only, ≥1024px): Replace the default cursor with a glowing ember that leaves a SMOKE TRAIL as it moves. Two parts:
+   (1) The ember tip: a small bright hot core (pale gold/near-white) wrapped in a soft warm amber radial glow that bleeds outward — like a live coal, not a flat dot.
+   (2) The smoke trail: as the pointer moves, it emits soft smoke particles along its recent path that drift slightly upward, fade out, and dissipate over ~0.6-1s. Spawn small blurred warm semi-transparent particle divs at the pointer position, each animating opacity 0.5→0 + slight upward/outward drift + scale up, then removed.
+   ★ PERFORMANCE IS CRITICAL — the cursor MUST NOT cause jank or lag. Implement all: THROTTLE particle spawn to ~60-80ms; update the ember position inside a requestAnimationFrame loop (mousemove only stores x/y); move with transform: translate3d() only, will-change: transform,opacity; cap active particles ~12-15; remove particles via animationend (no setInterval); pointer-events:none on cursor elements; only init if window.matchMedia('(pointer: fine)').matches && innerWidth >= 1024 (touch/coarse keeps normal cursor). Silky 60fps. This smoke-trail ember is THE signature bespoke touch — evocative of grill smoke, tasteful, and above all SMOOTH.`
+        : (category === "cafe")
+        ? `H. CUSTOM CURSOR — SOFT & ELEGANT (desktop only, ≥1024px): Do NOT use a fire/ember/smoke cursor (wrong mood for coffee). Instead, keep it refined and calm: replace the default cursor with a small, tasteful custom dot — a soft cream/caramel glowing dot with a gentle, slightly-lagging follower ring (a second, larger, semi-transparent circle that eases toward the pointer with a smooth spring), giving a premium, calm feel. Optionally the dot subtly scales up on hover over links/buttons. NO smoke, NO particles, NO fire. Move everything with transform: translate3d() inside a requestAnimationFrame loop (mousemove only stores x/y), will-change: transform, pointer-events:none. Only init if window.matchMedia('(pointer: fine)').matches && innerWidth >= 1024 (touch/coarse keeps normal cursor). Must be silky at 60fps and never laggy. Understated, warm, premium.`
+        : `H. CUSTOM CURSOR (desktop only, ≥1024px): a tasteful, minimal custom cursor fitting the niche's mood — e.g. a small accent-coloured dot with a soft easing follower ring. NO fire/smoke unless the niche is about grilling. Move with transform: translate3d() inside a requestAnimationFrame loop, will-change: transform, pointer-events:none, only init if window.matchMedia('(pointer: fine)').matches && innerWidth >= 1024. Silky 60fps, never laggy. Keep it understated and premium.`;
+
       userPrompt = `You are the design lead at an award-winning web studio (Awwwards Site of the Day level). A client is paying premium for a website that must look like a €50,000 agency build — NOT like an AI template. Build a complete, single-page, production-ready website.
 
 Output ONLY raw HTML from <!DOCTYPE html> to </html>. No markdown, no code fences, no explanation. All CSS and JS inline.
@@ -690,17 +707,7 @@ G. If a HERO VIDEO is present, it plays behind a gradient scrim with the load se
 
 ═══════════ AWARD-TIER DIFFERENTIATORS (these push it from "very good" to top-tier — implement ALL) ═══════════
 
-H. CUSTOM CURSOR — EMBER WITH A SMOKE TRAIL (desktop only, ≥1024px): Replace the default cursor with a glowing ember that leaves a SMOKE TRAIL as it moves. Two parts:
-   (1) The ember tip: a small bright hot core (pale gold/near-white) wrapped in a soft warm amber radial glow that bleeds outward — like a live coal, not a flat dot.
-   (2) The smoke trail: as the pointer moves, it emits soft smoke particles along its recent path that drift slightly upward, fade out, and dissipate over ~0.6-1s. Spawn small blurred warm semi-transparent particle divs at the pointer position, each animating opacity 0.5→0 + slight upward/outward drift + scale up, then removed.
-   ★ PERFORMANCE IS CRITICAL — the cursor MUST NOT cause jank or lag (a laggy cursor ruins the premium feel). Implement these optimizations, all mandatory:
-     - Do NOT create a particle on every mousemove event. THROTTLE hard: spawn a particle at most every ~60-80ms (track last-spawn timestamp; skip if too soon). This alone prevents most lag.
-     - Update the ember core position inside a requestAnimationFrame loop, NOT directly in the mousemove handler. The mousemove handler only stores the latest x/y; a single rAF loop reads it and moves the ember. Never do layout work in mousemove.
-     - Move everything with transform: translate3d() (GPU-composited), never top/left. Set will-change: transform, opacity on the ember and particles.
-     - Cap ACTIVE particles low — around 12-15 max, not 30. If at cap, skip spawning until some expire. Fewer, softer particles read as more elegant anyway.
-     - Give each particle a CSS animation that removes it via animationend (don't poll with setInterval). Use pointer-events: none on all cursor elements.
-     - Wrap the whole effect so it only initializes on devices with a fine pointer AND width >= 1024px: only run if window.matchMedia('(pointer: fine)').matches && innerWidth >= 1024. On touch/coarse pointers, do nothing and keep the normal cursor.
-   The result must feel silky at 60fps even on a mid-range laptop. If there's any doubt, fewer particles and more throttle — smoothness beats density. This smoke-trail ember is THE signature bespoke touch — evocative of grill smoke, tasteful, and above all SMOOTH.
+${cursorBlock}
 
 I. SECTION COLOR JOURNEY — MAKE IT FELT: The background must visibly shift as the user scrolls — not a subtle near-invisible change. Since the base is dark, use PERCEPTIBLE warm ambient glows: as the user enters key sections, introduce a visible radial glow/gradient of the accent color (ember/amber) bleeding from an edge or behind content, then receding. Think of light sources warming the room as you move through it. The shift between sections should be noticeable (a warm amber wash appearing behind the story section, cooling again, etc.) while keeping text readable. If the change isn't clearly felt when scrolling, it's too weak — make it stronger.
 
@@ -720,7 +727,7 @@ Motion must be smooth (transform & opacity only, GPU-friendly, will-change where
 5. Avoid the generic AI look: do NOT default to cream background + serif + terracotta (#D97757) unless the palette above says so.
 6. Sticky nav that turns solid + backdrop-blur on scroll. Smooth scroll to anchors.
 ${sectionHierarchyRule}
-8. Floating WhatsApp/booking button bottom-right linking to ${whatsappHref}.
+8. Floating WhatsApp/booking button fixed at bottom-right linking to ${whatsappHref}. MAKE IT POLISHED AND NON-INTRUSIVE: it must have its OWN solid pill background (a strong accent-colour fill with enough contrast that its label is always legible — never rely on the page behind it, so it stays readable even over a light map or photo), a subtle shadow to lift it off the page, a comfortable size (not oversized), and sit with margin from the edges (e.g. bottom:24px; right:24px). It must NEVER overlap or cover important content, text, or CTAs — keep it compact and give it a high z-index so it floats cleanly above sections without colliding with headings or buttons. On mobile, keep it small and out of the way (icon + short label or icon-only). Refined hover (slight lift). It should feel like a tasteful floating action button, not a banner.
 9. Fully mobile responsive. Visible keyboard focus states.
 10. Copy must be specific and brand-voiced, never filler. Write like a copywriter, in ${city.includes("Ireland") ? "English" : "the appropriate local language"}.
 
