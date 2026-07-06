@@ -41,7 +41,19 @@ export default async function handler(req, res) {
     // Default: "clean" (mais seguro/rápido/garantido). O painel manda "cinematic" quando o
     // usuário escolhe o modo cinematográfico. A jornada cinematográfica só é ativada quando
     // o modo é "cinematic" E o nicho tem jornada montada (hoje: burger).
-    const mode = (body.mode || "clean").toLowerCase() === "cinematic" ? "cinematic" : "clean";
+    // MODO DE GERAÇÃO — SISTEMA DE 3 SLOTS UNIVERSAL:
+    //   "clean"        -> versão elegante e sóbria (todo nicho tem)
+    //   "cinematic_a"  -> cinematográfico principal do nicho (slot A)
+    //   "cinematic_b"  -> cinematográfico variação do nicho (slot B)
+    // Retrocompatível: o valor antigo "cinematic" vira "cinematic_a".
+    // Default: "clean" (mais seguro/rápido/garantido).
+    // Se um nicho ainda não desenvolveu um slot, o código cai no slot mais próximo
+    // (ver lógica isCinematic* abaixo), então o painel nunca trava.
+    let mode = (body.mode || "clean").toLowerCase();
+    if (mode === "cinematic") mode = "cinematic_a"; // retrocompat
+    if (mode !== "clean" && mode !== "cinematic_a" && mode !== "cinematic_b") mode = "clean";
+    // flag genérica: é algum modo cinematográfico?
+    const isCinematic = (mode === "cinematic_a" || mode === "cinematic_b");
 
     if (!businessName || !businessType) {
       return res.status(400).json({ error: "businessName and businessType are required" });
@@ -295,6 +307,12 @@ export default async function handler(req, res) {
       // quantidade de frames que você vai subir (ajuste se gerar mais/menos):
       count: 40,
       pattern: `${bankBase}/frames/frame`, // + NNN + .jpg
+      // CAFÉ — dois efeitos scroll-linked, cada um com sua pasta de frames:
+      //   frames_cup/   -> "xícara descendo + gelo/leite/grãos" (Cinematográfico A)
+      //   frames_latte/ -> "latte art se formando" (Cinematográfico B)
+      cupPattern: `${bankBase}/frames_cup/frame`,
+      lattePattern: `${bankBase}/frames_latte/frame`,
+      cafeCount: 40,
     };
 
     // ---------- ASSETS DO CLIENTE ----------
@@ -357,7 +375,9 @@ ABSOLUTE IMAGE RULES:
       // resto do sistema (motion, cursor de brasa, color journey, contadores).
       // No modo "clean", este bloco fica vazio e o burger usa a estrutura elegante
       // limpa (bloco cleanBurgerBlock abaixo).
-      const isCinematicBurger = category === "burger" && mode === "cinematic";
+      // Burger: slot A = jornada explosão (atual). Slot B ainda não desenvolvido,
+      // então QUALQUER modo cinematográfico no burger usa a jornada atual (slot A).
+      const isCinematicBurger = category === "burger" && isCinematic;
       const burgerJourneyBlock = isCinematicBurger ? `
 
 ═══════════ BURGER PREMIUM PAGE — CLEAN EDITORIAL LAYOUT + CINEMATIC MOMENTS ═══════════
@@ -524,7 +544,18 @@ CLEAN MODE DISCIPLINE:
       //   3) THE POUR — latte art scroll-linked via FRAME SEQUENCE (Apple-style, nunca trava)
       //   4) THE RITUAL — gallery cinematográfica cozy
       // + menu, reviews, faq, contact. NÃO tem builder de pedido (nicho diferente).
-      const isCinematicCafe = category === "cafe" && mode === "cinematic";
+      // Café: slot A = "THE POUR" com xícara descendo + gelo/leite/grãos (frames);
+      //       slot B = "THE POUR" com latte art se formando (frames).
+      // Ambos compartilham a base cinematográfica; muda só o momento scroll-linked.
+      const isCinematicCafeA = category === "cafe" && mode === "cinematic_a";
+      const isCinematicCafeB = category === "cafe" && mode === "cinematic_b";
+      const isCinematicCafe = isCinematicCafeA || isCinematicCafeB;
+      // Configura o efeito scroll-linked THE POUR conforme o slot (A ou B):
+      const pourFramePattern = isCinematicCafeB ? bankFrames.lattePattern : bankFrames.cupPattern;
+      const pourFrameCount = bankFrames.cafeCount;
+      const pourEffectDesc = isCinematicCafeB
+        ? `LATTE ART FORMING: the cup sits pinned/centered, viewed from above, and as the user scrolls the rosetta latte art DRAWS ITSELF on the milk surface — from a blank crema to the finished detailed rosetta. Scrolling down forms the art; scrolling up unforms it. Minimal, zen, mesmerising — focus purely on the art appearing.`
+        : `CUP DESCENDING WITH ELEMENTS: a glass cup of coffee sits pinned/centered and, as the user scrolls, the scene TRANSFORMS around it — coffee beans fly in, a milk splash swirls, then ice cubes tumble in from the sides (hot → iced), splashes and droplets around the floating cup. Scrolling down builds the scene; scrolling up reverses it. Energetic, commercial, full of motion — a coffee advert happening as you scroll (like the reference).`;
       const cinematicCafeBlock = isCinematicCafe ? `
 
 ═══════════ CAFÉ PREMIUM PAGE — CINEMATIC JOURNEY (AWWWARDS-TIER, COZY & CRAFT) ═══════════
@@ -548,15 +579,16 @@ SECTION 2: THE STORY (id="about")  [clean editorial — the elegant base]
    The "craft spec" moment — the equivalent of the burger's THE CUT, but for coffee. Refined eyebrow "// THE ORIGIN". LEFT: a big static accent callout (e.g. "1,800M" altitude in caramel/amber) + a clean spec table in mono type with values right-aligned (Origin · Ethiopia Yirgacheffe / Altitude · 1,800m / Roast · Medium, 220°C / Process · Washed / Rest · 14 days / Notes · Floral, citrus, honey) + one short line of copy below. RIGHT: a big beautiful macro of roasted coffee beans ${photoList.length > 1 ? photoList[1] : photoList[0]} shown LARGE (min-height:560px, ideally 600–680px, object-fit:cover, a close glossy crop) sitting in generous dark space, NO labels/callout lines over it. ${bankVideos.roast ? `OPTIONALLY, instead of the static bean image, you MAY use the video "${bankVideos.roast}" here as a contained background of the right panel with poster="${photoList.length>1?photoList[1]:photoList[0]}" and the same onerror-only robustness rules (no onstalled/timer) — but keep it calm and contained, the spec table on the left stays the focus.` : ``} The image/video can gently fade/scale in on scroll; nothing overlaps it. The altitude/roast-temp numbers animate as counters on enter. Uncluttered, premium, lots of breathing room.
 
 ★ CINEMATIC MOMENT 3 (THE SHOWPIECE) ★ — SECTION 4: // THE POUR (id="pour")
-   THE HYPNOTIC SCROLL-LINKED LATTE ART — this is the signature "wow", built as an APPLE-STYLE FRAME SEQUENCE so it is silky on every device and NEVER janks (do NOT scrub an mp4 with scroll — that stutters; use a preloaded image sequence swapped by scroll progress).
-   Layout: a sticky/pinned stage that holds while the user scrolls through this tall section (make the section ~200-250vh tall; the visual pins in the viewport center while scrolling). In the center: a single <img> (or <canvas>) that shows one frame of the latte-art sequence at a time. Around it, short poetic copy lines fade in/out as the art forms ("// THE POUR", a line about the milk, a line about the art). Warm golden ambient glow, gentle steam accents.
+   THE HYPNOTIC SCROLL-LINKED MOMENT — this is the signature "wow", built as an APPLE-STYLE FRAME SEQUENCE so it is silky on every device and NEVER janks (do NOT scrub an mp4 with scroll — that stutters; use a preloaded image sequence swapped by scroll progress).
+   ★ THE EFFECT FOR THIS BUILD: ${pourEffectDesc}
+   Layout: a sticky/pinned stage that holds while the user scrolls through this tall section (make the section ~200-250vh tall; the visual pins in the viewport center while scrolling). In the center: a single <img> (or <canvas>) that shows one frame of the sequence at a time. Around it, short poetic copy lines fade in/out ("// THE POUR", a line about the craft). Warm golden ambient glow, gentle steam accents.
    ★ FRAME SEQUENCE IMPLEMENTATION (MANDATORY, exactly this technique):
-     - There are ${bankFrames.count} frames at URLs "${bankFrames.pattern}" + a 3-digit zero-padded number + ".jpg" (i.e. ${bankFrames.pattern}001.jpg, ${bankFrames.pattern}002.jpg, … ${bankFrames.pattern}${String(bankFrames.count).padStart(3,"0")}.jpg). Build the list of URLs in JS from 1 to ${bankFrames.count}.
-     - PRELOAD all frames into Image objects on load (they are small). Track loaded count; only enable the scroll effect once enough are ready. Show ${photoList.length>3?photoList[3]:photoList[0]} (a finished latte-art photo) as the initial/poster image so the stage is never blank while preloading.
-     - On scroll, compute this section's scroll progress (0 → 1 as it passes through the pinned range) and map it to a frame index: index = clamp(round(progress * (${bankFrames.count} - 1)), 0, ${bankFrames.count}-1). Set the <img>.src (or draw to canvas) to that frame. Scrolling down draws the art (empty → finished rosetta); scrolling up reverses it. Update inside requestAnimationFrame (store latest progress in the scroll handler; the rAF loop reads it and swaps the frame) — never swap directly in the scroll handler.
+     - There are ${pourFrameCount} frames at URLs "${pourFramePattern}" + a 3-digit zero-padded number + ".jpg" (i.e. ${pourFramePattern}001.jpg, ${pourFramePattern}002.jpg, … ${pourFramePattern}${String(pourFrameCount).padStart(3,"0")}.jpg). Build the list of URLs in JS from 1 to ${pourFrameCount}.
+     - PRELOAD all frames into Image objects on load (they are small). Track loaded count; only enable the scroll effect once enough are ready. Show ${photoList.length>3?photoList[3]:photoList[0]} (a finished coffee photo) as the initial/poster image so the stage is never blank while preloading.
+     - On scroll, compute this section's scroll progress (0 → 1 as it passes through the pinned range) and map it to a frame index: index = clamp(round(progress * (${pourFrameCount} - 1)), 0, ${pourFrameCount}-1). Set the <img>.src (or draw to canvas) to that frame. Scrolling down advances the sequence; scrolling up reverses it. Update inside requestAnimationFrame (store latest progress in the scroll handler; the rAF loop reads it and swaps the frame) — never swap directly in the scroll handler.
      - This is pure image swapping (no video decode), so it is smooth at 60fps on phones and laptops alike. will-change: contents; use decoding="async".
-     - ROBUST FALLBACK (only if frames genuinely fail to load — not on slowness): if after a reasonable preload the frames array is empty/errored, gracefully show the finished latte-art photo ${photoList.length>3?photoList[3]:photoList[0]} large and centered with a soft scale/opacity reveal on scroll instead, so the section is always beautiful. (prefers-reduced-motion: show the finished frame, no scrubbing.)
-   The result: as the user scrolls, the latte art literally draws itself in the cup — mesmerising, premium, and buttery smooth on any device.
+     - ROBUST FALLBACK (only if frames genuinely fail to load — not on slowness): if after a reasonable preload the frames array is empty/errored, gracefully show the finished coffee photo ${photoList.length>3?photoList[3]:photoList[0]} large and centered with a soft scale/opacity reveal on scroll instead, so the section is always beautiful. (prefers-reduced-motion: show the finished frame, no scrubbing.)
+   The result: as the user scrolls, the scene animates frame-by-frame — mesmerising, premium, and buttery smooth on any device.
 
 SECTION 5: THE MENU (id="services")  [clean typographic menu — elegant base]
    A refined TYPOGRAPHIC menu list (NOT bulky cards). Full-width rows: index (01, 02…), item name in strong display type, one-line description, price in accent on the far right, thin divider, hover highlights the row. Items (or from services: ${services || "invent realistic cafe items"}): e.g. 01 Espresso €2.8, 02 Flat White €3.6, 03 Cappuccino €3.6, 04 Iced Latte €4.2, 05 Butter Croissant €3.2, 06 Matcha Latte €4.5. Prices in € (Dublin). May group under small headers (COFFEE / COLD / BAKERY), kept clean.
