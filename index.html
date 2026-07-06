@@ -65,6 +65,8 @@
   .extract-result b{color:#60a5fa}
   /* SELETOR DE MODO (Clean / Cinematográfico) */
   .mode-select{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .mode-select-3{grid-template-columns:1fr 1fr 1fr}
+  @media(max-width:640px){.mode-select-3{grid-template-columns:1fr}}
   .mode-card{background:#0b1120;border:2px solid #334155;border-radius:12px;padding:14px 12px;cursor:pointer;transition:all .18s;text-align:left}
   .mode-card:hover{border-color:#475569}
   .mode-card.active{border-color:#8b5cf6;background:rgba(139,92,246,0.10)}
@@ -134,7 +136,7 @@
       <input id="businessName" placeholder="Ex: Taboo Burger Dublin"/>
 
       <label>Tipo de negócio</label>
-      <input id="businessType" placeholder="Ex: Burger Restaurant, Barbershop, Pub"/>
+      <input id="businessType" placeholder="Ex: Burger Restaurant, Barbershop, Pub" oninput="refreshModeDescriptions()"/>
 
       <label>Cidade <span class="opt">(opcional)</span></label>
       <input id="city" placeholder="Ex: Dublin, Ireland"/>
@@ -180,19 +182,23 @@
 
       <hr class="section-divider"/>
 
-      <!-- BLOCO 3: MODO DE GERAÇÃO -->
+      <!-- BLOCO 3: MODO DE GERAÇÃO (3 slots) -->
       <div class="section-header">🎬 Modo de geração</div>
-      <div class="mode-select">
+      <div class="mode-select mode-select-3">
         <div class="mode-card active" id="mode-clean" onclick="setMode('clean')">
           <div class="mtitle">✦ Clean</div>
-          <div class="mdesc">Elegante e sóbrio. Foto no hero, sem vídeo, sem animações pesadas. Rápido e garantido. Ideal p/ dentista, advogado, nichos sóbrios.</div>
+          <div class="mdesc">Elegante e sóbrio. Foto no hero, sem vídeo pesado. Rápido e garantido. Todo nicho tem.</div>
         </div>
-        <div class="mode-card" id="mode-cinematic" onclick="setMode('cinematic')">
-          <div class="mtitle">🔥 Cinematográfico</div>
-          <div class="mdesc">Impacto máximo. Vídeo no hero, THE CUT, THE SEAR c/ termômetro, builder interativo. Ideal p/ burger, academia, nichos de impacto.</div>
+        <div class="mode-card" id="mode-cinematic_a" onclick="setMode('cinematic_a')">
+          <div class="mtitle">🔥 Cinematográfico A</div>
+          <div class="mdesc" id="desc-a">Impacto máximo. O momento cinematográfico principal do nicho.</div>
+        </div>
+        <div class="mode-card" id="mode-cinematic_b" onclick="setMode('cinematic_b')">
+          <div class="mtitle">✨ Cinematográfico B</div>
+          <div class="mdesc" id="desc-b">Variação premium. A segunda direção cinematográfica do nicho.</div>
         </div>
       </div>
-      <div class="tip" id="modeTip">Modo Clean selecionado. O Cinematográfico só monta a jornada completa em nichos preparados (hoje: burger).</div>
+      <div class="tip" id="modeTip">Modo Clean selecionado. Escolha A ou B para as versões cinematográficas (variam por nicho).</div>
 
       <hr class="section-divider"/>
 
@@ -282,7 +288,7 @@ let currentHtml = "";
 let currentName = "site";
 let heroVideoBase64 = "";
 let leadFilter = "no";
-let currentMode = "clean"; // "clean" | "cinematic"
+let currentMode = "clean"; // "clean" | "cinematic_a" | "cinematic_b"
 
 function switchTab(which){
   document.getElementById("view-builder").style.display = which==="builder"?"block":"none";
@@ -297,14 +303,50 @@ function setFilter(f){
   document.getElementById("filter-all").classList.toggle("active",f==="all");
 }
 
-// SELETOR DE MODO (Clean / Cinematográfico)
+// SELETOR DE MODO (3 slots: Clean / Cinematográfico A / Cinematográfico B)
+// Descrições dos slots A e B variam conforme o nicho digitado em "Tipo de negócio".
+const MODE_DESCRIPTIONS = {
+  cafe: {
+    a: "Xícara descendo com gelo, leite e grãos voando em volta (scroll). Chamativo, comercial.",
+    b: "Latte art se desenhando conforme você rola. Zen, sofisticado, artesanal."
+  },
+  burger: {
+    a: "Vídeo de explosão no hero + THE CUT + THE SEAR (termômetro) + builder interativo.",
+    b: "(Em breve) — por enquanto usa a versão A."
+  },
+  _default: {
+    a: "O momento cinematográfico principal do nicho (quando disponível).",
+    b: "A segunda direção cinematográfica do nicho (quando disponível)."
+  }
+};
+
+function detectNiche(){
+  const t = (document.getElementById("businessType").value || "").toLowerCase();
+  if(t.includes("burger")||t.includes("smash")||t.includes("hamburg")) return "burger";
+  if(t.includes("cafe")||t.includes("coffee")||t.includes("café")||t.includes("bakery")||t.includes("padaria")) return "cafe";
+  return "_default";
+}
+
+function refreshModeDescriptions(){
+  const niche = detectNiche();
+  const d = MODE_DESCRIPTIONS[niche] || MODE_DESCRIPTIONS._default;
+  const da = document.getElementById("desc-a");
+  const db = document.getElementById("desc-b");
+  if(da) da.textContent = d.a;
+  if(db) db.textContent = d.b;
+}
+
 function setMode(m){
   currentMode = m;
   document.getElementById("mode-clean").classList.toggle("active", m==="clean");
-  document.getElementById("mode-cinematic").classList.toggle("active", m==="cinematic");
-  document.getElementById("modeTip").textContent = m==="cinematic"
-    ? "Modo Cinematográfico selecionado. Monta a jornada completa (vídeo, THE CUT, THE SEAR, builder) em nichos preparados (hoje: burger). Em outros nichos, gera a versão premium padrão."
-    : "Modo Clean selecionado. O Cinematográfico só monta a jornada completa em nichos preparados (hoje: burger).";
+  document.getElementById("mode-cinematic_a").classList.toggle("active", m==="cinematic_a");
+  document.getElementById("mode-cinematic_b").classList.toggle("active", m==="cinematic_b");
+  const tips = {
+    clean: "Modo Clean selecionado. Elegante e sóbrio, rápido e garantido.",
+    cinematic_a: "Cinematográfico A selecionado. O momento cinematográfico principal do nicho.",
+    cinematic_b: "Cinematográfico B selecionado. A variação cinematográfica do nicho."
+  };
+  document.getElementById("modeTip").textContent = tips[m] || tips.clean;
 }
 
 // EXTRAÇÃO AUTOMÁTICA
@@ -480,7 +522,8 @@ async function generate(){
   currentName = d.businessName.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"site";
   document.getElementById("genBtn").disabled = true;
   const videoMsg = heroVideoBase64 ? " com vídeo 3D" : "";
-  const modeMsg = currentMode==="cinematic" ? " (modo cinematográfico)" : " (modo clean)";
+  const modeLabels = { clean: " (modo clean)", cinematic_a: " (cinematográfico A)", cinematic_b: " (cinematográfico B)" };
+  const modeMsg = modeLabels[currentMode] || " (modo clean)";
   setLoading("Criando o site premium do " + d.businessName + videoMsg + modeMsg + "...");
   try {
     const html = await callApi(d);
