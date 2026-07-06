@@ -136,7 +136,12 @@
       <input id="businessName" placeholder="Ex: Taboo Burger Dublin"/>
 
       <label>Tipo de negócio</label>
-      <input id="businessType" placeholder="Ex: Burger Restaurant, Barbershop, Pub" oninput="refreshModeDescriptions()"/>
+      <select id="businessType" onchange="refreshModeDescriptions()">
+        <option value="">— Selecione o nicho —</option>
+        <option value="burger restaurant">🍔 Hamburgueria (Burger)</option>
+        <option value="coffee shop">☕ Cafeteria (Café)</option>
+      </select>
+      <div class="tip">Só aparecem os nichos 100% prontos. Conforme novos nichos ficam prontos, entram nesta lista.</div>
 
       <label>Cidade <span class="opt">(opcional)</span></label>
       <input id="city" placeholder="Ex: Dublin, Ireland"/>
@@ -327,6 +332,20 @@ function detectNiche(){
   return "_default";
 }
 
+// Mapeia texto livre (vindo da extração do Google Maps, em qualquer idioma) para
+// a opção correta do dropdown. Se não reconhecer, deixa em branco (força escolha manual).
+function setBusinessTypeFromText(text){
+  const t = (text || "").toLowerCase();
+  const sel = document.getElementById("businessType");
+  let value = "";
+  if(t.includes("burger")||t.includes("smash")||t.includes("hamburg")) value = "burger restaurant";
+  else if(t.includes("cafe")||t.includes("coffee")||t.includes("café")||t.includes("cafeteria")||t.includes("bakery")||t.includes("padaria")||t.includes("espresso")) value = "coffee shop";
+  // Verifica se o value existe como opção antes de setar
+  const exists = Array.from(sel.options).some(o => o.value === value);
+  sel.value = exists ? value : "";
+  refreshModeDescriptions();
+}
+
 function refreshModeDescriptions(){
   const niche = detectNiche();
   const d = MODE_DESCRIPTIONS[niche] || MODE_DESCRIPTIONS._default;
@@ -370,7 +389,7 @@ async function extractData(){
 
     // Preenche o formulário automaticamente
     if(d.businessName) document.getElementById("businessName").value = d.businessName;
-    if(d.businessType) document.getElementById("businessType").value = d.businessType;
+    if(d.businessType) setBusinessTypeFromText(d.businessType);
     if(d.city) document.getElementById("city").value = d.city;
     if(d.phone) document.getElementById("phone").value = d.phone;
     if(d.address) document.getElementById("address").value = d.address;
@@ -673,7 +692,7 @@ function useLead(jsonStr){
   let l; try{ l=JSON.parse(jsonStr); }catch(e){ return; }
   const type = document.getElementById("leadType").value||"";
   document.getElementById("businessName").value = l.name||"";
-  document.getElementById("businessType").value = type;
+  setBusinessTypeFromText(type);
   document.getElementById("city").value = document.getElementById("leadCity").value||"";
   document.getElementById("phone").value = l.phone||"";
   document.getElementById("address").value = l.address||"";
