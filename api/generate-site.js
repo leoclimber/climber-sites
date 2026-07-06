@@ -279,6 +279,22 @@ export default async function handler(req, res) {
     const bankVideos = {
       stack: `${bankBase}/stack.mp4`,
       sear: `${bankBase}/sear.mp4`,
+      // CAFÉ:
+      pour: `${bankBase}/pour.mp4`,     // hero: leite sendo despejado, latte art se formando
+      roast: `${bankBase}/roast.mp4`,   // opcional: grãos torrando/caindo (THE ORIGIN)
+    };
+
+    // FRAME SEQUENCE (Apple-style) para o momento scroll-linked do latte art.
+    // São frames leves (jpg) numerados em /banco/<nicho>/frames/frameNNN.jpg.
+    // O código faz um flip-book amarrado ao scroll (troca de imagem, sem decodificar
+    // vídeo), então roda liso em qualquer celular e NUNCA trava. Faz-se UMA vez e
+    // vale para todos os clientes do nicho.
+    // Convenção: frame001.jpg ... frameNNN.jpg (zero-padded a 3 dígitos).
+    const bankFrames = {
+      base: `${bankBase}/frames`,
+      // quantidade de frames que você vai subir (ajuste se gerar mais/menos):
+      count: 40,
+      pattern: `${bankBase}/frames/frame`, // + NNN + .jpg
     };
 
     // ---------- ASSETS DO CLIENTE ----------
@@ -500,20 +516,84 @@ CLEAN MODE DISCIPLINE:
 - Nav labels: STORY, MENU, GALLERY, REVIEWS, VISIT. Required section ids: hero, about, services, gallery, reviews, faq, contact.
 ` : "";
 
-      // Regras de hierarquia dependem do modo:
-      // - Burger + cinematic  -> arquitetura da jornada (bloco cinematográfico)
-      // - Burger + clean      -> arquitetura limpa (bloco clean acima)
-      // - Outros nichos       -> hierarquia padrão original
+      // ---------- BLOCO CINEMATOGRÁFICO (CAFÉ + MODO CINEMATOGRÁFICO) ----------
+      // Ativado quando category === "cafe" E mode === "cinematic". Jornada premium
+      // de 4 momentos, feita UMA vez para todos os cafés (igual ao burger):
+      //   1) HERO com vídeo do POUR (leite/latte art se formando)
+      //   2) THE ORIGIN — grãos + contadores (altitude/torra/origem)
+      //   3) THE POUR — latte art scroll-linked via FRAME SEQUENCE (Apple-style, nunca trava)
+      //   4) THE RITUAL — gallery cinematográfica cozy
+      // + menu, reviews, faq, contact. NÃO tem builder de pedido (nicho diferente).
+      const isCinematicCafe = category === "cafe" && mode === "cinematic";
+      const cinematicCafeBlock = isCinematicCafe ? `
+
+═══════════ CAFÉ PREMIUM PAGE — CINEMATIC JOURNEY (AWWWARDS-TIER, COZY & CRAFT) ═══════════
+Build a premium single-page coffee site that is CLEAN and ELEGANT as its foundation — warm palette (espresso/caramel/oat-milk/cream, soft golden light), refined typography, generous negative space — AND injects THREE genuine "wow" cinematic moments plus a hypnotic scroll-linked latte-art sequence. The feeling: craft, origin, ritual — "I want that coffee right now, any time of day." This is the coffee equivalent of an award-winning site: elegant first, cinematic second. NO order builder (that belongs to burger, wrong for coffee). Dark-warm background throughout with a golden/caramel ambient glow connecting sections.
+
+★★★ FOOD-PHOTO SIZING LAW (same as always): every coffee/food photo is LARGE, close, warm, appetite-driving (min-height:560px on desktop, object-fit:cover, tight inviting crops — the crema, the foam, the pour). Coffee/latte-art shots are the stars (largest tiles); beans/pastry/interior are support. Never small thumbnails, never big empty voids.
+
+BUILD THESE SECTIONS IN THIS EXACT ORDER (use the section ids given so nav + CTAs resolve):
+
+★ CINEMATIC MOMENT 1 ★ — SECTION 1: HERO WITH THE POUR VIDEO (id="hero")
+   ★ FULL-BLEED HERO VIDEO: ${bankVideos.pour ? `Use the video "${bankVideos.pour}" as a TRUE FULL-BLEED background: <video autoplay muted loop playsinline preload="auto" poster="${photoList[0]}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;"> covering the whole hero edge-to-edge — steamed milk being poured, latte art forming, steam rising, warm and inviting, LARGE and close.
+   ★★★ VIDEO ROBUSTNESS — CRITICAL: (1) MANDATORY poster on the <video> = ${photoList[0]}, AND render that same image ${photoList[0]} as a full-bleed <img> BEHIND the video (lower z-index), object-fit:cover, so while the pour video loads the user sees a beautiful cappuccino (never a blank/black box). (2) The fallback must ONLY trigger on the REAL "error" event (onerror) — NEVER "stalled"/"waiting"/timeout. Do NOT use onstalled or any timer (a brief network stall must not kill a working video). On a genuine error, hide the <video> so the coffee <img> behind shows. (3) preload="auto" so it loads calmly behind the poster/img.` : `Use the hero coffee image ${photoList[0]} as a full-bleed, object-fit:cover background — a big, close, inviting cappuccino with steam and latte art.`}
+   ★ KEEP COFFEE WARM & VISIBLE, TEXT PERFECTLY LEGIBLE: DIRECTIONAL gradient scrim concentrated in the TEXT ZONE (lower-left, ~left 55%), fading to transparent toward the right/top so the coffee stays warm and bright there. e.g. linear-gradient(105deg, rgba(20,14,10,0.80) 0%, rgba(20,14,10,0.5) 40%, transparent 78%) OVER the video, plus a soft text-shadow (0 2px 24px rgba(0,0,0,0.5)) on the headline as a safety net. Do NOT wash the whole video dark. Video bleeds to all four edges — no border, no frame.
+   TEXT OVER THE VIDEO: eyebrow ("// FRESHLY BREWED · DUBLIN" or a neighbourhood tag), the headline, a short subtitle, two CTAs (primary "VIEW THE MENU" → #services, secondary "FIND US" → #contact), and a row of animated stat counters (${rating}★ · ${reviewCount} reviews · e.g. "OPEN FROM 7AM"). ALL left-aligned and ANCHORED TO THE LEFT MARGIN of the page (same left gutter as the nav logo, ~5-6vw), sharing one clean vertical line with the logo — not floating in the middle. z-index above the video. A tiny "SCROLL TO SIP" cue at the bottom. Big brand wordmark in the nav.
+   ★ HEADLINE SIZING — STRICT: bold but MUST fit within the hero without scrolling and WITHOUT one giant word per line. Target 2–3 balanced multi-word lines. font-size: clamp(2.4rem, 5vw, 4.6rem); line-height:~1.05; constrain the headline block to about max-width:58% (max ~620px). One accent word in caramel/amber, rest cream. Warm original copy (write something specific, e.g. play on ritual, morning, craft — not generic).
+
+SECTION 2: THE STORY (id="about")  [clean editorial — the elegant base]
+   Optional elegant marquee (slow, seamless, refined): "Freshly Roasted • Latte Art • Slow Mornings • House Blend • Oat & Almond • Single Origin •". Two-column editorial story: LEFT refined eyebrow "// OUR STORY", a headline with one accent phrase, 2 short warm paragraphs (the ritual, the roast, the neighbourhood — soul, not "founded in"). RIGHT the interior/ambience image (${photoList.length > 5 ? photoList[5] : photoList[photoList.length-1]}) rendered LARGE (min-height:560px, object-fit:cover) with a small accent address badge in a corner. Generous whitespace, big cozy image.
+
+★ CINEMATIC MOMENT 2 ★ — SECTION 3: // THE ORIGIN (id="origin")
+   The "craft spec" moment — the equivalent of the burger's THE CUT, but for coffee. Refined eyebrow "// THE ORIGIN". LEFT: a big static accent callout (e.g. "1,800M" altitude in caramel/amber) + a clean spec table in mono type with values right-aligned (Origin · Ethiopia Yirgacheffe / Altitude · 1,800m / Roast · Medium, 220°C / Process · Washed / Rest · 14 days / Notes · Floral, citrus, honey) + one short line of copy below. RIGHT: a big beautiful macro of roasted coffee beans ${photoList.length > 1 ? photoList[1] : photoList[0]} shown LARGE (min-height:560px, ideally 600–680px, object-fit:cover, a close glossy crop) sitting in generous dark space, NO labels/callout lines over it. ${bankVideos.roast ? `OPTIONALLY, instead of the static bean image, you MAY use the video "${bankVideos.roast}" here as a contained background of the right panel with poster="${photoList.length>1?photoList[1]:photoList[0]}" and the same onerror-only robustness rules (no onstalled/timer) — but keep it calm and contained, the spec table on the left stays the focus.` : ``} The image/video can gently fade/scale in on scroll; nothing overlaps it. The altitude/roast-temp numbers animate as counters on enter. Uncluttered, premium, lots of breathing room.
+
+★ CINEMATIC MOMENT 3 (THE SHOWPIECE) ★ — SECTION 4: // THE POUR (id="pour")
+   THE HYPNOTIC SCROLL-LINKED LATTE ART — this is the signature "wow", built as an APPLE-STYLE FRAME SEQUENCE so it is silky on every device and NEVER janks (do NOT scrub an mp4 with scroll — that stutters; use a preloaded image sequence swapped by scroll progress).
+   Layout: a sticky/pinned stage that holds while the user scrolls through this tall section (make the section ~200-250vh tall; the visual pins in the viewport center while scrolling). In the center: a single <img> (or <canvas>) that shows one frame of the latte-art sequence at a time. Around it, short poetic copy lines fade in/out as the art forms ("// THE POUR", a line about the milk, a line about the art). Warm golden ambient glow, gentle steam accents.
+   ★ FRAME SEQUENCE IMPLEMENTATION (MANDATORY, exactly this technique):
+     - There are ${bankFrames.count} frames at URLs "${bankFrames.pattern}" + a 3-digit zero-padded number + ".jpg" (i.e. ${bankFrames.pattern}001.jpg, ${bankFrames.pattern}002.jpg, … ${bankFrames.pattern}${String(bankFrames.count).padStart(3,"0")}.jpg). Build the list of URLs in JS from 1 to ${bankFrames.count}.
+     - PRELOAD all frames into Image objects on load (they are small). Track loaded count; only enable the scroll effect once enough are ready. Show ${photoList.length>3?photoList[3]:photoList[0]} (a finished latte-art photo) as the initial/poster image so the stage is never blank while preloading.
+     - On scroll, compute this section's scroll progress (0 → 1 as it passes through the pinned range) and map it to a frame index: index = clamp(round(progress * (${bankFrames.count} - 1)), 0, ${bankFrames.count}-1). Set the <img>.src (or draw to canvas) to that frame. Scrolling down draws the art (empty → finished rosetta); scrolling up reverses it. Update inside requestAnimationFrame (store latest progress in the scroll handler; the rAF loop reads it and swaps the frame) — never swap directly in the scroll handler.
+     - This is pure image swapping (no video decode), so it is smooth at 60fps on phones and laptops alike. will-change: contents; use decoding="async".
+     - ROBUST FALLBACK (only if frames genuinely fail to load — not on slowness): if after a reasonable preload the frames array is empty/errored, gracefully show the finished latte-art photo ${photoList.length>3?photoList[3]:photoList[0]} large and centered with a soft scale/opacity reveal on scroll instead, so the section is always beautiful. (prefers-reduced-motion: show the finished frame, no scrubbing.)
+   The result: as the user scrolls, the latte art literally draws itself in the cup — mesmerising, premium, and buttery smooth on any device.
+
+SECTION 5: THE MENU (id="services")  [clean typographic menu — elegant base]
+   A refined TYPOGRAPHIC menu list (NOT bulky cards). Full-width rows: index (01, 02…), item name in strong display type, one-line description, price in accent on the far right, thin divider, hover highlights the row. Items (or from services: ${services || "invent realistic cafe items"}): e.g. 01 Espresso €2.8, 02 Flat White €3.6, 03 Cappuccino €3.6, 04 Iced Latte €4.2, 05 Butter Croissant €3.2, 06 Matcha Latte €4.5. Prices in € (Dublin). May group under small headers (COFFEE / COLD / BAKERY), kept clean.
+
+SECTION 6: THE RITUAL / GALLERY (id="gallery")  [clean mosaic — BIG photos]
+   Headline like "COME FOR THE COFFEE. STAY A WHILE." with eyebrow "// THE RITUAL". A DENSE, GENEROUS mosaic filling its width edge to edge (grid-template-columns: repeat(12, 1fr); gap:10px;). FEATURE tile (a latte-art/pour shot) large and TALL — min-height:620px. Secondary tiles substantial — min-height:300px, never tiny. Every tile width:100%; height:100%; object-fit:cover, no letterboxing, no dead space. Tight gaps, zero large black gaps. Coffee/latte-art shots get the biggest tiles; pastry/beans/interior support. Use images: ${photoList.slice(1).join(", ") || photoList.join(", ")}. Each tile fades+scales in on scroll, subtle hover zoom.
+
+SECTION 7: REVIEWS (id="reviews")  [clean 3-column]
+   Refined eyebrow "// WORD ON THE STREET". Big headline with the rating ("${rating} STARS, ${reviewCount} REVIEWS" — ${rating} and number animate as counters). THREE clean testimonial columns (not a carousel): five stars, a short warm quote, a realistic Irish name + Dublin neighbourhood (Stoneybatter, Rathmines, Portobello, Ranelagh). Calm, spacious, trustworthy.
+
+SECTION 8: FAQ (id="faq")  [clean minimalist accordion]
+   Refined eyebrow "// GOOD TO KNOW", headline "THE QUESTIONS". Minimalist accordion, 4 rows with a + toggle: "Do you have oat/almond milk?", "Is there space to work / wifi?", "What are your opening hours?", "Do you do takeaway?" — thin dividers, lots of space, smooth expand.
+
+SECTION 9: CONTACT (id="contact")  [clean close with map]
+   Headline like "COME SAY HELLO." LEFT: address (${address || city}), phone (${phone || "—"}), opening hours (${hours || "Mon–Sun, 7am–6pm"}), and a "FIND US" CTA → ${bookingHref}. RIGHT: a Google Maps iframe for the address. Warm, clean, confident close.
+
+LAYOUT DISCIPLINE (keeps the nota 10):
+- The CLEAN sections (Story, Menu, Gallery, Reviews, FAQ, Contact) stay uncluttered, spacious, editorial — with BIG warm coffee photos. Do not cram.
+- The THREE cinematic moments (hero pour video, THE ORIGIN spec, THE POUR frame-sequence) are the highlights — each impressive but self-contained, surrounded by calm.
+- Every non-static number animates (stats, rating, review count, altitude, roast temp). Any single "hero number" (e.g. 1,800M) can be static.
+- Custom cursor + section color journey stay, tuned to warm golden/caramel washes. Respect prefers-reduced-motion (disable scrubbing/heavy motion, keep usable).
+- Nav labels can read: STORY, ORIGIN, THE POUR, MENU, GALLERY, REVIEWS, VISIT. Required section ids: hero, about, origin, pour, services, gallery, reviews, faq, contact.
+` : "";
       const sectionHierarchyRule = isCinematicBurger
         ? `7. Follow the BURGER PREMIUM PAGE (cinematic) architecture defined above (clean editorial layout + four cinematic moments). Keep the required section ids: hero, about, cut, sear, services, build, gallery, reviews, faq, contact.`
         : isCleanBurger
         ? `7. Follow the BURGER PREMIUM PAGE (clean elegant) architecture defined above — photo hero, story, menu, gallery, reviews, faq, contact. NO video treatment, NO heat gauge, NO deconstruction, NO builder. Required section ids: hero, about, services, gallery, reviews, faq, contact.`
+        : isCinematicCafe
+        ? `7. Follow the CAFÉ PREMIUM PAGE (cinematic) architecture defined above (clean editorial base + hero pour video + THE ORIGIN spec + THE POUR scroll-linked latte-art frame sequence + ritual gallery). NO order builder. Required section ids: hero, about, origin, pour, services, gallery, reviews, faq, contact.`
         : isCleanCafe
         ? `7. Follow the CAFÉ PREMIUM PAGE (clean elegant) architecture defined above — warm photo hero, story, menu, gallery, reviews, faq, contact. NO video treatment, NO cup gauge, NO builder. Required section ids: hero, about, services, gallery, reviews, faq, contact.`
         : `7. Real hierarchy: hero → brand story/about (with soul, not "founded in 2010") → services (premium cards, no emoji) → gallery → reviews (3 testimonials, realistic Irish names) → FAQ (accordion, 4 items) → contact (with address, hours, map embed via Google Maps iframe using the address, and the booking CTA).`;
 
       const sectionIdsLine = (isCinematicBurger)
         ? `Section ids required: hero, about, cut, sear, services, build, gallery, reviews, faq, contact.`
+        : (isCinematicCafe)
+        ? `Section ids required: hero, about, origin, pour, services, gallery, reviews, faq, contact.`
         : (isCleanBurger || isCleanCafe)
         ? `Section ids required: hero, about, services, gallery, reviews, faq, contact.`
         : `Section ids required: about, services, gallery, reviews, faq, contact.`;
@@ -557,6 +637,7 @@ ${aboutHint}
 ${burgerJourneyBlock}
 ${cleanBurgerBlock}
 ${cleanCafeBlock}
+${cinematicCafeBlock}
 
 ═══════════ MOTION SYSTEM (this is what separates award-winners from templates) ═══════════
 The site must feel ALIVE and cinematic — not a static page. Build ALL of the following, orchestrated and tasteful (never gimmicky). Everything must respect prefers-reduced-motion (wrap motion in a media query and disable it there).
