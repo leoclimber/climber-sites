@@ -35,6 +35,13 @@ export default async function handler(req, res) {
     const suggestedFonts = (body.suggestedFonts || "").substring(0, 200);
     const editInstruction = (body.editInstruction || "").substring(0, 500);
     const previousHtml = (body.previousHtml || "").substring(0, 60000);
+    // MODO DE GERAÇÃO escolhido no painel:
+    //   "cinematic" -> jornada cinematográfica completa (vídeos, THE CUT, THE SEAR, BUILD)
+    //   "clean"     -> site elegante limpo, sem vídeos/animações pesadas (o padrão sóbrio)
+    // Default: "clean" (mais seguro/rápido/garantido). O painel manda "cinematic" quando o
+    // usuário escolhe o modo cinematográfico. A jornada cinematográfica só é ativada quando
+    // o modo é "cinematic" E o nicho tem jornada montada (hoje: burger).
+    const mode = (body.mode || "clean").toLowerCase() === "cinematic" ? "cinematic" : "clean";
 
     if (!businessName || !businessType) {
       return res.status(400).json({ error: "businessName and businessType are required" });
@@ -327,12 +334,15 @@ ABSOLUTE IMAGE RULES:
       const headlineHint = heroHeadline ? `Suggested hero headline: "${heroHeadline}" (refine it, don't use verbatim if you can do better).` : "";
       const aboutHint = aboutText ? `Research notes about the business for the About section: ${aboutText}` : "";
 
-      // ---------- BLOCO DA JORNADA CINEMATOGRÁFICA (SÓ BURGER) ----------
-      // Este bloco só é injetado quando category === "burger". Ele substitui a
-      // estrutura de seções padrão por uma jornada de scroll estilo docmo.agency,
-      // com 9 cenas encadeadas. Mantém todo o resto do sistema (motion, cursor de
-      // brasa, color journey, contadores) — apenas define a ARQUITETURA das seções.
-      const burgerJourneyBlock = category === "burger" ? `
+      // ---------- BLOCO DA JORNADA CINEMATOGRÁFICA (BURGER + MODO CINEMATOGRÁFICO) ----------
+      // Só é injetado quando category === "burger" E o modo escolhido no painel é
+      // "cinematic". Substitui a estrutura de seções padrão por uma jornada de scroll
+      // estilo docmo.agency, com vídeos + THE CUT + THE SEAR + BUILD. Mantém todo o
+      // resto do sistema (motion, cursor de brasa, color journey, contadores).
+      // No modo "clean", este bloco fica vazio e o burger usa a estrutura elegante
+      // limpa (bloco cleanBurgerBlock abaixo).
+      const isCinematicBurger = category === "burger" && mode === "cinematic";
+      const burgerJourneyBlock = isCinematicBurger ? `
 
 ═══════════ BURGER PREMIUM PAGE — CLEAN EDITORIAL LAYOUT + CINEMATIC MOMENTS ═══════════
 Build a premium single-page site that is CLEAN, ELEGANT and BREATHABLE as its foundation — generous negative space, confident condensed display typography, strong section rhythm, dark warm palette (ink/ember/cream/gold) — AND injects four genuine "wow" cinematic moments at the right places. The goal is a site that is BOTH elegant AND impressive: an award-winner that never feels cluttered. Do not overload scenes; let each one breathe. Clean layout is the base; the cinematic moments are the seasoning, not the whole meal.
@@ -402,15 +412,64 @@ JOURNEY MOTION RULES (on top of the global motion system below):
 NOTE: Required section ids: hero, about (story), cut, sear, services (menu), build, gallery, reviews, faq, contact. Use those exact ids so nav and CTAs resolve. Nav labels can read: STORY, MENU, GALLERY, REVIEWS, VISIT, plus the cinematic anchors (THE CUT, THE SEAR, BUILD).
 ` : "";
 
-      // Para burger, a lista rígida de seções do bloco de regras não se aplica —
-      // a jornada acima define a arquitetura. Para todos os outros nichos, mantém
-      // exatamente a hierarquia original.
-      const sectionHierarchyRule = category === "burger"
-        ? `7. Follow the BURGER PREMIUM PAGE architecture defined above (clean editorial layout + four cinematic moments). Keep the required section ids: hero, about, cut, sear, services, build, gallery, reviews, faq, contact.`
+      // ---------- BLOCO CLEAN (BURGER + MODO CLEAN) ----------
+      // Ativado quando category === "burger" E mode === "clean". É a versão ELEGANTE
+      // e sóbria: hero com FOTO (sem vídeo), sem termômetro, sem THE CUT/THE SEAR/BUILD.
+      // Mantém a mesma paleta e tipografia premium, o mesmo apetite nas fotos grandes,
+      // mas com estrutura simples, rápida e garantida — ideal para nichos sóbrios ou
+      // quando o cliente quer o site limpo. As fotos seguem a mesma lei de tamanho.
+      const isCleanBurger = category === "burger" && mode === "clean";
+      const cleanBurgerBlock = isCleanBurger ? `
+
+═══════════ BURGER PREMIUM PAGE — CLEAN ELEGANT LAYOUT (NO HEAVY VIDEO/ANIMATION) ═══════════
+Build a premium single-page burger site that is CLEAN, ELEGANT and BREATHABLE — generous negative space, confident condensed display typography, strong section rhythm, dark warm palette (ink/ember/cream/gold), big appetite-driving food photos. This is the SOBER, FAST, GUARANTEED version: NO hero video, NO scroll-linked heat gauge, NO ingredient deconstruction, NO interactive builder. Just a beautifully art-directed, photo-led premium page. Elegant and confident, like a top restaurant site.
+
+★★★ FOOD-PHOTO SIZING LAW (same as always — big, close, appetite-driving): Every food photo must be LARGE and mouth-watering. Hero/feature photos min-height:560px on desktop, object-fit:cover, tight close crops of the cheese/char. Food dominates its section (a paired food image ≥48% of section width; standalone images near full-width). Never small thumbnails, never big empty dark voids around a small photo — the photo grows to fill the space. Burgers are the stars (largest tiles); fries/drinks are support.
+
+BUILD THESE SECTIONS IN THIS EXACT ORDER (use the section ids given so nav + CTAs resolve):
+
+SECTION 1: HERO (id="hero") — PHOTO, NOT VIDEO
+   Full-bleed hero using the hero burger image ${photoList[0]} as a big, close, appetising background (object-fit:cover, filling the viewport). ${hasVideo ? `(A client hero video was provided — you MAY use it here as a simple full-bleed background video with a light scrim, but keep it calm; no elaborate cinematic treatment.)` : `No video — the big photo IS the hero.`} Minimal dark scrim concentrated behind the text zone so the burger stays bright and visible. Over it: eyebrow ("// STONEYBATTER · DUBLIN"), a bold headline, short subtitle, two CTAs (primary "CALL TO ORDER" → ${bookingHref}, secondary "SEE THE MENU" → #services), and a row of animated stat counters (${rating}★ · ${reviewCount} reviews · 100% fresh) anchored lower-left. Big brand wordmark in the nav.
+   ★ HEADLINE SIZING — STRICT, FOR CONSISTENCY: bold and confident but MUST fit within the hero without scrolling and WITHOUT one giant word per line. Target 2–3 balanced multi-word lines. Use font-size: clamp(2.5rem, 5.5vw, 5rem); line-height:~1.0; constrain the headline block to about max-width:60% of the hero (max ~640px) so it wraps into tidy multi-word lines on the left. One accent word in ember, rest cream.
+
+SECTION 2: THE STORY (id="about") — clean editorial
+   Optional elegant marquee (slow, seamless, refined) with flavour keywords. Two-column editorial story: LEFT mono eyebrow "// THE STORY", a headline with one ember accent phrase, 2 short warm paragraphs (soul, not "founded in"). RIGHT the interior/ambience image (${photoList.length > 5 ? photoList[5] : photoList[photoList.length-1]}) rendered LARGE (min-height:560px, object-fit:cover, filling its column) with a small ember address badge in a corner. Generous whitespace, big image.
+
+SECTION 3: THE MENU (id="services") — clean typographic menu
+   A refined TYPOGRAPHIC menu list (NOT bulky cards). Each item a full-width row: index number (01, 02…), item name in strong display type, one-line description under it, price in ember on the far right, thin divider between rows, hover highlights the row. Items (or from services: ${services || "invent realistic items"}): e.g. 01 Classic Smash €12, 02 Vegan Burger €12, 03 Bacon Cheeseburger €14, 04 Loaded Cheese Fries €6, 05 Bacon & Cheese Fries €7. Prices in € (Dublin).
+
+SECTION 4: THE GALLERY (id="gallery") — clean mosaic, BIG photos
+   Headline "LOOK. THEN COME HUNGRY", mono eyebrow "// THE GOODS". A DENSE, GENEROUS mosaic that fills its width edge to edge (e.g. grid-template-columns: repeat(12, 1fr); gap:10px;). The FEATURE tile (a burger) is large and TALL — min-height:620px on desktop. Secondary tiles substantial — min-height:300px, never tiny. Every tile width:100%; height:100%; object-fit:cover so photos fill cells with no letterboxing and no dead space. Tight gaps, generous tiles, zero large black gaps. Burgers get the biggest tiles; fries/drinks are support. Use images: ${photoList.slice(1).join(", ") || photoList.join(", ")}. Each tile fades+scales in on scroll, subtle hover zoom.
+
+SECTION 5: REVIEWS (id="reviews") — clean 3-column
+   Mono eyebrow "// WORD ON PRUSSIA ST". A big headline with the rating ("${rating} STARS, ${reviewCount} REVIEWS" — the ${rating} and number animate as counters). THREE clean testimonial columns (not a carousel): five amber stars, a short quote, a realistic Irish name + Dublin neighbourhood (Stoneybatter, Phibsborough, Smithfield). Calm, spacious, trustworthy.
+
+SECTION 6: FAQ (id="faq") — clean minimalist accordion
+   Mono eyebrow "// BEFORE YOU BITE", headline "THE QUESTIONS". Minimalist accordion, 4 rows with a + toggle: "Do you take bookings?", "Is the vegan burger actually good?", "What are your opening hours?", "Where exactly are you?" — thin dividers, lots of space, smooth expand.
+
+SECTION 7: CONTACT (id="contact") — clean close with map
+   Headline "FIND US. FEED YOU." LEFT: address (${address || city}), phone (${phone || "—"}), opening hours (${hours || "Mon–Sun, kitchen hours"}), and a "CALL TO ORDER" CTA → ${bookingHref}. RIGHT: a Google Maps iframe for the address. Dark, clean, confident close.
+
+CLEAN MODE DISCIPLINE:
+- This is the elegant, restrained version. Keep every section uncluttered, spacious, editorial — headline + supporting content + whitespace, with BIG food photos throughout.
+- Animated number counters stay (stats, rating, review count). The custom ember cursor and section color journey stay (they are lightweight and premium). But NO hero video treatment, NO heat gauge, NO deconstruction, NO interactive builder — those belong to the cinematic mode only.
+- Nav labels: STORY, MENU, GALLERY, REVIEWS, VISIT. Required section ids: hero, about, services, gallery, reviews, faq, contact.
+` : "";
+
+      // Regras de hierarquia dependem do modo:
+      // - Burger + cinematic  -> arquitetura da jornada (bloco cinematográfico)
+      // - Burger + clean      -> arquitetura limpa (bloco clean acima)
+      // - Outros nichos       -> hierarquia padrão original
+      const sectionHierarchyRule = isCinematicBurger
+        ? `7. Follow the BURGER PREMIUM PAGE (cinematic) architecture defined above (clean editorial layout + four cinematic moments). Keep the required section ids: hero, about, cut, sear, services, build, gallery, reviews, faq, contact.`
+        : isCleanBurger
+        ? `7. Follow the BURGER PREMIUM PAGE (clean elegant) architecture defined above — photo hero, story, menu, gallery, reviews, faq, contact. NO video treatment, NO heat gauge, NO deconstruction, NO builder. Required section ids: hero, about, services, gallery, reviews, faq, contact.`
         : `7. Real hierarchy: hero → brand story/about (with soul, not "founded in 2010") → services (premium cards, no emoji) → gallery → reviews (3 testimonials, realistic Irish names) → FAQ (accordion, 4 items) → contact (with address, hours, map embed via Google Maps iframe using the address, and the booking CTA).`;
 
-      const sectionIdsLine = category === "burger"
+      const sectionIdsLine = isCinematicBurger
         ? `Section ids required: hero, about, cut, sear, services, build, gallery, reviews, faq, contact.`
+        : isCleanBurger
+        ? `Section ids required: hero, about, services, gallery, reviews, faq, contact.`
         : `Section ids required: about, services, gallery, reviews, faq, contact.`;
 
       userPrompt = `You are the design lead at an award-winning web studio (Awwwards Site of the Day level). A client is paying premium for a website that must look like a €50,000 agency build — NOT like an AI template. Build a complete, single-page, production-ready website.
@@ -450,6 +509,7 @@ ${photoBlock}
 ${refBlock}
 ${aboutHint}
 ${burgerJourneyBlock}
+${cleanBurgerBlock}
 
 ═══════════ MOTION SYSTEM (this is what separates award-winners from templates) ═══════════
 The site must feel ALIVE and cinematic — not a static page. Build ALL of the following, orchestrated and tasteful (never gimmicky). Everything must respect prefers-reduced-motion (wrap motion in a media query and disable it there).
