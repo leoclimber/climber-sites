@@ -238,6 +238,12 @@ export default async function handler(req, res) {
     else if (t.includes("photo") || t.includes("fotograf") || t.includes("studio") || t.includes("estúdio")) category = "photography";
     else if (t.includes("construction") || t.includes("build") || t.includes("real estate") || t.includes("imobili") || t.includes("property") || t.includes("construtora")) category = "construction";
 
+    // ---------- FLAG DO SHOWPIECE THE POUR A ----------
+    // Declarada AQUI no topo (não dentro do bloco else) para ficar visível também
+    // na etapa de injeção do bloco carimbado lá embaixo. Se ficar dentro do else,
+    // dá "isCinematicCafeA is not defined" na hora de injetar (bug corrigido).
+    const isCinematicCafeA = category === "cafe" && mode === "cinematic_a";
+
     // ---------- KITS DE DIREÇÃO DE ARTE POR NICHO ----------
     const kits = {
       burger: {
@@ -648,7 +654,7 @@ CLEAN MODE DISCIPLINE:
       //        · slot A = xícara descendo + grãos/leite/gelo (bloco CARIMBADO, injetado)
       //        · slot B = latte art se formando (frame sequence)
       //   4) menu, THE RITUAL (gallery), reviews, faq, contact.
-      const isCinematicCafeA = category === "cafe" && mode === "cinematic_a";
+      // isCinematicCafeA já declarado no topo (fica visível na injeção lá embaixo)
       const isCinematicCafeB = category === "cafe" && mode === "cinematic_b";
       const isCinematicCafe = isCinematicCafeA || isCinematicCafeB;
       // Configuração do frame sequence do slot B (o slot A não usa frames — é carimbado):
