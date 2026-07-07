@@ -1,3 +1,134 @@
+// ============================================================================
+// THE POUR A — SHOWPIECE CARIMBADO (café, modo cinematic_a)
+// Injetado via placeholder THE_POUR_A_PLACEHOLDER depois da geração do Opus.
+// Xícara (cup.png) desce por cima, ancora no centro durante 3 atos, e sai
+// suave no fim entregando pro menu. Fundos graos/leite/gelo trocam por opacity;
+// copy dos 3 atos (editável pelo cliente) faz cross-fade em sincronia.
+// 100% transform/opacity na GPU; scroll só grava progresso, desenho em rAF.
+// Idêntico toda geração, nunca trava. A copy é template — o cliente pode editar.
+// ============================================================================
+function buildPourA(assets) {
+  const CUP = assets.cup, GRAOS = assets.graos, LEITE = assets.leite, GELO = assets.gelo;
+  return `
+<section class="pourA" id="pour" aria-label="The Pour">
+  <div class="pourA__stage">
+    <div class="pourA__bg">
+      <img class="pourA__bgimg" data-bg="0" src="${GRAOS}" alt="" decoding="async" onerror="if(this.src.endsWith('.png')){this.src=this.src.replace('.png','.jpg');}"/>
+      <img class="pourA__bgimg" data-bg="1" src="${LEITE}" alt="" decoding="async" onerror="if(this.src.endsWith('.png')){this.src=this.src.replace('.png','.jpg');}"/>
+      <img class="pourA__bgimg" data-bg="2" src="${GELO}" alt="" decoding="async" onerror="if(this.src.endsWith('.png')){this.src=this.src.replace('.png','.jpg');}"/>
+    </div>
+    <div class="pourA__glow"></div>
+    <div class="pourA__scrim"></div>
+    <div class="pourA__eyebrowtop">// THE POUR</div>
+    <div class="pourA__textcol">
+      <div class="pourA__acts">
+        <div class="pourA__act" data-act="0">
+          <div class="pourA__eyebrow">01 / Origin</div>
+          <h3 class="pourA__title">It starts with the <em>bean.</em></h3>
+          <p class="pourA__line">Single-origin beans, roasted in small batches. Every cup begins long before the pour.</p>
+        </div>
+        <div class="pourA__act" data-act="1">
+          <div class="pourA__eyebrow">02 / Craft</div>
+          <h3 class="pourA__title">Poured with <em>intention.</em></h3>
+          <p class="pourA__line">Steamed to silk, poured by hand. The kind of care you can taste in the first sip.</p>
+        </div>
+        <div class="pourA__act" data-act="2">
+          <div class="pourA__eyebrow">03 / Ritual</div>
+          <h3 class="pourA__title">Made to <em>slow you down.</em></h3>
+          <p class="pourA__line">More than a drink — a pause in your day. Come sit, stay a while.</p>
+        </div>
+      </div>
+    </div>
+    <div class="pourA__cupcol">
+      <div class="pourA__cupwrap">
+        <img class="pourA__cup" src="${CUP}" alt="Signature cup" decoding="async"/>
+      </div>
+    </div>
+    <div class="pourA__dots">
+      <span class="pourA__dot" data-dot="0"></span>
+      <span class="pourA__dot" data-dot="1"></span>
+      <span class="pourA__dot" data-dot="2"></span>
+    </div>
+  </div>
+</section>
+<style>
+  .pourA{position:relative;height:340vh;background:#140E0A}
+  .pourA__stage{position:sticky;top:0;height:100vh;overflow:hidden;display:grid;grid-template-columns:1fr 1fr}
+  .pourA__bg{position:absolute;inset:0;z-index:0;pointer-events:none}
+  .pourA__bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s cubic-bezier(.16,1,.3,1);filter:saturate(1.1) brightness(.9)}
+  .pourA__glow{position:absolute;inset:0;z-index:1;background:radial-gradient(60% 55% at 68% 50%, rgba(181,121,63,.28), transparent 70%);pointer-events:none}
+  .pourA__scrim{position:absolute;inset:0;z-index:2;background:linear-gradient(90deg, rgba(20,14,10,.86) 0%, rgba(20,14,10,.5) 34%, transparent 58%);pointer-events:none}
+  .pourA__textcol{position:relative;z-index:4;display:flex;align-items:center;padding-left:6vw;padding-right:2vw}
+  .pourA__acts{position:relative;width:100%;max-width:440px;min-height:220px}
+  .pourA__act{position:absolute;inset:0;opacity:0;transform:translateY(24px);transition:opacity .5s ease,transform .5s cubic-bezier(.16,1,.3,1);pointer-events:none}
+  .pourA__act.is-active{opacity:1;transform:translateY(0)}
+  .pourA__eyebrow{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#B5793F;margin-bottom:18px;text-transform:uppercase}
+  .pourA__title{font-size:clamp(2rem,3.4vw,3rem);line-height:1.04;font-weight:700;margin-bottom:16px;letter-spacing:-.5px;color:#F6F0E7}
+  .pourA__title em{font-style:normal;color:#B5793F}
+  .pourA__line{font-size:16px;line-height:1.7;color:#D8CFC2;max-width:400px}
+  .pourA__cupcol{position:relative;z-index:3}
+  .pourA__cupwrap{position:absolute;left:50%;top:0;transform:translate(-50%,0);will-change:transform}
+  .pourA__cup{width:min(30vw,360px);height:auto;display:block;filter:drop-shadow(0 40px 60px rgba(0,0,0,.55))}
+  .pourA__eyebrowtop{position:absolute;top:40px;left:6vw;z-index:5;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#B5793F;opacity:.9}
+  .pourA__dots{position:absolute;bottom:44px;left:6vw;z-index:5;display:flex;gap:10px}
+  .pourA__dot{width:26px;height:3px;border-radius:2px;background:rgba(246,240,231,.22);transition:background .4s}
+  .pourA__dot.is-active{background:#B5793F}
+  @media(max-width:820px){
+    .pourA{height:300vh}
+    .pourA__stage{grid-template-columns:1fr}
+    .pourA__textcol{position:absolute;inset:0;align-items:flex-end;padding-bottom:12vh;padding-left:8vw;z-index:4}
+    .pourA__scrim{background:linear-gradient(0deg, rgba(20,14,10,.92) 0%, rgba(20,14,10,.4) 46%, transparent 72%)}
+    .pourA__cup{width:min(56vw,300px)}
+    .pourA__acts{max-width:80vw}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .pourA{height:auto}
+    .pourA__stage{position:relative;height:auto;min-height:100vh}
+    .pourA__cupwrap{position:relative!important;transform:translateX(-50%)!important}
+  }
+</style>
+<script>
+(function(){
+  var section=document.getElementById('pour');
+  if(!section)return;
+  var stage=section.querySelector('.pourA__stage');
+  var cupwrap=section.querySelector('.pourA__cupwrap');
+  var bgs=section.querySelectorAll('.pourA__bgimg');
+  var acts=section.querySelectorAll('.pourA__act');
+  var dots=section.querySelectorAll('.pourA__dot');
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var progress=0,ticking=false;
+  function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+  function setActive(idx){
+    for(var i=0;i<acts.length;i++){acts[i].classList.toggle('is-active',i===idx);}
+    for(var j=0;j<bgs.length;j++){bgs[j].style.opacity=(j===idx)?'1':'0';}
+    for(var k=0;k<dots.length;k++){dots[k].classList.toggle('is-active',k===idx);}
+  }
+  function render(){
+    ticking=false;
+    var idx=clamp(Math.floor(progress*3),0,2);
+    setActive(idx);
+    var stageH=stage.offsetHeight||window.innerHeight;
+    var cupY;
+    if(progress<0.18){var t=progress/0.18;cupY=(-0.40+t*0.62)*stageH;}
+    else if(progress<=0.82){cupY=0.22*stageH;}
+    else{var t2=(progress-0.82)/0.18;cupY=(0.22+t2*0.55)*stageH;}
+    var scale=1+Math.sin(clamp(progress,0,1)*Math.PI)*0.04;
+    cupwrap.style.transform='translate(-50%,'+cupY+'px) scale('+scale.toFixed(3)+')';
+  }
+  function onScroll(){
+    var rect=section.getBoundingClientRect();
+    var total=section.offsetHeight-window.innerHeight;
+    var passed=clamp(-rect.top,0,total);
+    progress=total>0?passed/total:0;
+    if(!ticking){ticking=true;requestAnimationFrame(render);}
+  }
+  if(reduce){setActive(2);cupwrap.style.transform='translateX(-50%)';}
+  else{window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',onScroll,{passive:true});onScroll();}
+})();
+</script>`;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -35,20 +166,12 @@ export default async function handler(req, res) {
     const suggestedFonts = (body.suggestedFonts || "").substring(0, 200);
     const editInstruction = (body.editInstruction || "").substring(0, 500);
     const previousHtml = (body.previousHtml || "").substring(0, 60000);
-    // MODO DE GERAÇÃO escolhido no painel:
-    //   "cinematic" -> jornada cinematográfica completa (vídeos, THE CUT, THE SEAR, BUILD)
-    //   "clean"     -> site elegante limpo, sem vídeos/animações pesadas (o padrão sóbrio)
-    // Default: "clean" (mais seguro/rápido/garantido). O painel manda "cinematic" quando o
-    // usuário escolhe o modo cinematográfico. A jornada cinematográfica só é ativada quando
-    // o modo é "cinematic" E o nicho tem jornada montada (hoje: burger).
     // MODO DE GERAÇÃO — SISTEMA DE 3 SLOTS UNIVERSAL:
     //   "clean"        -> versão elegante e sóbria (todo nicho tem)
     //   "cinematic_a"  -> cinematográfico principal do nicho (slot A)
     //   "cinematic_b"  -> cinematográfico variação do nicho (slot B)
     // Retrocompatível: o valor antigo "cinematic" vira "cinematic_a".
     // Default: "clean" (mais seguro/rápido/garantido).
-    // Se um nicho ainda não desenvolveu um slot, o código cai no slot mais próximo
-    // (ver lógica isCinematic* abaixo), então o painel nunca trava.
     let mode = (body.mode || "clean").toLowerCase();
     if (mode === "cinematic") mode = "cinematic_a"; // retrocompat
     if (mode !== "clean" && mode !== "cinematic_a" && mode !== "cinematic_b") mode = "clean";
@@ -111,9 +234,6 @@ export default async function handler(req, res) {
     else if (t.includes("construction") || t.includes("build") || t.includes("real estate") || t.includes("imobili") || t.includes("property") || t.includes("construtora")) category = "construction";
 
     // ---------- KITS DE DIREÇÃO DE ARTE POR NICHO ----------
-    // Cada kit: paleta (hex nomeados), tipografia (display+body+peso), mood da foto,
-    // conceito de assinatura (o "momento uau"), e tom de copy.
-    // IMPORTANTE: fugir do default IA (creme + serif + terracota #D97757).
     const kits = {
       burger: {
         palette: "ink #12100E / ember #E4551F / cream #F3EDE1 / char #1E1A15 / gold-line #C9A24B",
@@ -259,16 +379,7 @@ export default async function handler(req, res) {
 
     const kit = kits[category] || kits.generic;
 
-    // ---------- BANCO DE IMAGENS POR NICHO (hospedado no próprio GitHub) ----------
-    // Quando o cliente não tem fotos (ou tem poucas), o gerador usa o banco premium
-    // do nicho. As imagens ficam em /banco/<nicho>/ no repositório e são servidas
-    // pelo raw.githubusercontent.
-    //
-    // CONVENÇÃO DE NOMES (importante — suba os arquivos EXATAMENTE com estes nomes):
-    //   hero.jpg  1.jpg  2.jpg  3.jpg  4.jpg  ambiente.jpg
-    // Use sempre a extensão .jpg no NOME do arquivo (mesmo que a imagem tenha vindo
-    // como .png, basta renomear a extensão para .jpg ao subir — funciona normalmente).
-    // Se preferir, o HTML gerado também tenta .png automaticamente como fallback.
+    // ---------- BANCO DE IMAGENS POR NICHO ----------
     const BANK_REPO = "leoclimber/climber-sites";
     const BANK_BRANCH = "main";
     const bankBase = `https://raw.githubusercontent.com/${BANK_REPO}/${BANK_BRANCH}/banco/${category}`;
@@ -281,53 +392,43 @@ export default async function handler(req, res) {
       `${bankBase}/ambiente.jpg`,
     ];
 
-    // ---------- BANCO DE VÍDEOS POR NICHO (opcional, mesmo esquema das imagens) ----------
-    // Vídeos cinematográficos ficam em /banco/<nicho>/<nome>.mp4 no repositório.
-    // Para o burger-journey, dois vídeos Seedance são usados quando presentes:
-    //   stack.mp4  -> THE STACK (burger girando/desmontando)
-    //   sear.mp4   -> THE SEAR  (chapa selando a carne com fogo)
-    // Se ainda não estiverem no ar, a jornada cai de volta para imagens do banco
-    // automaticamente (via onerror), então o site funciona ANTES dos vídeos existirem.
+    // ---------- BANCO DE VÍDEOS POR NICHO ----------
     const bankVideos = {
       stack: `${bankBase}/stack.mp4`,
       sear: `${bankBase}/sear.mp4`,
       // CAFÉ:
-      pour: `${bankBase}/pour.mp4`,     // hero: leite sendo despejado, latte art se formando
-      roast: `${bankBase}/roast.mp4`,   // opcional: grãos torrando/caindo (THE ORIGIN)
+      pour: `${bankBase}/pour.mp4`,
+      roast: `${bankBase}/roast.mp4`,
     };
 
-    // FRAME SEQUENCE (Apple-style) para o momento scroll-linked do latte art.
-    // São frames leves (jpg) numerados em /banco/<nicho>/frames/frameNNN.jpg.
-    // O código faz um flip-book amarrado ao scroll (troca de imagem, sem decodificar
-    // vídeo), então roda liso em qualquer celular e NUNCA trava. Faz-se UMA vez e
-    // vale para todos os clientes do nicho.
-    // Convenção: frame001.jpg ... frameNNN.jpg (zero-padded a 3 dígitos).
+    // ---------- FRAME SEQUENCE (usado só pelo café B) ----------
     const bankFrames = {
       base: `${bankBase}/frames`,
-      // quantidade de frames que você vai subir (ajuste se gerar mais/menos):
       count: 40,
-      pattern: `${bankBase}/frames/frame`, // + NNN + .jpg
-      // CAFÉ — dois efeitos scroll-linked, cada um com sua pasta de frames:
-      //   frames_cup/   -> "xícara descendo + gelo/leite/grãos" (Cinematográfico A)
-      //   frames_latte/ -> "latte art se formando" (Cinematográfico B)
+      pattern: `${bankBase}/frames/frame`,
       cupPattern: `${bankBase}/frames_cup/frame`,
       lattePattern: `${bankBase}/frames_latte/frame`,
       cafeCount: 40,
-      // FLAGS — LIGAR quando os frames estiverem no GitHub. Enquanto false, o
-      // momento THE POUR usa o FALLBACK elegante (foto com reveal), sem montar o
-      // mecanismo pesado de frames (que sobrecarregava e cortava o site).
-      cupReady: true,    // ATIVADO: frames_cup/ (frame001..040) está no ar (efeito A: xícara + grãos/leite/gelo)
-      latteReady: false, // true quando frames_latte/ estiver no ar (efeito B)
+      cupReady: true,     // (café A agora usa o showpiece carimbado, não frames)
+      latteReady: false,  // true quando frames_latte/ estiver no ar (efeito B)
     };
+
+    // ---------- ASSETS DO SHOWPIECE THE POUR A (café) — PNGs recortados ----------
+    // Xícara + elementos do efeito scroll-linked (Cinematográfico A), recortados
+    // com fundo transparente, hospedados no banco do café.
+    const cafePourAssets = {
+      cup:   `${bankBase}/cup.png`,
+      graos: `${bankBase}/graos.png`,
+      leite: `${bankBase}/leite.png`,
+      gelo:  `${bankBase}/gelo.png`,
+    };
+    // HTML carimbado do showpiece (idêntico toda geração, roda na GPU).
+    const POUR_A_HTML = buildPourA(cafePourAssets);
 
     // ---------- ASSETS DO CLIENTE ----------
     const realPhotos = clientPhotos.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).slice(0, 8);
     const hasRealPhotos = realPhotos.length > 0;
     const hasEnoughRealPhotos = realPhotos.length >= 4;
-    // Lógica híbrida:
-    // - 4+ fotos reais  -> usa só as reais (autenticidade total)
-    // - 1 a 3 fotos     -> usa as reais + completa com o banco do nicho
-    // - 0 fotos         -> usa 100% o banco do nicho
     const photoList = hasEnoughRealPhotos
       ? realPhotos
       : [...realPhotos, ...bankPhotos].slice(0, 8);
@@ -374,14 +475,6 @@ ABSOLUTE IMAGE RULES:
       const aboutHint = aboutText ? `Research notes about the business for the About section: ${aboutText}` : "";
 
       // ---------- BLOCO DA JORNADA CINEMATOGRÁFICA (BURGER + MODO CINEMATOGRÁFICO) ----------
-      // Só é injetado quando category === "burger" E o modo escolhido no painel é
-      // "cinematic". Substitui a estrutura de seções padrão por uma jornada de scroll
-      // estilo docmo.agency, com vídeos + THE CUT + THE SEAR + BUILD. Mantém todo o
-      // resto do sistema (motion, cursor de brasa, color journey, contadores).
-      // No modo "clean", este bloco fica vazio e o burger usa a estrutura elegante
-      // limpa (bloco cleanBurgerBlock abaixo).
-      // Burger: slot A = jornada explosão (atual). Slot B ainda não desenvolvido,
-      // então QUALQUER modo cinematográfico no burger usa a jornada atual (slot A).
       const isCinematicBurger = category === "burger" && isCinematic;
       const burgerJourneyBlock = isCinematicBurger ? `
 
@@ -456,11 +549,6 @@ NOTE: Required section ids: hero, about (story), cut, sear, services (menu), bui
 ` : "";
 
       // ---------- BLOCO CLEAN (BURGER + MODO CLEAN) ----------
-      // Ativado quando category === "burger" E mode === "clean". É a versão ELEGANTE
-      // e sóbria: hero com FOTO (sem vídeo), sem termômetro, sem THE CUT/THE SEAR/BUILD.
-      // Mantém a mesma paleta e tipografia premium, o mesmo apetite nas fotos grandes,
-      // mas com estrutura simples, rápida e garantida — ideal para nichos sóbrios ou
-      // quando o cliente quer o site limpo. As fotos seguem a mesma lei de tamanho.
       const isCleanBurger = category === "burger" && mode === "clean";
       const cleanBurgerBlock = isCleanBurger ? `
 
@@ -500,9 +588,6 @@ CLEAN MODE DISCIPLINE:
 ` : "";
 
       // ---------- BLOCO CLEAN (CAFÉ + MODO CLEAN) ----------
-      // Ativado quando category === "cafe" E mode === "clean". Versão elegante e
-      // aconchegante da cafeteria: hero com foto de latte art, luz de manhã, tom
-      // slow-morning. Sem vídeo, sem gauge, sem builder. Fotos grandes e apetitosas.
       const isCleanCafe = category === "cafe" && mode === "clean";
       const cleanCafeBlock = isCleanCafe ? `
 
@@ -549,25 +634,22 @@ CLEAN MODE DISCIPLINE:
 - STEAM/AMBIENCE: a very subtle, slow, tasteful steam or warm light drift near the hero cup adds life (CSS only, low opacity, never distracting).
 - MICRO-DETAILS: buttons have a refined hover (slight lift + soft shadow bloom or fill-sweep). Everything transform/opacity based, 60fps, respect prefers-reduced-motion. These 2% details are what separate "very good" from "perfect" — do them with restraint.
 ` : "";
-      // de 4 momentos, feita UMA vez para todos os cafés (igual ao burger):
-      //   1) HERO com vídeo do POUR (leite/latte art se formando)
-      //   2) THE ORIGIN — grãos + contadores (altitude/torra/origem)
-      //   3) THE POUR — latte art scroll-linked via FRAME SEQUENCE (Apple-style, nunca trava)
-      //   4) THE RITUAL — gallery cinematográfica cozy
-      // + menu, reviews, faq, contact. NÃO tem builder de pedido (nicho diferente).
-      // Café: slot A = "THE POUR" com xícara descendo + gelo/leite/grãos (frames);
-      //       slot B = "THE POUR" com latte art se formando (frames).
-      // Ambos compartilham a base cinematográfica; muda só o momento scroll-linked.
+
+      // ---------- BLOCO CINEMATOGRÁFICO (CAFÉ + MODO CINEMATOGRÁFICO A/B) ----------
+      // Jornada cinematográfica do café, feita UMA vez para todos os cafés:
+      //   1) HERO com vídeo do POUR
+      //   2) THE ORIGIN — grãos + contadores
+      //   3) THE POUR — showpiece scroll-linked
+      //        · slot A = xícara descendo + grãos/leite/gelo (bloco CARIMBADO, injetado)
+      //        · slot B = latte art se formando (frame sequence)
+      //   4) menu, THE RITUAL (gallery), reviews, faq, contact.
       const isCinematicCafeA = category === "cafe" && mode === "cinematic_a";
       const isCinematicCafeB = category === "cafe" && mode === "cinematic_b";
       const isCinematicCafe = isCinematicCafeA || isCinematicCafeB;
-      // Configura o efeito scroll-linked THE POUR conforme o slot (A ou B):
-      const pourFramePattern = isCinematicCafeB ? bankFrames.lattePattern : bankFrames.cupPattern;
+      // Configuração do frame sequence do slot B (o slot A não usa frames — é carimbado):
+      const pourFramePattern = bankFrames.lattePattern;
       const pourFrameCount = bankFrames.cafeCount;
-      const pourFramesReady = isCinematicCafeB ? bankFrames.latteReady : bankFrames.cupReady;
-      const pourEffectDesc = isCinematicCafeB
-        ? `LATTE ART FORMING: the cup sits pinned/centered, viewed from above, and as the user scrolls the rosetta latte art DRAWS ITSELF on the milk surface — from a blank crema to the finished detailed rosetta. Scrolling down forms the art; scrolling up unforms it. Minimal, zen, mesmerising — focus purely on the art appearing.`
-        : `CUP DESCENDING WITH ELEMENTS: a glass cup of coffee sits pinned/centered and, as the user scrolls, the scene TRANSFORMS around it — coffee beans fly in, a milk splash swirls, then ice cubes tumble in from the sides (hot → iced), splashes and droplets around the floating cup. Scrolling down builds the scene; scrolling up reverses it. Energetic, commercial, full of motion — a coffee advert happening as you scroll (like the reference).`;
+      const pourFramesReady = bankFrames.latteReady;
       const cinematicCafeBlock = isCinematicCafe ? `
 
 ═══════════ CAFÉ PREMIUM PAGE — CINEMATIC JOURNEY (AWWWARDS-TIER, COZY & CRAFT) ═══════════
@@ -594,11 +676,16 @@ SECTION 2: THE STORY (id="about")  [clean editorial — the elegant base]
    The "craft spec" moment — the equivalent of the burger's THE CUT, but for coffee. Refined eyebrow "// THE ORIGIN". LEFT: a big static accent callout (e.g. "1,800M" altitude in caramel/amber) + a clean spec table in mono type with values right-aligned (Origin · Ethiopia Yirgacheffe / Altitude · 1,800m / Roast · Medium, 220°C / Process · Washed / Rest · 14 days / Notes · Floral, citrus, honey) + one short line of copy below. RIGHT: a big beautiful macro of roasted coffee beans ${photoList.length > 1 ? photoList[1] : photoList[0]} shown LARGE (min-height:560px, ideally 600–680px, object-fit:cover, a close glossy crop) sitting in generous dark space, NO labels/callout lines over it. ${bankVideos.roast ? `OPTIONALLY, instead of the static bean image, you MAY use the video "${bankVideos.roast}" here as a contained background of the right panel with poster="${photoList.length>1?photoList[1]:photoList[0]}" and the same onerror-only robustness rules (no onstalled/timer) — but keep it calm and contained, the spec table on the left stays the focus.` : ``} The image/video can gently fade/scale in on scroll; nothing overlaps it. The altitude/roast-temp numbers animate as counters on enter. Uncluttered, premium, lots of breathing room.
 
 ★ CINEMATIC MOMENT 3 (THE SHOWPIECE) ★ — SECTION 4: // THE POUR (id="pour")
-${pourFramesReady ? `   THE HYPNOTIC SCROLL-LINKED MOMENT — the signature "wow", built as an APPLE-STYLE FRAME SEQUENCE (silky on every device, never janks — do NOT scrub an mp4; use a preloaded image sequence swapped by scroll progress).
-   ★ THE EFFECT: ${pourEffectDesc}
+${isCinematicCafeA
+  ? `   OUTPUT EXACTLY this token on its OWN LINE where SECTION 4 goes, and build NOTHING else for this section — it is injected afterwards as a locked, pre-built showpiece (do NOT create a <section id="pour"> yourself, do NOT add any pour markup, just the token):
+   THE_POUR_A_PLACEHOLDER`
+  : (pourFramesReady
+    ? `   THE HYPNOTIC SCROLL-LINKED MOMENT — the signature "wow", built as an APPLE-STYLE FRAME SEQUENCE (silky on every device, never janks — do NOT scrub an mp4; use a preloaded image sequence swapped by scroll progress).
+   ★ THE EFFECT: LATTE ART FORMING — the cup sits pinned/centered, viewed from above, and as the user scrolls the rosetta latte art DRAWS ITSELF on the milk surface, from blank crema to finished rosetta. Scrolling down forms the art; scrolling up unforms it. Minimal, zen, mesmerising.
    Layout: a sticky/pinned stage (~220vh tall section; the visual pins in the viewport center while scrolling). Center: one <img> showing one frame at a time. Around it, short copy lines fade in/out. Warm golden glow, gentle steam.
    ★ FRAME SEQUENCE (implement exactly): ${pourFrameCount} frames at "${pourFramePattern}" + 3-digit zero-padded number + ".jpg" (${pourFramePattern}001.jpg … ${pourFramePattern}${String(pourFrameCount).padStart(3,"0")}.jpg); build the URL list in JS 1→${pourFrameCount}. PRELOAD all into Image objects; show ${photoList.length>3?photoList[3]:photoList[0]} as the poster while preloading. On scroll compute section progress 0→1 and map to frame index = clamp(round(progress*(${pourFrameCount}-1)),0,${pourFrameCount}-1); set <img>.src to that frame inside a requestAnimationFrame loop (scroll handler only stores progress; never swap directly in it). Pure image swap, 60fps; will-change:contents; decoding="async". If frames error out, fall back to the finished photo ${photoList.length>3?photoList[3]:photoList[0]} with a soft scroll reveal. (prefers-reduced-motion: show the finished frame.)
-   The result: as the user scrolls, the scene animates frame-by-frame — mesmerising and buttery smooth.` : `   THE POUR — a clean, standard, NORMAL-HEIGHT section (NOT sticky, NOT pinned, NOT tall — just a regular section like the others). Two-column layout: LEFT a refined eyebrow "// THE POUR", a headline like "Every cup, poured with care.", and 2 short lines about the craft (the pour, the microfoam, the ritual). RIGHT a single large beautiful coffee image ${photoList.length>3?photoList[3]:photoList[0]} (min-height:520px, object-fit:cover, a close latte-art crop) with a soft warm glow and gentle steam, fading + slightly scaling in on scroll. Keep it simple, warm and premium — a normal editorial section, nothing sticky or scroll-scrubbed. Do NOT make this section taller than a normal section; do NOT pin it.`}
+   The result: as the user scrolls, the scene animates frame-by-frame — mesmerising and buttery smooth.`
+    : `   THE POUR — a clean, standard, NORMAL-HEIGHT section (NOT sticky, NOT pinned, NOT tall — just a regular section like the others). Two-column layout: LEFT a refined eyebrow "// THE POUR", a headline like "Every cup, poured with care.", and 2 short lines about the craft (the pour, the microfoam, the ritual). RIGHT a single large beautiful coffee image ${photoList.length>3?photoList[3]:photoList[0]} (min-height:520px, object-fit:cover, a close latte-art crop) with a soft warm glow and gentle steam, fading + slightly scaling in on scroll. Keep it simple, warm and premium — a normal editorial section, nothing sticky or scroll-scrubbed. Do NOT make this section taller than a normal section; do NOT pin it.`)}
 
 SECTION 5: THE MENU (id="services")  [clean typographic menu — elegant base]
    A refined TYPOGRAPHIC menu list (NOT bulky cards). Full-width rows: index (01, 02…), item name in strong display type, one-line description, price in accent on the far right, thin divider, hover highlights the row. Items (or from services: ${services || "invent realistic cafe items"}): e.g. 01 Espresso €2.8, 02 Flat White €3.6, 03 Cappuccino €3.6, 04 Iced Latte €4.2, 05 Butter Croissant €3.2, 06 Matcha Latte €4.5. Prices in € (Dublin). May group under small headers (COFFEE / COLD / BAKERY), kept clean.
@@ -617,17 +704,18 @@ SECTION 9: CONTACT (id="contact")  [clean close with map]
 
 LAYOUT DISCIPLINE (keeps the nota 10):
 - The CLEAN sections (Story, Menu, Gallery, Reviews, FAQ, Contact) stay uncluttered, spacious, editorial — with BIG warm coffee photos. Do not cram.
-- The THREE cinematic moments (hero pour video, THE ORIGIN spec, THE POUR frame-sequence) are the highlights — each impressive but self-contained, surrounded by calm.
+- The THREE cinematic moments (hero pour video, THE ORIGIN spec, THE POUR showpiece) are the highlights — each impressive but self-contained, surrounded by calm.
 - Every non-static number animates (stats, rating, review count, altitude, roast temp). Any single "hero number" (e.g. 1,800M) can be static.
 - Custom cursor + section color journey stay, tuned to warm golden/caramel washes. Respect prefers-reduced-motion (disable scrubbing/heavy motion, keep usable).
 - Nav labels can read: STORY, ORIGIN, THE POUR, MENU, GALLERY, REVIEWS, VISIT. Required section ids: hero, about, origin, pour, services, gallery, reviews, faq, contact.
 ` : "";
+
       const sectionHierarchyRule = isCinematicBurger
         ? `7. Follow the BURGER PREMIUM PAGE (cinematic) architecture defined above (clean editorial layout + four cinematic moments). Keep the required section ids: hero, about, cut, sear, services, build, gallery, reviews, faq, contact.`
         : isCleanBurger
         ? `7. Follow the BURGER PREMIUM PAGE (clean elegant) architecture defined above — photo hero, story, menu, gallery, reviews, faq, contact. NO video treatment, NO heat gauge, NO deconstruction, NO builder. Required section ids: hero, about, services, gallery, reviews, faq, contact.`
         : isCinematicCafe
-        ? `7. Follow the CAFÉ PREMIUM PAGE (cinematic) architecture defined above (clean editorial base + hero pour video + THE ORIGIN spec + THE POUR scroll-linked latte-art frame sequence + ritual gallery). NO order builder. Required section ids: hero, about, origin, pour, services, gallery, reviews, faq, contact.`
+        ? `7. Follow the CAFÉ PREMIUM PAGE (cinematic) architecture defined above (clean editorial base + hero pour video + THE ORIGIN spec + THE POUR showpiece + ritual gallery). NO order builder. Required section ids: hero, about, origin, pour, services, gallery, reviews, faq, contact.`
         : isCleanCafe
         ? `7. Follow the CAFÉ PREMIUM PAGE (clean elegant) architecture defined above — warm photo hero, story, menu, gallery, reviews, faq, contact. NO video treatment, NO cup gauge, NO builder. Required section ids: hero, about, services, gallery, reviews, faq, contact.`
         : `7. Real hierarchy: hero → brand story/about (with soul, not "founded in 2010") → services (premium cards, no emoji) → gallery → reviews (3 testimonials, realistic Irish names) → FAQ (accordion, 4 items) → contact (with address, hours, map embed via Google Maps iframe using the address, and the booking CTA).`;
@@ -640,9 +728,7 @@ LAYOUT DISCIPLINE (keeps the nota 10):
         ? `Section ids required: hero, about, services, gallery, reviews, faq, contact.`
         : `Section ids required: about, services, gallery, reviews, faq, contact.`;
 
-      // CURSOR POR NICHO: a "brasa com fumaça" é a assinatura do burger (evoca grelha).
-      // Em nichos onde fogo/brasa não combina (café, etc.), usar um cursor mais neutro
-      // e elegante — ou o cursor normal. Cada nicho tem sua identidade.
+      // CURSOR POR NICHO
       const cursorBlock = (category === "burger")
         ? `H. CUSTOM CURSOR — EMBER WITH A SMOKE TRAIL (desktop only, ≥1024px): Replace the default cursor with a glowing ember that leaves a SMOKE TRAIL as it moves. Two parts:
    (1) The ember tip: a small bright hot core (pale gold/near-white) wrapped in a soft warm amber radial glow that bleeds outward — like a live coal, not a flat dot.
@@ -742,17 +828,8 @@ Build it to win an award. Every color and type choice must come from the art dir
     }
 
     // ---------- CHAMADA À API COM STREAMING (Opus para criação, Sonnet para edição) ----------
-    // Streaming é essencial aqui: sem ele, a função fica "muda" por minutos enquanto o Opus
-    // gera o site inteiro, e o proxy da Vercel corta a conexão por inatividade (504) antes
-    // mesmo de bater o maxDuration configurado. Com streaming, mandamos heartbeats conforme
-    // os dados chegam, então a conexão nunca fica "morta".
     const isEdit = editInstruction && previousHtml;
     const useModel = isEdit ? "claude-sonnet-4-6" : "claude-opus-4-8";
-    // Teto máximo nos dois casos. Você paga só pelos tokens realmente gerados,
-    // então um teto alto não custa mais — apenas garante que nenhum site (grande
-    // ou pequeno) seja cortado no meio, na criação OU na edição.
-    // Sites cinematográficos (café A/B, burger) são grandes e ricos, então usamos
-    // um teto bem alto pra nunca cortar no meio. Edição usa um teto menor.
     const maxTokens = isEdit ? 32000 : 64000;
 
     const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
@@ -775,12 +852,8 @@ Build it to win an award. Every color and type choice must come from the art dir
       return res.status(502).json({ error: "AI failed", detail: err.substring(0, 500) });
     }
 
-    // A partir daqui já começamos a manter a conexão viva. Headers primeiro.
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
 
-    // Heartbeat por timer (rede de segurança) + heartbeat a cada pedaço recebido do Opus.
-    // Espaços em branco são JSON-válidos como whitespace antes do objeto final,
-    // então o JSON.parse do cliente ignora tudo isso automaticamente.
     const heartbeat = setInterval(() => {
       try { res.write(" "); } catch (_) {}
     }, 10000);
@@ -797,10 +870,10 @@ Build it to win an award. Every color and type choice must come from the art dir
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        try { res.write(" "); } catch (_) {} // heartbeat a cada pedaço recebido
+        try { res.write(" "); } catch (_) {}
 
         const lines = buffer.split("\n");
-        buffer = lines.pop(); // guarda linha incompleta pro próximo pedaço
+        buffer = lines.pop();
 
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
@@ -833,6 +906,13 @@ Build it to win an award. Every color and type choice must come from the art dir
     // Injeta o vídeo real no placeholder (evita mandar base64 gigante no prompt)
     if (hasVideo) {
       html = html.split("HERO_VIDEO_SRC").join(heroVideoBase64);
+    }
+
+    // Injeta o showpiece THE POUR A carimbado (só no café cinematográfico A).
+    // Igual à lógica do HERO_VIDEO_SRC: o Opus deixa o marcador, o servidor troca
+    // pelo bloco pronto — garante que o efeito é IDÊNTICO toda vez e nunca trava.
+    if (isCinematicCafeA) {
+      html = html.split("THE_POUR_A_PLACEHOLDER").join(POUR_A_HTML);
     }
 
     if (!html.includes("</html>")) {
