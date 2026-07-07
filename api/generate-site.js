@@ -1,130 +1,144 @@
 // ============================================================================
-// THE POUR A — SHOWPIECE CARIMBADO (café, modo cinematic_a)
+// THE POUR A — SHOWPIECE SCROLL-SCRUB (café, modo cinematic_a)
 // Injetado via placeholder THE_POUR_A_PLACEHOLDER depois da geração do Opus.
-// Xícara (cup.png) desce por cima, ancora no centro durante 3 atos, e sai
-// suave no fim entregando pro menu. Fundos graos/leite/gelo trocam por opacity;
-// copy dos 3 atos (editável pelo cliente) faz cross-fade em sincronia.
-// 100% transform/opacity na GPU; scroll só grava progresso, desenho em rAF.
-// Idêntico toda geração, nunca trava. A copy é template — o cliente pode editar.
+//
+// EFEITO (igual à referência noirpixel): a cena do café (pour_scene.mp4 — xícara
+// centralizada + grãos→leite→gelo se transformando de forma fluida) fica
+// CENTRALIZADA, sem fundo/moldura, e o vídeo é CONGELADO: o SCROLL controla o
+// tempo dele. Rolar pra baixo avança a cena; rolar pra cima rebobina. Movimento
+// único e contínuo, nunca slide. A xícara desce de leve conforme rola.
+//
+// ROBUSTEZ iOS: setar video.currentTime direto no scroll trava no Safari/iPhone.
+// Solução (a mesma da Apple): o scroll só grava o alvo; um loop rAF interpola
+// (lerp) o tempo atual em direção ao alvo e faz o seek suave. Fica liso no
+// desktop E no celular. Copy dos 3 atos aparece em sincronia (editável).
 // ============================================================================
 function buildPourA(assets) {
-  const CUP = assets.cup, GRAOS = assets.graos, LEITE = assets.leite, GELO = assets.gelo;
+  const VID = assets.pourScene;
+  const POSTER = assets.poster;
   return `
 <section class="pourA" id="pour" aria-label="The Pour">
   <div class="pourA__stage">
-    <div class="pourA__bg">
-      <img class="pourA__bgimg" data-bg="0" src="${GRAOS}" alt="" decoding="async" onerror="if(this.src.endsWith('.png')){this.src=this.src.replace('.png','.jpg');}"/>
-      <img class="pourA__bgimg" data-bg="1" src="${LEITE}" alt="" decoding="async" onerror="if(this.src.endsWith('.png')){this.src=this.src.replace('.png','.jpg');}"/>
-      <img class="pourA__bgimg" data-bg="2" src="${GELO}" alt="" decoding="async" onerror="if(this.src.endsWith('.png')){this.src=this.src.replace('.png','.jpg');}"/>
-    </div>
-    <div class="pourA__glow"></div>
-    <div class="pourA__scrim"></div>
     <div class="pourA__eyebrowtop">// THE POUR</div>
-    <div class="pourA__textcol">
-      <div class="pourA__acts">
-        <div class="pourA__act" data-act="0">
-          <div class="pourA__eyebrow">01 / Origin</div>
-          <h3 class="pourA__title">It starts with the <em>bean.</em></h3>
-          <p class="pourA__line">Single-origin beans, roasted in small batches. Every cup begins long before the pour.</p>
-        </div>
-        <div class="pourA__act" data-act="1">
-          <div class="pourA__eyebrow">02 / Craft</div>
-          <h3 class="pourA__title">Poured with <em>intention.</em></h3>
-          <p class="pourA__line">Steamed to silk, poured by hand. The kind of care you can taste in the first sip.</p>
-        </div>
-        <div class="pourA__act" data-act="2">
-          <div class="pourA__eyebrow">03 / Ritual</div>
-          <h3 class="pourA__title">Made to <em>slow you down.</em></h3>
-          <p class="pourA__line">More than a drink — a pause in your day. Come sit, stay a while.</p>
-        </div>
+    <video class="pourA__video" id="pourAVid"
+      src="${VID}" poster="${POSTER}"
+      muted playsinline preload="auto" webkit-playsinline
+      onerror="this.style.display='none';var p=document.getElementById('pourAFallback');if(p)p.style.display='block';"></video>
+    <img class="pourA__fallback" id="pourAFallback" src="${POSTER}" alt="" style="display:none"/>
+    <div class="pourA__acts">
+      <div class="pourA__act" data-a="0">
+        <div class="pourA__eb">01 / Origin</div>
+        <h3 class="pourA__ti">It starts with the <em>bean.</em></h3>
+        <p class="pourA__li">Single-origin beans, roasted in small batches. Every cup begins long before the pour.</p>
       </div>
-    </div>
-    <div class="pourA__cupcol">
-      <div class="pourA__cupwrap">
-        <img class="pourA__cup" src="${CUP}" alt="Signature cup" decoding="async"/>
+      <div class="pourA__act" data-a="1">
+        <div class="pourA__eb">02 / Craft</div>
+        <h3 class="pourA__ti">Poured with <em>intention.</em></h3>
+        <p class="pourA__li">Steamed to silk, poured by hand. The kind of care you can taste in the first sip.</p>
+      </div>
+      <div class="pourA__act" data-a="2">
+        <div class="pourA__eb">03 / Ritual</div>
+        <h3 class="pourA__ti">Made to <em>slow you down.</em></h3>
+        <p class="pourA__li">More than a drink — a pause in your day. Come sit, stay a while.</p>
       </div>
     </div>
     <div class="pourA__dots">
-      <span class="pourA__dot" data-dot="0"></span>
-      <span class="pourA__dot" data-dot="1"></span>
-      <span class="pourA__dot" data-dot="2"></span>
+      <span class="pourA__dot" data-d="0"></span>
+      <span class="pourA__dot" data-d="1"></span>
+      <span class="pourA__dot" data-d="2"></span>
     </div>
   </div>
 </section>
 <style>
-  .pourA{position:relative;height:340vh;background:#140E0A}
-  .pourA__stage{position:sticky;top:0;height:100vh;overflow:hidden;display:grid;grid-template-columns:1fr 1fr}
-  .pourA__bg{position:absolute;inset:0;z-index:0;pointer-events:none}
-  .pourA__bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s cubic-bezier(.16,1,.3,1);filter:saturate(1.1) brightness(.9)}
-  .pourA__glow{position:absolute;inset:0;z-index:1;background:radial-gradient(60% 55% at 68% 50%, rgba(181,121,63,.28), transparent 70%);pointer-events:none}
-  .pourA__scrim{position:absolute;inset:0;z-index:2;background:linear-gradient(90deg, rgba(20,14,10,.86) 0%, rgba(20,14,10,.5) 34%, transparent 58%);pointer-events:none}
-  .pourA__textcol{position:relative;z-index:4;display:flex;align-items:center;padding-left:6vw;padding-right:2vw}
-  .pourA__acts{position:relative;width:100%;max-width:440px;min-height:220px}
-  .pourA__act{position:absolute;inset:0;opacity:0;transform:translateY(24px);transition:opacity .5s ease,transform .5s cubic-bezier(.16,1,.3,1);pointer-events:none}
-  .pourA__act.is-active{opacity:1;transform:translateY(0)}
-  .pourA__eyebrow{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#B5793F;margin-bottom:18px;text-transform:uppercase}
-  .pourA__title{font-size:clamp(2rem,3.4vw,3rem);line-height:1.04;font-weight:700;margin-bottom:16px;letter-spacing:-.5px;color:#F6F0E7}
-  .pourA__title em{font-style:normal;color:#B5793F}
-  .pourA__line{font-size:16px;line-height:1.7;color:#D8CFC2;max-width:400px}
-  .pourA__cupcol{position:relative;z-index:3}
-  .pourA__cupwrap{position:absolute;left:50%;top:0;transform:translate(-50%,0);will-change:transform}
-  .pourA__cup{width:min(30vw,360px);height:auto;display:block;filter:drop-shadow(0 40px 60px rgba(0,0,0,.55))}
-  .pourA__eyebrowtop{position:absolute;top:40px;left:6vw;z-index:5;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#B5793F;opacity:.9}
+  .pourA{position:relative;height:420vh}
+  .pourA__stage{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .pourA__video,.pourA__fallback{position:absolute;top:50%;left:50%;width:min(74vw,960px);height:auto;transform:translate(-50%,-50%);will-change:transform;pointer-events:none;filter:saturate(1.12) contrast(1.04)}
+  .pourA__acts{position:absolute;left:6vw;top:50%;transform:translateY(-50%);z-index:5;max-width:420px;min-height:200px}
+  .pourA__act{position:absolute;top:0;left:0;width:100%;opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s cubic-bezier(.16,1,.3,1);pointer-events:none}
+  .pourA__act.on{opacity:1;transform:translateY(0)}
+  .pourA__eb{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#B5793F;margin-bottom:16px;text-transform:uppercase}
+  .pourA__ti{font-size:clamp(2rem,3.4vw,3rem);line-height:1.04;font-weight:700;margin-bottom:14px;letter-spacing:-.5px;color:#2A1D14;text-shadow:0 1px 20px rgba(255,255,255,.5)}
+  .pourA__ti em{font-style:normal;color:#B5793F}
+  .pourA__li{font-size:16px;line-height:1.7;color:#5a4a3a;max-width:380px}
+  .pourA__eyebrowtop{position:absolute;top:38px;left:6vw;z-index:5;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#B5793F;opacity:.9}
   .pourA__dots{position:absolute;bottom:44px;left:6vw;z-index:5;display:flex;gap:10px}
-  .pourA__dot{width:26px;height:3px;border-radius:2px;background:rgba(246,240,231,.22);transition:background .4s}
-  .pourA__dot.is-active{background:#B5793F}
+  .pourA__dot{width:26px;height:3px;border-radius:2px;background:rgba(42,29,20,.2);transition:background .4s}
+  .pourA__dot.on{background:#B5793F}
   @media(max-width:820px){
-    .pourA{height:300vh}
-    .pourA__stage{grid-template-columns:1fr}
-    .pourA__textcol{position:absolute;inset:0;align-items:flex-end;padding-bottom:12vh;padding-left:8vw;z-index:4}
-    .pourA__scrim{background:linear-gradient(0deg, rgba(20,14,10,.92) 0%, rgba(20,14,10,.4) 46%, transparent 72%)}
-    .pourA__cup{width:min(56vw,300px)}
-    .pourA__acts{max-width:80vw}
+    .pourA{height:380vh}
+    .pourA__video,.pourA__fallback{width:96vw}
+    .pourA__acts{left:0;right:0;top:auto;bottom:14vh;transform:none;padding:0 8vw;max-width:none}
+    .pourA__ti{text-shadow:0 1px 24px rgba(255,255,255,.7)}
   }
   @media(prefers-reduced-motion:reduce){
     .pourA{height:auto}
     .pourA__stage{position:relative;height:auto;min-height:100vh}
-    .pourA__cupwrap{position:relative!important;transform:translateX(-50%)!important}
   }
 </style>
 <script>
 (function(){
   var section=document.getElementById('pour');
   if(!section)return;
-  var stage=section.querySelector('.pourA__stage');
-  var cupwrap=section.querySelector('.pourA__cupwrap');
-  var bgs=section.querySelectorAll('.pourA__bgimg');
+  var video=document.getElementById('pourAVid');
   var acts=section.querySelectorAll('.pourA__act');
   var dots=section.querySelectorAll('.pourA__dot');
   var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var progress=0,ticking=false;
+  var dur=0, ready=false;
+  var progress=0;      // alvo vindo do scroll (0..1)
+  var current=0;       // valor interpolado (0..1) — o que realmente vira currentTime
+  var dy=0;            // deslocamento vertical da cena
   function clamp(v,a,b){return v<a?a:(v>b?b:v);}
-  function setActive(idx){
-    for(var i=0;i<acts.length;i++){acts[i].classList.toggle('is-active',i===idx);}
-    for(var j=0;j<bgs.length;j++){bgs[j].style.opacity=(j===idx)?'1':'0';}
-    for(var k=0;k<dots.length;k++){dots[k].classList.toggle('is-active',k===idx);}
-  }
-  function render(){
-    ticking=false;
-    var idx=clamp(Math.floor(progress*3),0,2);
-    setActive(idx);
-    var stageH=stage.offsetHeight||window.innerHeight;
-    var cupY;
-    if(progress<0.18){var t=progress/0.18;cupY=(-0.40+t*0.62)*stageH;}
-    else if(progress<=0.82){cupY=0.22*stageH;}
-    else{var t2=(progress-0.82)/0.18;cupY=(0.22+t2*0.55)*stageH;}
-    var scale=1+Math.sin(clamp(progress,0,1)*Math.PI)*0.04;
-    cupwrap.style.transform='translate(-50%,'+cupY+'px) scale('+scale.toFixed(3)+')';
-  }
+
+  video.addEventListener('loadedmetadata',function(){
+    dur=video.duration||10; ready=true;
+    try{ video.pause(); }catch(e){}
+    onScroll(); loop();
+  });
+
   function onScroll(){
     var rect=section.getBoundingClientRect();
     var total=section.offsetHeight-window.innerHeight;
     var passed=clamp(-rect.top,0,total);
     progress=total>0?passed/total:0;
-    if(!ticking){ticking=true;requestAnimationFrame(render);}
   }
-  if(reduce){setActive(2);cupwrap.style.transform='translateX(-50%)';}
-  else{window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',onScroll,{passive:true});onScroll();}
+
+  function paint(){
+    // atos por terço (baseado no alvo pra reagir rápido)
+    var idx=clamp(Math.floor(progress*3),0,2);
+    for(var i=0;i<acts.length;i++){ acts[i].classList.toggle('on', i===idx); }
+    for(var k=0;k<dots.length;k++){ dots[k].classList.toggle('on', k===idx); }
+    // xícara/cena desce de leve (movimento único e contínuo)
+    var ndy=(-18 + current*36);
+    if(Math.abs(ndy-dy)>0.1){ dy=ndy; video.style.transform='translate(-50%,calc(-50% + '+dy.toFixed(1)+'px))'; var f=document.getElementById('pourAFallback'); if(f)f.style.transform=video.style.transform; }
+  }
+
+  function loop(){
+    // interpola current -> progress (suaviza o seek, essencial pro iOS não travar)
+    current += (progress-current)*0.12;
+    if(Math.abs(progress-current)<0.0005) current=progress;
+    if(ready && dur){
+      var target=clamp(current,0,1)*dur;
+      // fastSeek quando existir (iOS/Safari): seek aproximado e leve
+      if(Math.abs(video.currentTime-target)>0.015){
+        if(typeof video.fastSeek==='function'){ try{ video.fastSeek(target); }catch(e){ try{video.currentTime=target;}catch(_){}} }
+        else { try{ video.currentTime=target; }catch(e){} }
+      }
+    }
+    paint();
+    requestAnimationFrame(loop);
+  }
+
+  if(reduce){
+    // sem scrub: para o vídeo num frame representativo e mostra o último ato
+    video.addEventListener('loadedmetadata',function(){ try{ video.currentTime=(video.duration||10)*0.6; }catch(e){} });
+    acts[acts.length-1].classList.add('on');
+    dots[dots.length-1].classList.add('on');
+  } else {
+    window.addEventListener('scroll',onScroll,{passive:true});
+    window.addEventListener('resize',onScroll,{passive:true});
+    // tenta destravar a decodificação em alguns browsers (load silencioso)
+    try{ video.load(); }catch(e){}
+  }
 })();
 </script>`;
 }
@@ -424,16 +438,15 @@ export default async function handler(req, res) {
       latteReady: false,  // true quando frames_latte/ estiver no ar (efeito B)
     };
 
-    // ---------- ASSETS DO SHOWPIECE THE POUR A (café) — PNGs recortados ----------
-    // Xícara + elementos do efeito scroll-linked (Cinematográfico A), recortados
-    // com fundo transparente, hospedados no banco do café.
+    // ---------- ASSETS DO SHOWPIECE THE POUR A (café) — VÍDEO SCROLL-SCRUB ----------
+    // A cena única (xícara + grãos→leite→gelo fluido) é um vídeo do Seedance.
+    // O scroll controla o tempo do vídeo (scroll-scrub), como na referência.
+    // poster = um frame estático de fallback (hero do café) caso o vídeo falhe.
     const cafePourAssets = {
-      cup:   `${bankBase}/cup.png`,
-      graos: `${bankBase}/graos.png`,
-      leite: `${bankBase}/leite.png`,
-      gelo:  `${bankBase}/gelo.png`,
+      pourScene: `${bankBase}/pour_scene.mp4`,
+      poster:    `${bankBase}/hero.jpg`,
     };
-    // HTML carimbado do showpiece (idêntico toda geração, roda na GPU).
+    // HTML carimbado do showpiece (idêntico toda geração, scroll-scrub liso).
     const POUR_A_HTML = buildPourA(cafePourAssets);
 
     // ---------- ASSETS DO CLIENTE ----------
