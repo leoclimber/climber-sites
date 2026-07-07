@@ -139,6 +139,11 @@ export default async function handler(req, res) {
   const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_KEY) return res.status(500).json({ error: "Missing ANTHROPIC_API_KEY" });
 
+  // Marca se já enviamos os headers da resposta (streaming). Depois disso, NENHUM
+  // caminho pode usar res.status().json() — só res.write()/res.end() — senão o
+  // Node estoura ERR_HTTP_HEADERS_SENT. O catch final usa esta flag pra decidir.
+  let headersSent = false;
+
   try {
     const body = req.body || {};
     const businessName = (body.businessName || "").substring(0, 100);
@@ -853,6 +858,7 @@ Build it to win an award. Every color and type choice must come from the art dir
     }
 
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    headersSent = true;
 
     const heartbeat = setInterval(() => {
       try { res.write(" "); } catch (_) {}
@@ -924,6 +930,14 @@ Build it to win an award. Every color and type choice must come from the art dir
     return res.end();
 
   } catch (e) {
-    return res.status(500).json({ error: "Server error", detail: String(e).substring(0, 200) });
+    // Se os headers já foram enviados (estávamos em streaming), NÃO dá pra usar
+    // res.status().json() — isso estoura ERR_HTTP_HEADERS_SENT (foi o bug do log).
+    // Nesse caso respondemos pelo mesmo canal já aberto: res.write + res.end.
+    const msg = String((e && e.message) || e).substring(0, 200);
+    if (headersSent || res.headersSent || res.writableEnded) {
+      try { res.write(JSON.stringify({ error: "Server error", detail: msg })); } catch (_) {}
+      try { return res.end(); } catch (_) { return; }
+    }
+    return res.status(500).json({ error: "Server error", detail: msg });
   }
 }
