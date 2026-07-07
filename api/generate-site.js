@@ -316,7 +316,7 @@ export default async function handler(req, res) {
       // FLAGS — LIGAR quando os frames estiverem no GitHub. Enquanto false, o
       // momento THE POUR usa o FALLBACK elegante (foto com reveal), sem montar o
       // mecanismo pesado de frames (que sobrecarregava e cortava o site).
-      cupReady: false,   // true quando frames_cup/ estiver no ar (efeito A)
+      cupReady: true,    // ATIVADO: frames_cup/ (frame001..040) está no ar (efeito A: xícara + grãos/leite/gelo)
       latteReady: false, // true quando frames_latte/ estiver no ar (efeito B)
     };
 
