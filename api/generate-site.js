@@ -2,29 +2,31 @@
 // THE POUR A — SHOWPIECE SCROLL-SCRUB (café, modo cinematic_a)
 // Injetado via placeholder THE_POUR_A_PLACEHOLDER depois da geração do Opus.
 //
-// EFEITO (igual à referência noirpixel): a cena do café (pour_scene.mp4 — xícara
-// centralizada + grãos→leite→gelo se transformando de forma fluida) fica
-// CENTRALIZADA, sem fundo/moldura, e o vídeo é CONGELADO: o SCROLL controla o
-// tempo dele. Rolar pra baixo avança a cena; rolar pra cima rebobina. Movimento
-// único e contínuo, nunca slide. A xícara desce de leve conforme rola.
+// EFEITO (igual à referência noirpixel): a cena do café (frame sequence extraída
+// de pour_scene.mp4 — xícara centralizada + grãos→leite→gelo se transformando de
+// forma fluida) fica CENTRALIZADA, sem fundo/moldura. O SCROLL controla qual
+// frame é desenhado. Rolar pra baixo avança a cena; rolar pra cima rebobina.
+// Movimento único e contínuo, nunca slide. A xícara desce de leve conforme rola.
 //
-// ROBUSTEZ iOS: setar video.currentTime direto no scroll trava no Safari/iPhone.
-// Solução (a mesma da Apple): o scroll só grava o alvo; um loop rAF interpola
-// (lerp) o tempo atual em direção ao alvo e faz o seek suave. Fica liso no
-// desktop E no celular. Copy dos 3 atos aparece em sincronia (editável).
+// POR QUE FRAME SEQUENCE (e não vídeo scrubado): setar video.currentTime no
+// scroll é a abordagem antiga — trava/engasga em Safari/iPhone mesmo com
+// interpolação. Frame sequence (estilo Apple) é 100% confiável em qualquer
+// device: são só imagens pré-carregadas trocadas num <canvas>, sem decode de
+// vídeo envolvido. O loop rAF interpola (lerp) o progresso alvo do scroll pro
+// índice de frame desenhado, então o movimento continua liso mesmo pulando
+// frames. Copy dos 3 atos aparece em sincronia (editável).
 // ============================================================================
 function buildPourA(assets) {
-  const VID = assets.pourScene;
+  const FRAMES_BASE = assets.framesBase;
+  const FRAME_COUNT = assets.frameCount;
   const POSTER = assets.poster;
   return `
 <section class="pourA" id="pour" aria-label="The Pour">
   <div class="pourA__stage">
     <div class="pourA__eyebrowtop">// THE POUR</div>
-    <video class="pourA__video" id="pourAVid"
-      src="${VID}" poster="${POSTER}"
-      muted playsinline preload="auto" webkit-playsinline
-      onerror="this.style.display='none';var p=document.getElementById('pourAFallback');if(p)p.style.display='block';"></video>
-    <img class="pourA__fallback" id="pourAFallback" src="${POSTER}" alt="" style="display:none"/>
+    <canvas class="pourA__canvas" id="pourACanvas" aria-hidden="true"></canvas>
+    <img class="pourA__fallback" id="pourAFallback" src="${POSTER}" alt=""/>
+    <div class="pourA__scrim" aria-hidden="true"></div>
     <div class="pourA__acts">
       <div class="pourA__act" data-a="0">
         <div class="pourA__eb">01 / Origin</div>
@@ -51,9 +53,10 @@ function buildPourA(assets) {
 </section>
 <style>
   .pourA{position:relative;height:420vh}
-  .pourA__stage{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center}
-  .pourA__video,.pourA__fallback{position:absolute;top:50%;left:50%;width:min(74vw,960px);height:auto;transform:translate(-50%,-50%);will-change:transform;pointer-events:none;filter:saturate(1.12) contrast(1.04)}
-  .pourA__acts{position:absolute;left:6vw;top:50%;transform:translateY(-50%);z-index:5;max-width:420px;min-height:200px}
+  .pourA__stage{position:sticky;top:0;height:100vh;overflow:hidden}
+  .pourA__canvas,.pourA__fallback{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;will-change:transform;pointer-events:none;filter:saturate(1.12) contrast(1.04);transform:scale(1.12)}
+  .pourA__scrim{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(100deg, rgba(246,240,231,.62) 0%, rgba(246,240,231,.32) 26%, transparent 56%)}
+  .pourA__acts{position:absolute;left:6vw;top:50%;transform:translateY(-50%);z-index:5;width:min(420px,74vw);min-height:200px}
   .pourA__act{position:absolute;top:0;left:0;width:100%;opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s cubic-bezier(.16,1,.3,1);pointer-events:none}
   .pourA__act.on{opacity:1;transform:translateY(0)}
   .pourA__eb{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#B5793F;margin-bottom:16px;text-transform:uppercase}
@@ -66,8 +69,8 @@ function buildPourA(assets) {
   .pourA__dot.on{background:#B5793F}
   @media(max-width:820px){
     .pourA{height:380vh}
-    .pourA__video,.pourA__fallback{width:96vw}
-    .pourA__acts{left:0;right:0;top:auto;bottom:14vh;transform:none;padding:0 8vw;max-width:none}
+    .pourA__scrim{background:linear-gradient(180deg, rgba(246,240,231,.2) 0%, rgba(246,240,231,.5) 62%, rgba(246,240,231,.78) 100%)}
+    .pourA__acts{left:0;right:0;top:auto;width:auto;bottom:14vh;transform:none;padding:0 8vw;max-width:none}
     .pourA__ti{text-shadow:0 1px 24px rgba(255,255,255,.7)}
   }
   @media(prefers-reduced-motion:reduce){
@@ -79,21 +82,37 @@ function buildPourA(assets) {
 (function(){
   var section=document.getElementById('pour');
   if(!section)return;
-  var video=document.getElementById('pourAVid');
+  var canvas=document.getElementById('pourACanvas');
+  var ctx=canvas.getContext('2d');
+  var fallback=document.getElementById('pourAFallback');
   var acts=section.querySelectorAll('.pourA__act');
   var dots=section.querySelectorAll('.pourA__dot');
   var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var dur=0, ready=false;
+  var FRAME_COUNT=${FRAME_COUNT};
+  var FRAMES_BASE='${FRAMES_BASE}';
+  function frameUrl(i){ return FRAMES_BASE+'/frame'+String(i).padStart(3,'0')+'.webp'; }
+  var frames=[], failed=false, sized=false, revealed=false;
   var progress=0;      // alvo vindo do scroll (0..1)
-  var current=0;       // valor interpolado (0..1) — o que realmente vira currentTime
+  var current=0;       // valor interpolado (0..1) — o que vira índice de frame
   var dy=0;            // deslocamento vertical da cena
+  var dpr=Math.min(window.devicePixelRatio||1,2);
   function clamp(v,a,b){return v<a?a:(v>b?b:v);}
 
-  video.addEventListener('loadedmetadata',function(){
-    dur=video.duration||10; ready=true;
-    try{ video.pause(); }catch(e){}
-    onScroll(); loop();
-  });
+  function sizeCanvas(img){
+    canvas.width=Math.round((img.naturalWidth||1280)*dpr);
+    canvas.height=Math.round((img.naturalHeight||720)*dpr);
+    sized=true;
+  }
+  function onFrameError(){
+    if(failed)return; failed=true;
+    canvas.style.display='none'; fallback.style.display='block';
+  }
+  for(var i=1;i<=FRAME_COUNT;i++){
+    var img=new Image();
+    img.onerror=onFrameError;
+    img.src=frameUrl(i);
+    frames.push(img);
+  }
 
   function onScroll(){
     var rect=section.getBoundingClientRect();
@@ -107,37 +126,48 @@ function buildPourA(assets) {
     var idx=clamp(Math.floor(progress*3),0,2);
     for(var i=0;i<acts.length;i++){ acts[i].classList.toggle('on', i===idx); }
     for(var k=0;k<dots.length;k++){ dots[k].classList.toggle('on', k===idx); }
-    // xícara/cena desce de leve (movimento único e contínuo)
+    // cena desce de leve (movimento único e contínuo). O scale(1.12) na base
+    // (CSS) dá margem de sobra pra esse translateY nunca expor borda vazia
+    // — full-bleed sempre coberto, mesmo com o drift.
     var ndy=(-18 + current*36);
-    if(Math.abs(ndy-dy)>0.1){ dy=ndy; video.style.transform='translate(-50%,calc(-50% + '+dy.toFixed(1)+'px))'; var f=document.getElementById('pourAFallback'); if(f)f.style.transform=video.style.transform; }
+    if(Math.abs(ndy-dy)>0.1){ dy=ndy; var t='translateY('+dy.toFixed(1)+'px) scale(1.12)'; canvas.style.transform=t; if(fallback)fallback.style.transform=t; }
+    if(failed)return;
+    // índice de frame vem do valor JÁ INTERPOLADO (current), não do alvo bruto —
+    // é isso que faz a troca de frame ficar lisa em vez de saltada.
+    var fi=clamp(Math.round(current*(FRAME_COUNT-1)),0,FRAME_COUNT-1);
+    var frame=frames[fi];
+    if(frame && frame.complete && frame.naturalWidth){
+      if(!sized) sizeCanvas(frame);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(frame,0,0,canvas.width,canvas.height);
+      if(!revealed){ revealed=true; fallback.style.display='none'; }
+    }
   }
 
   function loop(){
-    // interpola current -> progress (suaviza o seek, essencial pro iOS não travar)
+    // interpola current -> progress (suaviza a troca de frame)
     current += (progress-current)*0.12;
     if(Math.abs(progress-current)<0.0005) current=progress;
-    if(ready && dur){
-      var target=clamp(current,0,1)*dur;
-      // fastSeek quando existir (iOS/Safari): seek aproximado e leve
-      if(Math.abs(video.currentTime-target)>0.015){
-        if(typeof video.fastSeek==='function'){ try{ video.fastSeek(target); }catch(e){ try{video.currentTime=target;}catch(_){}} }
-        else { try{ video.currentTime=target; }catch(e){} }
-      }
-    }
     paint();
     requestAnimationFrame(loop);
   }
 
   if(reduce){
-    // sem scrub: para o vídeo num frame representativo e mostra o último ato
-    video.addEventListener('loadedmetadata',function(){ try{ video.currentTime=(video.duration||10)*0.6; }catch(e){} });
+    // sem scrub: mostra um frame representativo e o último ato, sem animar
     acts[acts.length-1].classList.add('on');
     dots[dots.length-1].classList.add('on');
+    current=progress=0.6;
+    (function paintStill(){
+      var frame=frames[Math.floor(FRAME_COUNT*0.6)];
+      if(frame && frame.complete && frame.naturalWidth){
+        sizeCanvas(frame); ctx.drawImage(frame,0,0,canvas.width,canvas.height); fallback.style.display='none';
+      } else if(!failed){ requestAnimationFrame(paintStill); }
+    })();
   } else {
     window.addEventListener('scroll',onScroll,{passive:true});
     window.addEventListener('resize',onScroll,{passive:true});
-    // tenta destravar a decodificação em alguns browsers (load silencioso)
-    try{ video.load(); }catch(e){}
+    onScroll();
+    loop();
   }
 })();
 </script>`;
@@ -434,17 +464,20 @@ export default async function handler(req, res) {
       cupPattern: `${bankBase}/frames_cup/frame`,
       lattePattern: `${bankBase}/frames_latte/frame`,
       cafeCount: 40,
-      cupReady: true,     // (café A agora usa o showpiece carimbado, não frames)
+      cupReady: true,     // (café A usa seu próprio frame sequence carimbado — frames_pour/ — não este bankFrames)
       latteReady: false,  // true quando frames_latte/ estiver no ar (efeito B)
     };
 
-    // ---------- ASSETS DO SHOWPIECE THE POUR A (café) — VÍDEO SCROLL-SCRUB ----------
-    // A cena única (xícara + grãos→leite→gelo fluido) é um vídeo do Seedance.
-    // O scroll controla o tempo do vídeo (scroll-scrub), como na referência.
-    // poster = um frame estático de fallback (hero do café) caso o vídeo falhe.
+    // ---------- ASSETS DO SHOWPIECE THE POUR A (café) — FRAME SEQUENCE SCROLL-SCRUB ----------
+    // A cena única (xícara + grãos→leite→gelo fluido) foi extraída do vídeo do
+    // Seedance (pour_scene.mp4) em 90 frames .webp (banco/cafe/frames_pour/).
+    // O scroll controla qual frame é desenhado num <canvas> — estilo Apple,
+    // nunca engasga (não há decode de vídeo/seek envolvido).
+    // poster = um frame estático de fallback (hero do café) caso os frames falhem.
     const cafePourAssets = {
-      pourScene: `${bankBase}/pour_scene.mp4`,
-      poster:    `${bankBase}/hero.jpg`,
+      framesBase: `${bankBase}/frames_pour`,
+      frameCount: 90,
+      poster:     `${bankBase}/hero.jpg`,
     };
     // HTML carimbado do showpiece (idêntico toda geração, scroll-scrub liso).
     const POUR_A_HTML = buildPourA(cafePourAssets);
