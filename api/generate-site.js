@@ -1,20 +1,17 @@
 // ============================================================================
-// THE POUR A — SHOWPIECE SCROLL-SCRUB (café, modo cinematic_a)
+// THE POUR A — SHOWPIECE FRAME-SEQUENCE SCROLL-SCRUB (café, modo cinematic_a)
 // Injetado via placeholder THE_POUR_A_PLACEHOLDER depois da geração do Opus.
 //
-// EFEITO (igual à referência noirpixel): a cena do café (frame sequence extraída
-// de pour_scene.mp4 — xícara centralizada + grãos→leite→gelo se transformando de
-// forma fluida) fica CENTRALIZADA, sem fundo/moldura. O SCROLL controla qual
-// frame é desenhado. Rolar pra baixo avança a cena; rolar pra cima rebobina.
-// Movimento único e contínuo, nunca slide. A xícara desce de leve conforme rola.
-//
-// POR QUE FRAME SEQUENCE (e não vídeo scrubado): setar video.currentTime no
-// scroll é a abordagem antiga — trava/engasga em Safari/iPhone mesmo com
-// interpolação. Frame sequence (estilo Apple) é 100% confiável em qualquer
-// device: são só imagens pré-carregadas trocadas num <canvas>, sem decode de
-// vídeo envolvido. O loop rAF interpola (lerp) o progresso alvo do scroll pro
-// índice de frame desenhado, então o movimento continua liso mesmo pulando
-// frames. Copy dos 3 atos aparece em sincronia (editável).
+// HISTÓRICO: passamos por PNGs flutuantes (GSAP) e por um frame-sequence
+// antigo (canvas + scroll listener manual, sem GSAP), depois pelo vídeo
+// âmbar pour_scene.mp4 original (apagado do banco). A versão atual —
+// frame-sequence (130 .webp de pour_scene_dark.mp4, fundo preto,
+// banco/cafe/frames_pour_dark/) — é desenhada num <canvas>, com GSAP
+// ScrollTrigger fazendo o pin (pin:true) + scrub (scrub:1): mais robusto que
+// sticky+scroll-listener pra manter o índice de frame sincronizado com o
+// progresso do scroll. Fallback vanilla (sticky CSS + rAF+lerp) se o GSAP CDN
+// falhar. As legendas (início/meio/clímax) usam painéis locais com
+// backdrop-filter pra ficarem sempre legíveis, sem escurecer a tela toda.
 // ============================================================================
 function buildPourA(assets) {
   const FRAMES_BASE = assets.framesBase;
@@ -23,86 +20,94 @@ function buildPourA(assets) {
   return `
 <section class="pourA" id="pour" aria-label="The Pour">
   <div class="pourA__stage">
-    <div class="pourA__eyebrowtop">// THE POUR</div>
     <canvas class="pourA__canvas" id="pourACanvas" aria-hidden="true"></canvas>
-    <img class="pourA__fallback" id="pourAFallback" src="${POSTER}" alt=""/>
-    <div class="pourA__scrim" aria-hidden="true"></div>
-    <div class="pourA__acts">
-      <div class="pourA__act" data-a="0">
-        <div class="pourA__eb">01 / Origin</div>
-        <h3 class="pourA__ti">It starts with the <em>bean.</em></h3>
-        <p class="pourA__li">Single-origin beans, roasted in small batches. Every cup begins long before the pour.</p>
-      </div>
-      <div class="pourA__act" data-a="1">
-        <div class="pourA__eb">02 / Craft</div>
-        <h3 class="pourA__ti">Poured with <em>intention.</em></h3>
-        <p class="pourA__li">Steamed to silk, poured by hand. The kind of care you can taste in the first sip.</p>
-      </div>
-      <div class="pourA__act" data-a="2">
-        <div class="pourA__eb">03 / Ritual</div>
-        <h3 class="pourA__ti">Made to <em>slow you down.</em></h3>
-        <p class="pourA__li">More than a drink — a pause in your day. Come sit, stay a while.</p>
-      </div>
-    </div>
-    <div class="pourA__dots">
-      <span class="pourA__dot" data-d="0"></span>
-      <span class="pourA__dot" data-d="1"></span>
-      <span class="pourA__dot" data-d="2"></span>
+    <img class="pourA__fallback" id="pourAFallback" src="${POSTER}" alt="" style="display:none"/>
+    <div class="pourA__vignette" aria-hidden="true"></div>
+    <div class="pourA__eyebrow">// THE POUR</div>
+    <div class="pourA__side pourA__side--left" id="pourASide1"><div class="pourA__panel"><span>Every bean, a story</span></div></div>
+    <div class="pourA__side pourA__side--right" id="pourASide2"><div class="pourA__panel"><span>Crafted, never rushed</span></div></div>
+    <div class="pourA__caption" id="pourACaption">
+      <div class="pourA__panel"><div class="pourA__ti">Poured with <em>intention</em></div></div>
     </div>
   </div>
 </section>
 <style>
-  .pourA{position:relative;height:420vh}
-  .pourA__stage{position:sticky;top:0;height:100vh;overflow:hidden}
-  .pourA__canvas,.pourA__fallback{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;will-change:transform;pointer-events:none;filter:saturate(1.12) contrast(1.04);transform:scale(1.12)}
-  .pourA__scrim{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(100deg, rgba(246,240,231,.62) 0%, rgba(246,240,231,.32) 26%, transparent 56%)}
-  .pourA__acts{position:absolute;left:6vw;top:50%;transform:translateY(-50%);z-index:5;width:min(420px,74vw);min-height:200px}
-  .pourA__act{position:absolute;top:0;left:0;width:100%;opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s cubic-bezier(.16,1,.3,1);pointer-events:none}
-  .pourA__act.on{opacity:1;transform:translateY(0)}
-  .pourA__eb{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#B5793F;margin-bottom:16px;text-transform:uppercase}
-  .pourA__ti{font-size:clamp(2rem,3.4vw,3rem);line-height:1.04;font-weight:700;margin-bottom:14px;letter-spacing:-.5px;color:#2A1D14;text-shadow:0 1px 20px rgba(255,255,255,.5)}
-  .pourA__ti em{font-style:normal;color:#B5793F}
-  .pourA__li{font-size:16px;line-height:1.7;color:#5a4a3a;max-width:380px}
-  .pourA__eyebrowtop{position:absolute;top:38px;left:6vw;z-index:5;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#B5793F;opacity:.9}
-  .pourA__dots{position:absolute;bottom:44px;left:6vw;z-index:5;display:flex;gap:10px}
-  .pourA__dot{width:26px;height:3px;border-radius:2px;background:rgba(42,29,20,.2);transition:background .4s}
-  .pourA__dot.on{background:#B5793F}
-  @media(max-width:820px){
-    .pourA{height:380vh}
-    .pourA__scrim{background:linear-gradient(180deg, rgba(246,240,231,.2) 0%, rgba(246,240,231,.5) 62%, rgba(246,240,231,.78) 100%)}
-    .pourA__acts{left:0;right:0;top:auto;width:auto;bottom:14vh;transform:none;padding:0 8vw;max-width:none}
-    .pourA__ti{text-shadow:0 1px 24px rgba(255,255,255,.7)}
+  .pourA{position:relative;height:100vh;overflow:hidden;background:#080503}
+  .pourA__stage{position:relative;height:100%;width:100%}
+  .pourA__canvas,.pourA__fallback{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.1) contrast(1.04);pointer-events:none}
+  .pourA__vignette{position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:
+      linear-gradient(180deg, rgba(8,5,3,1) 0%, rgba(8,5,3,.4) 14%, transparent 26%, transparent 60%, rgba(8,5,3,.5) 86%, rgba(8,5,3,1) 100%),
+      radial-gradient(120% 90% at 50% 50%, transparent 48%, rgba(5,3,2,.55) 100%)}
+  .pourA__eyebrow{position:absolute;top:38px;left:6vw;z-index:5;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#E8B36B;opacity:.75}
+
+  /* painel "legenda de filme": fundo LOCALIZADO à frase (não a tela toda) —
+     backdrop-filter borra+escurece só os pixels do vídeo atrás do texto, o
+     que garante contraste seja qual for o momento da coreografia (grãos,
+     leite ou gelo) atrás dele. rgba de fundo é o fallback pra navegadores
+     sem backdrop-filter (aí ele fica mais opaco pra compensar). */
+  .pourA__panel{display:inline-block;padding:16px 28px;border-radius:16px;
+    background:rgba(8,5,3,.32);
+    -webkit-backdrop-filter:blur(16px) brightness(.5) saturate(1.15);
+    backdrop-filter:blur(16px) brightness(.5) saturate(1.15);
+    box-shadow:0 0 46px 16px rgba(5,3,2,.2)}
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    .pourA__panel{background:rgba(6,4,2,.64)}
   }
-  @media(prefers-reduced-motion:reduce){
-    .pourA{height:auto}
-    .pourA__stage{position:relative;height:auto;min-height:100vh}
-  }
+
+  .pourA__side{position:absolute;top:50%;transform:translateY(-50%);z-index:5;max-width:min(32%,360px);pointer-events:none;
+    opacity:0;filter:blur(16px);
+    transition:opacity 1.1s cubic-bezier(.16,1,.3,1),filter 1.1s cubic-bezier(.16,1,.3,1),transform 1.1s cubic-bezier(.16,1,.3,1)}
+  .pourA__side--left{left:6vw;text-align:left;transform:translateY(-50%) translateX(-18px)}
+  .pourA__side--right{right:6vw;text-align:right;transform:translateY(-50%) translateX(18px)}
+  .pourA__side.show{opacity:1;filter:blur(0)}
+  .pourA__side--left.show{transform:translateY(-50%) translateX(0)}
+  .pourA__side--right.show{transform:translateY(-50%) translateX(0)}
+  .pourA__side span{font-size:clamp(1.1rem,1.8vw,1.5rem);font-family:'Fraunces',Georgia,serif;font-style:italic;font-weight:500;color:#F2E4CE;letter-spacing:-.2px;text-shadow:0 3px 18px rgba(0,0,0,.75)}
+
+  .pourA__caption{position:absolute;left:0;right:0;bottom:12vh;z-index:5;text-align:center;pointer-events:none;
+    opacity:0;filter:blur(14px);transform:translateY(28px);
+    transition:opacity 1.1s cubic-bezier(.16,1,.3,1),filter 1.1s cubic-bezier(.16,1,.3,1),transform 1.1s cubic-bezier(.16,1,.3,1)}
+  .pourA__caption.show{opacity:1;filter:blur(0);transform:translateY(0)}
+  .pourA__caption .pourA__panel{padding:20px 40px}
+  .pourA__ti{font-size:clamp(1.8rem,3.4vw,3rem);font-family:'Fraunces',Georgia,serif;font-style:italic;font-weight:600;color:#FBF3E7;letter-spacing:-.3px;text-shadow:0 3px 20px rgba(0,0,0,.7)}
+  .pourA__ti em{color:#E8B36B}
+  @media(max-width:820px){ .pourA__side{max-width:64%} .pourA__side--left,.pourA__side--right{left:7vw;right:7vw;text-align:left;transform:translateY(-50%)} .pourA__panel{padding:13px 22px} }
+  @media(prefers-reduced-motion:reduce){ .pourA__caption,.pourA__side{transition:none} }
 </style>
 <script>
 (function(){
   var section=document.getElementById('pour');
   if(!section)return;
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var canvas=document.getElementById('pourACanvas');
   var ctx=canvas.getContext('2d');
   var fallback=document.getElementById('pourAFallback');
-  var acts=section.querySelectorAll('.pourA__act');
-  var dots=section.querySelectorAll('.pourA__dot');
-  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var caption=document.getElementById('pourACaption');
+
   var FRAME_COUNT=${FRAME_COUNT};
   var FRAMES_BASE='${FRAMES_BASE}';
-  function frameUrl(i){ return FRAMES_BASE+'/frame'+String(i).padStart(3,'0')+'.webp'; }
-  var frames=[], failed=false, sized=false, revealed=false;
-  var progress=0;      // alvo vindo do scroll (0..1)
-  var current=0;       // valor interpolado (0..1) — o que vira índice de frame
-  var dy=0;            // deslocamento vertical da cena
-  var dpr=Math.min(window.devicePixelRatio||1,2);
-  function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+  var CAPTION_AT=0.78; // progresso a partir do qual o texto do clímax entra
+  // cache-bust: raw.githubusercontent.com (Fastly) mantém cache por URL —
+  // como os arquivos frame001..130.webp já foram sobrescritos mais de uma
+  // vez com conteúdo de vídeos DIFERENTES sob o mesmo nome, um visitante
+  // podia receber uma MISTURA de frames antigos (cache) e novos (fresh),
+  // literalmente cortando de um vídeo pro outro no meio do scrub. O query
+  // param força o browser/CDN a tratar como recurso novo. Bump este valor
+  // sempre que o conteúdo de frames_pour_dark/ for regenerado de novo.
+  var FRAMES_VERSION='3';
 
-  function sizeCanvas(img){
-    canvas.width=Math.round((img.naturalWidth||1280)*dpr);
-    canvas.height=Math.round((img.naturalHeight||720)*dpr);
-    sized=true;
-  }
+  // legendas laterais (início=esquerda, meio=direita) que entram/saem
+  // conforme o scroll-scrub avança, cada uma com sua janela de progresso
+  // [in,out] — fade+blur via a mesma classe .show usada no clímax central.
+  var SIDE_CAPTIONS=[
+    {id:'pourASide1', from:0.06, to:0.30},
+    {id:'pourASide2', from:0.40, to:0.64},
+  ].map(function(c){ c.el=document.getElementById(c.id); return c; });
+
+  function frameUrl(i){ return FRAMES_BASE+'/frame'+String(i).padStart(3,'0')+'.webp?v='+FRAMES_VERSION; }
+  var frames=[], failed=false, sized=false, revealed=false, dpr=Math.min(window.devicePixelRatio||1,2);
+
   function onFrameError(){
     if(failed)return; failed=true;
     canvas.style.display='none'; fallback.style.display='block';
@@ -114,27 +119,15 @@ function buildPourA(assets) {
     frames.push(img);
   }
 
-  function onScroll(){
-    var rect=section.getBoundingClientRect();
-    var total=section.offsetHeight-window.innerHeight;
-    var passed=clamp(-rect.top,0,total);
-    progress=total>0?passed/total:0;
+  function sizeCanvas(img){
+    canvas.width=Math.round((img.naturalWidth||1280)*dpr);
+    canvas.height=Math.round((img.naturalHeight||720)*dpr);
+    sized=true;
   }
 
-  function paint(){
-    // atos por terço (baseado no alvo pra reagir rápido)
-    var idx=clamp(Math.floor(progress*3),0,2);
-    for(var i=0;i<acts.length;i++){ acts[i].classList.toggle('on', i===idx); }
-    for(var k=0;k<dots.length;k++){ dots[k].classList.toggle('on', k===idx); }
-    // cena desce de leve (movimento único e contínuo). O scale(1.12) na base
-    // (CSS) dá margem de sobra pra esse translateY nunca expor borda vazia
-    // — full-bleed sempre coberto, mesmo com o drift.
-    var ndy=(-18 + current*36);
-    if(Math.abs(ndy-dy)>0.1){ dy=ndy; var t='translateY('+dy.toFixed(1)+'px) scale(1.12)'; canvas.style.transform=t; if(fallback)fallback.style.transform=t; }
+  function drawAt(p){
     if(failed)return;
-    // índice de frame vem do valor JÁ INTERPOLADO (current), não do alvo bruto —
-    // é isso que faz a troca de frame ficar lisa em vez de saltada.
-    var fi=clamp(Math.round(current*(FRAME_COUNT-1)),0,FRAME_COUNT-1);
+    var fi=Math.max(0,Math.min(FRAME_COUNT-1,Math.round(p*(FRAME_COUNT-1))));
     var frame=frames[fi];
     if(frame && frame.complete && frame.naturalWidth){
       if(!sized) sizeCanvas(frame);
@@ -144,31 +137,1055 @@ function buildPourA(assets) {
     }
   }
 
-  function loop(){
-    // interpola current -> progress (suaviza a troca de frame)
-    current += (progress-current)*0.12;
-    if(Math.abs(progress-current)<0.0005) current=progress;
-    paint();
-    requestAnimationFrame(loop);
+  function paint(p){
+    drawAt(p);
+    caption.classList.toggle('show', p>=CAPTION_AT);
+    for(var i=0;i<SIDE_CAPTIONS.length;i++){
+      var c=SIDE_CAPTIONS[i];
+      if(c.el) c.el.classList.toggle('show', p>=c.from && p<c.to);
+    }
+  }
+
+  function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+  function computeProgress(){
+    var rect=section.getBoundingClientRect();
+    var total=section.offsetHeight-window.innerHeight;
+    var passed=clamp(-rect.top,0,total);
+    return total>0?passed/total:0;
   }
 
   if(reduce){
-    // sem scrub: mostra um frame representativo e o último ato, sem animar
-    acts[acts.length-1].classList.add('on');
-    dots[dots.length-1].classList.add('on');
-    current=progress=0.6;
-    (function paintStill(){
-      var frame=frames[Math.floor(FRAME_COUNT*0.6)];
-      if(frame && frame.complete && frame.naturalWidth){
-        sizeCanvas(frame); ctx.drawImage(frame,0,0,canvas.width,canvas.height); fallback.style.display='none';
-      } else if(!failed){ requestAnimationFrame(paintStill); }
-    })();
+    paint(1);
+    return;
+  }
+
+  var hasGsap=(typeof window.gsap!=='undefined' && typeof window.ScrollTrigger!=='undefined');
+
+  if(hasGsap){
+    gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.create({
+      trigger:section, start:'top top', pin:true, scrub:1, anticipatePin:1,
+      end:function(){ return '+='+Math.round(window.innerHeight*3.5); },
+      invalidateOnRefresh:true,
+      onUpdate:function(self){ paint(self.progress); },
+    });
+    paint(0);
   } else {
+    // fallback vanilla — se o GSAP CDN falhar, sticky via CSS + scroll+rAF lerp
+    section.style.position='relative';
+    var stage=section.querySelector('.pourA__stage');
+    stage.style.position='sticky'; stage.style.top='0';
+    var target=0, current=0;
+    function onScroll(){ target=computeProgress(); }
+    function loop(){
+      current += (target-current)*0.12;
+      if(Math.abs(target-current)<0.0005) current=target;
+      paint(current);
+      requestAnimationFrame(loop);
+    }
     window.addEventListener('scroll',onScroll,{passive:true});
     window.addEventListener('resize',onScroll,{passive:true});
     onScroll();
     loop();
   }
+})();
+</script>`;
+}
+
+// ============================================================================
+// CAPA — SHOWPIECE (café, modo cinematic_a)
+// Injetado via placeholder CAPA_PLACEHOLDER depois da geração do Opus.
+// Fundo de vapor: frame sequence (121 .webp de capa_vapor.mp4, banco/cafe/
+// frames_capa/) desenhada num <canvas>, em loop PING-PONG (pra frente até o
+// fim, pra trás até o início, repete) — trocar apenas o ÍNDICE do array de
+// frames já carregados é instantâneo, sem seek/decode, então não trava e
+// não tem pausa na virada (limitação que um <video> real teria com
+// currentTime/playbackRate). 170 grãos de café (sprites recortados de uma
+// única folha graos.png — 8
+// grãos-fonte, bboxes extraídas por detecção de componentes conectados no
+// canal alpha) em 3 camadas de profundidade, com repulsão de mouse (GSAP
+// quickTo); nome/tagline/subtexto entrando em blur→foco.
+// ============================================================================
+function buildCapa(assets) {
+  const FRAMES_BASE = assets.framesBase;
+  const FRAME_COUNT = assets.frameCount;
+  const POSTER = assets.poster;
+  const SHEET_URL = assets.beansSheet;
+  const CAFE_NAME_1 = assets.cafeName1;
+  const CAFE_NAME_2 = assets.cafeName2;
+  const TAGLINE = assets.tagline;
+  const SUBTEXT = assets.subtext;
+  const BRAND_LABEL = assets.brandLabel;
+  const CITY_LABEL = assets.cityLabel;
+  const CTA_HREF = assets.ctaHref;
+  return `
+<section class="capa" id="capa" aria-label="Capa">
+  <div class="capa__videoWrap" id="capaVideoWrap">
+    <canvas class="capa__video" id="capaVideoCanvas" aria-hidden="true"></canvas>
+    <img class="capa__poster" src="${POSTER}" alt="" aria-hidden="true"/>
+  </div>
+  <div class="capa__textScrim" aria-hidden="true"></div>
+  <div class="capa__bottomFade" aria-hidden="true"></div>
+  <div class="capa__grain" aria-hidden="true"></div>
+  <div class="capa__beans" id="capaBeans" aria-hidden="true"></div>
+
+  <div class="capa__topbar">
+    <div class="capa__brand" id="capaBrand"></div>
+    <div class="capa__clock"><span id="capaClock">--:--:--</span> · <span id="capaCity"></span></div>
+  </div>
+
+  <div class="capa__stage">
+    <h1 class="capa__name">
+      <span class="cWord" id="cw1"></span>
+      <span class="cWord cWord--gold" id="cw2"></span>
+    </h1>
+    <p class="capa__tagline" id="capaTagline"></p>
+    <p class="capa__subtext" id="capaSubtext"></p>
+  </div>
+
+  <div class="capa__bottom">
+    <a href="${CTA_HREF}" class="capa__cta" id="capaCta">View the menu</a>
+    <div class="capa__scroll" id="capaScroll">
+      <span>SCROLL</span>
+      <div class="capa__scrollline"><i></i></div>
+    </div>
+  </div>
+</section>
+<style>
+  .capa{position:relative;height:100vh;min-height:640px;overflow:hidden;background:#080503;color:#F5EBDD}
+
+  .capa__videoWrap{position:absolute;inset:-3vh;z-index:0}
+  .capa__video,.capa__poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .capa__poster{opacity:0;pointer-events:none;z-index:1}
+  .capa__videoWrap--failed .capa__video{display:none}
+  .capa__videoWrap--failed .capa__poster{opacity:1}
+
+  .capa__textScrim{position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:linear-gradient(100deg, rgba(4,2,1,.5) 0%, rgba(4,2,1,.26) 34%, transparent 60%)}
+
+  /* ponte de continuidade: dissolve o vídeo em #080503 (mesma cor-base de
+     TODAS as seções) nos últimos ~10vh da capa, pra rolar direto pra seção
+     seguinte sem nenhum corte de cor perceptível — sensação de peça única.
+     ALTURA REDUZIDA (era 16vh) + grãos ficam com y-max abaixo dessa faixa
+     (ver biasedPos) pra essa faixa nunca "comer" grão nenhum por cima. */
+  .capa__bottomFade{position:absolute;left:0;right:0;bottom:0;height:10vh;z-index:4;pointer-events:none;
+    background:linear-gradient(180deg, transparent 0%, #080503 100%)}
+
+  .capa__grain{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+  .capa__beans{position:absolute;inset:0;z-index:2;pointer-events:none}
+  .grain{position:absolute;pointer-events:none}
+  .grain__float{will-change:transform}
+  .grain__repel{will-change:transform}
+  .grain__sprite{will-change:transform;background-repeat:no-repeat}
+
+  .capa__topbar{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:center;padding:34px 6vw;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#E8B36B;opacity:0;text-shadow:0 2px 6px rgba(0,0,0,.85)}
+  .capa__clock{font-variant-numeric:tabular-nums;color:#CBB89A}
+  .capa__clock span{color:#F2C879}
+
+  .capa__stage{position:relative;z-index:5;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:0 6vw}
+
+  .capa__name{display:flex;flex-direction:column;gap:.02em;min-width:0;max-width:100%}
+  .cWord{display:inline-block;font-size:clamp(3rem,13vw,10rem);line-height:.96;font-weight:700;letter-spacing:-.02em;color:#FFFBF4;
+    text-shadow:0 4px 30px rgba(0,0,0,.7);
+    opacity:0;filter:blur(14px);transform:translateY(36px)}
+  .cWord--gold{font-style:italic;font-weight:600;color:#E8A64A}
+
+  .capa__tagline{margin-top:.6em;font-family:'Fraunces',Georgia,serif;font-style:italic;font-weight:500;font-size:clamp(1.05rem,2vw,1.6rem);color:#F2E4CE;text-shadow:0 3px 16px rgba(0,0,0,.75);
+    opacity:0;transform:translateY(18px)}
+  .capa__subtext{margin-top:.55em;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:#CBB89A;text-shadow:0 2px 10px rgba(0,0,0,.8);
+    opacity:0;transform:translateY(14px)}
+
+  .capa__bottom{position:absolute;bottom:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:center;padding:0 6vw 42px}
+
+  .capa__cta{opacity:0;pointer-events:auto;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#0c0805;background:#F2C879;padding:15px 28px;border-radius:999px;text-decoration:none;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:transform .35s cubic-bezier(.16,1,.3,1),box-shadow .35s ease}
+  .capa__cta:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+
+  .capa__scroll{opacity:0;display:flex;flex-direction:column;align-items:center;gap:10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:3px;color:#CBB89A;text-shadow:0 2px 8px rgba(0,0,0,.8)}
+  .capa__scrollline{width:1px;height:34px;background:rgba(255,255,255,.3);position:relative;overflow:hidden}
+  .capa__scrollline i{position:absolute;left:0;top:-40%;width:100%;height:40%;background:#F2C879;animation:capaScrollDrop 1.8s ease-in-out infinite}
+  @keyframes capaScrollDrop{0%{top:-40%}100%{top:100%}}
+
+  @media(max-width:820px){
+    .capa__topbar{padding:26px 7vw;font-size:10px}
+    .cWord{font-size:clamp(2.4rem,15vw,4.4rem)}
+    .capa__tagline{font-size:1rem}
+    .capa__bottom{padding:0 7vw 30px}
+    .capa__scroll{display:none}
+    .capa__textScrim{background:linear-gradient(180deg, rgba(4,2,1,.3) 0%, rgba(4,2,1,.55) 55%, rgba(4,2,1,.72) 100%)}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .cWord,.capa__tagline,.capa__subtext{opacity:1;filter:none;transform:none}
+    .capa__topbar,.capa__cta,.capa__scroll{opacity:1}
+    .capa__scrollline i{animation:none;display:none}
+    .grain__float{animation:none!important}
+  }
+</style>
+<script>
+(function(){
+  var CAFE_NAME_1 = ${JSON.stringify(CAFE_NAME_1)};
+  var CAFE_NAME_2 = ${JSON.stringify(CAFE_NAME_2)};
+  var TAGLINE     = ${JSON.stringify(TAGLINE)};
+  var SUBTEXT     = ${JSON.stringify(SUBTEXT)};
+  var BRAND_LABEL = ${JSON.stringify(BRAND_LABEL)};
+  var CITY_LABEL  = ${JSON.stringify(CITY_LABEL)};
+
+  document.getElementById('cw1').textContent = CAFE_NAME_1;
+  document.getElementById('cw2').textContent = CAFE_NAME_2;
+  document.getElementById('capaTagline').textContent = TAGLINE;
+  document.getElementById('capaSubtext').textContent = SUBTEXT;
+  document.getElementById('capaBrand').textContent = BRAND_LABEL;
+  document.getElementById('capaCity').textContent = CITY_LABEL;
+
+  // ---- loop PING-PONG via FRAME SEQUENCE + canvas (não <video>) ----
+  // A primeira versão tentava ping-pong num <video> real via currentTime
+  // decrescendo (rAF) — mas seek em vídeo força o decoder a buscar o
+  // keyframe anterior e decodificar pra frente até o ponto exato, o que
+  // trava MUITO (cada seek é caro) e cria uma pausa perceptível bem no
+  // ponto de virada (quando currentTime chega em 0 e precisa retomar o
+  // play nativo — há um delay de seek+buffer ali). Isso é uma limitação
+  // conhecida de <video>, não um bug de lógica.
+  // Fix definitivo: mesma técnica já aprovada e comprovadamente lisa do
+  // THE POUR — decompor o vídeo em frames .webp pré-carregados como
+  // Image() e desenhar no <canvas> via drawImage. "Reverter" vira só
+  // andar o ÍNDICE do array pra trás — não há seek, não há decode, é só
+  // trocar qual imagem (já decodificada) é desenhada. Zero stutter, zero
+  // pausa na virada, movimento idêntico pra frente e pra trás.
+  (function setupPingPongFrames(){
+    var wrap=document.getElementById('capaVideoWrap');
+    var canvas=document.getElementById('capaVideoCanvas');
+    if(!canvas) return;
+    var ctx=canvas.getContext('2d');
+    var FRAME_COUNT=${FRAME_COUNT};
+    var FRAMES_BASE='${FRAMES_BASE}';
+    var FPS=24; // mesmo fps do vídeo original — movimento em velocidade natural
+    var dpr=Math.min(window.devicePixelRatio||1,2);
+
+    function frameUrl(i){ return FRAMES_BASE+'/frame'+String(i).padStart(3,'0')+'.webp'; }
+
+    var frames=[], failed=false, sized=false;
+    function onFrameError(){
+      if(failed)return; failed=true;
+      if(wrap) wrap.classList.add('capa__videoWrap--failed');
+    }
+    for(var i=1;i<=FRAME_COUNT;i++){
+      var img=new Image();
+      img.onerror=onFrameError;
+      img.src=frameUrl(i);
+      frames.push(img);
+    }
+
+    function sizeCanvas(img){
+      canvas.width=Math.round((img.naturalWidth||1280)*dpr);
+      canvas.height=Math.round((img.naturalHeight||720)*dpr);
+      sized=true;
+    }
+
+    function draw(idx){
+      if(failed)return;
+      var frame=frames[idx];
+      if(frame && frame.complete && frame.naturalWidth){
+        if(!sized) sizeCanvas(frame);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(frame,0,0,canvas.width,canvas.height);
+      }
+    }
+
+    var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var idx=0, dir=1, acc=0, lastTs=null;
+    var frameDuration=1000/FPS;
+
+    function tick(ts){
+      if(failed)return;
+      if(lastTs===null) lastTs=ts;
+      var dt=ts-lastTs;
+      lastTs=ts;
+      acc+=dt;
+      while(acc>=frameDuration){
+        acc-=frameDuration;
+        idx+=dir;
+        if(idx>=FRAME_COUNT){ idx=FRAME_COUNT-2; dir=-1; }
+        else if(idx<0){ idx=1; dir=1; }
+      }
+      draw(idx);
+      requestAnimationFrame(tick);
+    }
+
+    // espera o 1º frame carregar antes de começar (evita canvas em branco);
+    // se falhar, o fallback (poster) já assume via onFrameError.
+    var startCheck=setInterval(function(){
+      if(failed){ clearInterval(startCheck); return; }
+      if(frames[0] && frames[0].complete && frames[0].naturalWidth){
+        clearInterval(startCheck);
+        draw(0);
+        if(!reduce) requestAnimationFrame(tick);
+      }
+    },40);
+  })();
+
+  // ---- relógio ao vivo ----
+  var clockEl=document.getElementById('capaClock');
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function tick(){
+    var d=new Date();
+    clockEl.textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  }
+  tick();
+  setInterval(tick,1000);
+
+  // ---- grãos interativos: 170 instâncias, 3 camadas de profundidade ----
+  var SHEET_URL=${JSON.stringify(SHEET_URL)}, SHEET_W=505, SHEET_H=302;
+  // bboxes re-medidas por flood-fill no canal alpha (tight bounding box de
+  // cada componente conectada) — mais precisas que a estimativa visual
+  // anterior, que tinha alguns px de folga a mais em cada grão.
+  var BEAN_SPRITES=[
+    {x:179,y:4,w:57,h:63}, {x:28,y:42,w:73,h:66}, {x:391,y:49,w:66,h:69}, {x:220,y:102,w:79,h:75},
+    {x:329,y:180,w:67,h:69}, {x:106,y:184,w:76,h:67}, {x:430,y:221,w:71,h:63}, {x:3,y:232,w:58,h:67},
+  ];
+  var GRAIN_COUNT=150;
+  // Um grão em foto real é um oval na diagonal — dentro do retângulo reto
+  // que o contém, ~25-28% da área é naturalmente transparente (os cantos).
+  // Isso é normal e não é bug, MAS em tamanhos muito pequenos (<15px) +
+  // opacidade baixa + blur, esses cantos transparentes somem visualmente
+  // no fundo escuro e o grão passa a impressão de estar cortado ao meio.
+  // sizeMin elevado (nenhuma camada abaixo de 15px) + opacidade mais alta
+  // garantem a silhueta OVAL completa sempre legível como "grão inteiro".
+  var TIERS=[
+    {sizeMin:15, sizeMax:22, opMin:.62, opMax:.76, z:1},
+    {sizeMin:22, sizeMax:32, opMin:.78, opMax:.9,  z:2},
+    {sizeMin:32, sizeMax:48, opMin:.9,  opMax:1,   z:3},
+  ];
+  var beansWrap=document.getElementById('capaBeans');
+  var grains=[];
+
+  function rand(a,b){ return a+Math.random()*(b-a); }
+
+  // margem de segurança: os grãos nunca podem nascer perto o bastante da
+  // borda pra que o float (amplitude) + repulsão do mouse (MAX_PUSH) os
+  // empurre pra fora do .capa (overflow:hidden) — isso causava grãos
+  // "cortados pela metade" perto das bordas. y-max fica ACIMA da faixa do
+  // .capa__bottomFade (10vh, z-index maior que os grãos) — senão o
+  // gradiente escurece por cima dos grãos na base e eles parecem cortados.
+  //
+  // ACHADO IMPORTANTE (via teste isolado): o "grão cortado" reportado NÃO
+  // era um bug de crop — cada grão sozinho renderiza inteiro em qualquer
+  // tamanho/rotação (confirmado testando 1 grão isolado, todas transforms).
+  // O problema real é DOIS OU MAIS grãos nascendo perto o bastante pra se
+  // sobreporem: dois ovais semitransparentes sobrepostos se fundem numa
+  // silhueta ambígua — "meio grão colado com pedaço de outro" — exatamente
+  // o efeito reportado (reproduzido isoladamente pra confirmar a causa).
+  //
+  // Fix: amostragem por rejeição EM PIXELS, sensível ao TAMANHO de cada
+  // grão — a primeira versão usava um gap fixo em %, que não é suficiente
+  // pra dois grãos GRANDES (tier 3, até 48px) e distorce entre eixo X/Y
+  // porque a seção não é quadrada (100vw x 100vh). Aqui a distância mínima
+  // exigida entre os CENTROS de dois grãos é a soma dos seus próprios
+  // raios + uma margem — proporcional ao tamanho real de cada um.
+  var VW=window.innerWidth||1280, VH=window.innerHeight||800;
+  var placedPx=[]; // {xPx,yPx,radiusPx}
+  var GAP_MARGIN=10;
+  function biasedPos(radiusPx){
+    var x,y,best=null,bestSlack=-Infinity;
+    for(var t=0;t<40;t++){
+      if(Math.random()<0.62){
+        x = Math.random()<0.5 ? rand(5,30) : rand(70,95);
+        y = rand(9,75);
+      } else {
+        x = rand(5,95);
+        y = rand(9,75);
+      }
+      var xPx=x/100*VW, yPx=y/100*VH;
+      var worstSlack=Infinity;
+      for(var j=0;j<placedPx.length;j++){
+        var dx=xPx-placedPx[j].xPx, dy=yPx-placedPx[j].yPx;
+        var d=Math.sqrt(dx*dx+dy*dy);
+        var need=radiusPx+placedPx[j].radiusPx+GAP_MARGIN;
+        var slack=d-need; // >=0 significa livre de colisão
+        if(slack<worstSlack) worstSlack=slack;
+      }
+      if(worstSlack>=0){ placedPx.push({xPx:xPx,yPx:yPx,radiusPx:radiusPx}); return {x:x,y:y}; }
+      if(worstSlack>bestSlack){ bestSlack=worstSlack; best={x:x,y:y,xPx:xPx,yPx:yPx}; }
+    }
+    placedPx.push({xPx:best.xPx,yPx:best.yPx,radiusPx:radiusPx});
+    return {x:best.x,y:best.y};
+  }
+
+  for(var i=0;i<GRAIN_COUNT;i++){
+    var tier = TIERS[i % TIERS.length];
+    var sp=BEAN_SPRITES[i%BEAN_SPRITES.length];
+    var dispW=rand(tier.sizeMin,tier.sizeMax);
+    var scale=dispW/sp.w;
+    var dispH=sp.h*scale;
+    var pos=biasedPos(Math.max(dispW,dispH)/2);
+    var rot=rand(-30,30);
+    var mirror=Math.random()<0.5?-1:1;
+    var floatDur=rand(3,6.4);
+    var floatDelay=rand(0,4.5);
+    var floatAmp=rand(6,14);
+    var op=rand(tier.opMin,tier.opMax);
+
+    var home=document.createElement('div');
+    home.className='grain';
+    home.style.left=pos.x+'%';
+    home.style.top=pos.y+'%';
+    home.style.zIndex=tier.z;
+
+    var floatEl=document.createElement('div');
+    floatEl.className='grain__float';
+    floatEl.style.animation='grainFloat'+(i%3)+' '+floatDur+'s ease-in-out '+floatDelay+'s infinite';
+    floatEl.style.setProperty('--amp',floatAmp+'px');
+
+    var repelEl=document.createElement('div');
+    repelEl.className='grain__repel';
+
+    var sprite=document.createElement('div');
+    sprite.className='grain__sprite';
+    sprite.style.width=dispW+'px';
+    sprite.style.height=dispH+'px';
+    sprite.style.opacity=op;
+    sprite.style.filter = tier.z===1 ? 'blur(.5px) drop-shadow(0 3px 5px rgba(0,0,0,.4))' : 'drop-shadow(0 6px 10px rgba(0,0,0,.5))';
+    sprite.style.backgroundImage='url("'+SHEET_URL+'")';
+    sprite.style.backgroundSize=(SHEET_W*scale)+'px '+(SHEET_H*scale)+'px';
+    sprite.style.backgroundPosition=(-sp.x*scale)+'px '+(-sp.y*scale)+'px';
+    sprite.style.transform='rotate('+rot+'deg) scaleX('+mirror+')';
+
+    repelEl.appendChild(sprite);
+    floatEl.appendChild(repelEl);
+    home.appendChild(floatEl);
+    beansWrap.appendChild(home);
+
+    grains.push({home:home, repel:repelEl, baseX:0, baseY:0, tier:tier.z});
+  }
+
+  var styleTag=document.createElement('style');
+  styleTag.textContent=
+    '@keyframes grainFloat0{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(var(--amp)) rotate(4deg)}}'+
+    '@keyframes grainFloat1{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(calc(var(--amp) * -1)) rotate(-5deg)}}'+
+    '@keyframes grainFloat2{0%,100%{transform:translateX(0) translateY(0)}50%{transform:translateX(calc(var(--amp) * .6)) translateY(calc(var(--amp) * .8))}}';
+  document.head.appendChild(styleTag);
+
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGsap=(typeof window.gsap!=='undefined' && typeof window.ScrollTrigger!=='undefined');
+
+  function layoutGrains(){
+    grains.forEach(function(g){
+      var r=g.home.getBoundingClientRect();
+      g.baseX=r.left; g.baseY=r.top;
+    });
+  }
+  window.addEventListener('resize',layoutGrains);
+
+  if(!reduce && hasGsap){
+    gsap.registerPlugin(ScrollTrigger);
+
+    grains.forEach(function(g){
+      g.qx=gsap.quickTo(g.repel,'x',{duration:.5,ease:'power3.out'});
+      g.qy=gsap.quickTo(g.repel,'y',{duration:.5,ease:'power3.out'});
+    });
+    layoutGrains();
+    setTimeout(layoutGrains,600);
+
+    var REPEL_R=130, MAX_PUSH=55;
+    window.addEventListener('mousemove',function(e){
+      grains.forEach(function(g){
+        var dx=g.baseX-e.clientX, dy=g.baseY-e.clientY;
+        var dist=Math.hypot(dx,dy)||0.0001;
+        if(dist<REPEL_R){
+          var strength=(1-dist/REPEL_R);
+          strength = strength*strength*(3-2*strength);
+          var push=strength*MAX_PUSH;
+          g.qx(dx/dist*push); g.qy(dy/dist*push);
+        } else {
+          g.qx(0); g.qy(0);
+        }
+      });
+    },{passive:true});
+
+    var tl=gsap.timeline({defaults:{ease:'power3.out'}});
+    tl.to('.capa__topbar',{opacity:.9,duration:.8},0)
+      .to('#cw1',{opacity:1,filter:'blur(0px)',y:0,duration:1,ease:'power4.out'},.15)
+      .to('#cw2',{opacity:1,filter:'blur(0px)',y:0,duration:1.1,ease:'power4.out'},.35)
+      .to('#capaTagline',{opacity:1,y:0,duration:.8},.85)
+      .to('#capaSubtext',{opacity:1,y:0,duration:.7},1.0)
+      .to('#capaCta',{opacity:1,duration:.7},1.05)
+      .to('#capaScroll',{opacity:.85,duration:.6},1.2);
+    window.__capaTl=tl;
+  } else {
+    document.querySelectorAll('.cWord').forEach(function(w){ w.style.opacity=1; w.style.filter='none'; w.style.transform='none'; });
+    document.getElementById('capaTagline').style.opacity=1;
+    document.getElementById('capaTagline').style.transform='none';
+    document.getElementById('capaSubtext').style.opacity=1;
+    document.getElementById('capaSubtext').style.transform='none';
+    document.querySelector('.capa__topbar').style.opacity=.9;
+    document.getElementById('capaCta').style.opacity=1;
+    document.getElementById('capaScroll').style.opacity=.85;
+  }
+})();
+</script>`;
+}
+
+// ============================================================================
+// STORY — SHOWPIECE (café, modo cinematic_a)
+// Injetado via placeholder STORY_PLACEHOLDER depois da geração do Opus.
+// Editorial simples: eyebrow numerado "01 / OUR STORY" + título serif +
+// narrativa (variável — vem de aboutText do form, com fallback) ao lado de
+// uma foto grande (ambiente.jpg por padrão). Mesmo fundo/paleta das outras
+// seções pra fluir sem corte visual a partir da CAPA.
+// ============================================================================
+function buildStory(assets) {
+  const NARRATIVE = assets.narrative;
+  const PHOTO = assets.photo;
+  return `
+<section class="story" id="story" aria-label="Our Story">
+  <div class="story__bg" aria-hidden="true"></div>
+  <div class="story__grain" aria-hidden="true"></div>
+
+  <div class="story__inner">
+    <div class="story__text">
+      <div class="story__eyebrow reveal">01 / OUR STORY</div>
+      <h2 class="story__title reveal">Crafted for <em>the moment.</em></h2>
+      <p class="story__narrative reveal">${NARRATIVE}</p>
+    </div>
+    <div class="story__media reveal">
+      <img src="${PHOTO}" alt="" loading="lazy" decoding="async"/>
+    </div>
+  </div>
+</section>
+<style>
+  .story{position:relative;background:#080503;color:#F5EBDD;padding:14vh 6vw;overflow:hidden}
+  /* fundo CHAPADO #080503 (sem gradiente vertical) + glow radial recuado
+     bem pra dentro (nunca toca y=0% nem y=100%) — garante que o topo e a
+     base da seção batem PIXEL A PIXEL com a seção vizinha, sem nenhuma
+     linha de corte na transição do scroll. */
+  .story__bg{position:absolute;inset:0;z-index:0;background:
+    radial-gradient(50% 40% at 80% 40%, rgba(210,140,60,.11) 0%, rgba(180,110,40,0) 68%),
+    #080503}
+  .story__grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+  .story__inner{position:relative;z-index:2;max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:8vw;align-items:center}
+
+  .story__eyebrow{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#E8B36B;text-transform:uppercase;margin-bottom:20px;opacity:.9}
+  .story__title{font-size:clamp(2.2rem,4.6vw,3.6rem);font-weight:600;line-height:1.08;letter-spacing:-.01em;color:#FFFBF4;margin-bottom:4vh}
+  .story__title em{font-style:italic;font-weight:500;color:#E8A64A}
+  .story__narrative{font-family:'Fraunces',Georgia,serif;font-size:clamp(1.05rem,1.4vw,1.25rem);line-height:1.75;color:#E8DCC8;max-width:52ch}
+
+  .story__media{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:4/5;min-height:420px;
+    box-shadow:0 30px 70px rgba(0,0,0,.45)}
+  .story__media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+  .reveal{opacity:0;transform:translateY(36px);will-change:transform,opacity}
+
+  @media(max-width:900px){
+    .story__inner{grid-template-columns:1fr;gap:6vh}
+    .story__media{order:-1;min-height:320px}
+    .story{padding:10vh 7vw}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none}
+  }
+</style>
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGsap = (typeof window.gsap!=='undefined' && typeof window.ScrollTrigger!=='undefined');
+
+  if(reduce || !hasGsap){
+    document.querySelectorAll('#story .reveal').forEach(function(el){ el.style.opacity=1; el.style.transform='none'; });
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  ScrollTrigger.batch('#story .reveal', {
+    start:'top 85%',
+    onEnter: function(batch){
+      gsap.to(batch, {opacity:1, y:0, duration:1, ease:'power3.out', stagger:.12, clearProps:'willChange'});
+    },
+    once:true,
+  });
+})();
+</script>`;
+}
+
+// ============================================================================
+// GALLERY — SHOWPIECE (café, modo cinematic_a)
+// Injetado via placeholder GALLERY_PLACEHOLDER depois da geração do Opus.
+// Portado de teste-gallery.html (aprovado): mosaico masonry via CSS
+// multi-column (cada foto com seu próprio aspect-ratio), revelado em blocos
+// via ScrollTrigger.batch conforme entra na viewport, hover zoom+brilho em
+// CSS puro.
+// ============================================================================
+function buildGallery(assets) {
+  const PHOTOS = assets.photos; // array de até 6 URLs
+  const ratios = ["3/4", "1/1", "4/5", "4/3", "1/1", "3/4"];
+  const items = PHOTOS.slice(0, 6).map((url, i) =>
+    `<figure class="g-item gal-reveal" style="--ar:${ratios[i % ratios.length]}"><img src="${url}" alt="" loading="lazy" decoding="async"/></figure>`
+  ).join("\n    ");
+  return `
+<section class="gal" id="gal" aria-label="Gallery">
+  <div class="gal__bg" aria-hidden="true"></div>
+  <div class="gal__grain" aria-hidden="true"></div>
+
+  <div class="gal__head">
+    <div class="gal__eyebrow gal-reveal">04 / MOMENTS</div>
+    <h2 class="gal__title gal-reveal">Every cup, <em>a moment.</em></h2>
+  </div>
+
+  <div class="gal__grid" id="galGrid">
+    ${items}
+  </div>
+</section>
+<style>
+  .gal{position:relative;background:#080503;color:#F5EBDD;padding:12vh 6vw 14vh;overflow:hidden}
+
+  /* fundo chapado + glow recuado — ver nota de continuidade em .story__bg */
+  .gal__bg{position:absolute;inset:0;z-index:0;background:
+    radial-gradient(50% 38% at 50% 32%, rgba(210,140,60,.13) 0%, rgba(180,110,40,0) 68%),
+    #080503}
+
+  .gal__grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+  .gal__head{position:relative;z-index:2;margin-bottom:7vh;max-width:640px}
+  .gal__eyebrow{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#E8B36B;text-transform:uppercase;margin-bottom:18px;opacity:.9}
+  .gal__title{font-size:clamp(2rem,4.4vw,3.6rem);font-weight:600;line-height:1.08;letter-spacing:-.01em;color:#FFFBF4}
+  .gal__title em{font-style:italic;font-weight:500;color:#E8A64A}
+
+  .gal__grid{position:relative;z-index:2;column-count:3;column-gap:28px}
+  @media(max-width:1100px){ .gal__grid{column-count:2} }
+  @media(max-width:640px){ .gal__grid{column-count:1} }
+
+  .g-item{position:relative;margin:0 0 28px;break-inside:avoid;border-radius:6px;overflow:hidden;background:#15100c;
+    aspect-ratio:var(--ar,4/5);
+    content-visibility:auto;contain-intrinsic-size:400px 500px}
+  .g-item img{display:block;width:100%;height:100%;object-fit:cover;
+    transform:scale(1.001) translateZ(0);filter:brightness(1) saturate(1);
+    transition:transform .7s cubic-bezier(.16,1,.3,1),filter .7s ease}
+  @media(hover:hover) and (pointer:fine){
+    .g-item:hover img{transform:scale(1.06) translateZ(0);filter:brightness(1.1) saturate(1.08);will-change:transform}
+  }
+  .g-item::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+
+  .gal-reveal{opacity:0;transform:translateY(44px) scale(.97);will-change:transform,opacity}
+
+  @media(max-width:640px){
+    .gal{padding:9vh 7vw 10vh}
+    .gal__head{margin-bottom:5vh}
+    .g-item{margin-bottom:20px}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .gal-reveal{opacity:1;transform:none}
+    .g-item img{transition:none}
+  }
+</style>
+<script>
+(function(){
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGsap=(typeof window.gsap!=='undefined' && typeof window.ScrollTrigger!=='undefined');
+
+  if(reduce || !hasGsap){
+    document.querySelectorAll('.gal-reveal').forEach(function(el){ el.style.opacity=1; el.style.transform='none'; });
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  ScrollTrigger.batch('.gal__head .gal-reveal', {
+    start:'top 88%',
+    onEnter: function(batch){
+      gsap.to(batch, {opacity:1, y:0, scale:1, duration:.9, ease:'power3.out', stagger:.12, clearProps:'willChange'});
+    },
+    once:true,
+  });
+
+  ScrollTrigger.batch('.gal__grid .gal-reveal', {
+    start:'top 90%',
+    onEnter: function(batch){
+      gsap.to(batch, {opacity:1, y:0, scale:1, duration:1, ease:'power3.out', stagger:.1, clearProps:'willChange'});
+    },
+    once:true,
+  });
+})();
+</script>`;
+}
+
+// ============================================================================
+// MENU — SHOWPIECE (café, modo cinematic_a)
+// Injetado via placeholder MENU_PLACEHOLDER depois da geração do Opus.
+// Portado de teste-menu.html (aprovado): vitrine grande e espaçosa (refs
+// Johnny's Dirty Soda / Duckbill Cookies) — 3-4 cards por vez, setas + drag
+// com inércia (GSAP Draggable/InertiaPlugin). Passar o mouse (ou tocar no
+// mobile) amplia o card, revela a descrição e embaça/apaga os irmãos —
+// controlado no .menuCard__inner (filho), nunca no .menuCard (pai, área de
+// hover FIXA) pra nunca reintroduzir o bug do tremor (ver comentários no
+// CSS abaixo).
+// ============================================================================
+function buildMenu(assets) {
+  const DRINKS = assets.drinks;
+  const FOOD = assets.food;
+  return `
+<div class="menuPage" id="menu">
+  <div class="menuPage__bg" aria-hidden="true"></div>
+  <div class="menuPage__grain" aria-hidden="true"></div>
+
+  <div class="menuRow" id="drinksRow"></div>
+  <div class="menuRow" id="foodRow"></div>
+</div>
+<style>
+  .menuPage{position:relative;background:#080503;color:#F5EBDD;padding:10vh 0 8vh;overflow:hidden}
+  /* fundo chapado + glow recuado — ver nota de continuidade em .story__bg */
+  .menuPage__bg{position:absolute;inset:0;z-index:0;background:
+    radial-gradient(50% 32% at 50% 34%, rgba(210,140,60,.12) 0%, rgba(180,110,40,0) 68%),
+    #080503}
+  .menuPage__grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+  .menuRow{position:relative;z-index:2;margin-bottom:10vh}
+  .menuRow:last-child{margin-bottom:0}
+
+  .menuRow__head{display:flex;justify-content:space-between;align-items:flex-end;padding:0 6vw;margin-bottom:5vh;gap:24px}
+  .menuRow__eyebrow{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#E8B36B;text-transform:uppercase;margin-bottom:16px;opacity:.9}
+  .menuRow__title{font-size:clamp(1.9rem,3.6vw,3rem);font-weight:600;line-height:1.05;letter-spacing:-.01em;color:#FFFBF4}
+
+  .menuRow__dragHint{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#CBB89A;opacity:.75;white-space:nowrap;padding-bottom:6px}
+  .menuRow__dragHint i{display:inline-block;animation:dragNudge 1.6s ease-in-out infinite}
+  @keyframes dragNudge{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+
+  .menuRow__carousel{position:relative}
+
+  /* setas: wrapper de tamanho fixo (56px, o <button> de verdade) + filho
+     visual (48px, pointer-events:none) — impede o hit-test de hesitar
+     entre pai/filho, o que causava tremor de hover na borda. */
+  .menuRow__arrowHit{position:absolute;top:36%;transform:translateY(-50%);width:56px;height:56px;
+    display:flex;align-items:center;justify-content:center;z-index:7;cursor:pointer;
+    background:none;border:none;padding:0;appearance:none;-webkit-appearance:none}
+  .menuRow__arrowHit--prev{left:1.2vw}
+  .menuRow__arrowHit--next{right:1.2vw}
+  .menuRow__arrowHit:disabled{cursor:default}
+
+  .menuRow__arrow{width:48px;height:48px;border-radius:50%;pointer-events:none;
+    background:rgba(18,13,8,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.14);color:#F5EBDD;font-size:20px;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .3s ease,border-color .3s ease,transform .3s ease,opacity .3s ease}
+  .menuRow__arrowHit:hover .menuRow__arrow{background:rgba(242,200,121,.16);border-color:rgba(242,200,121,.45);transform:scale(1.08)}
+  .menuRow__arrowHit:disabled .menuRow__arrow{opacity:.22}
+
+  .menuRow__track{overflow-x:hidden;overflow-y:visible;padding:3vh 0 5vh;
+    -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 6vw,#000 94%,transparent 100%);
+    mask-image:linear-gradient(90deg,transparent 0,#000 6vw,#000 94%,transparent 100%)}
+  .menuRow__track--native{overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  .menuRow__track--native::-webkit-scrollbar{display:none}
+
+  .menuRow__cardsWrap{display:flex;gap:34px;width:max-content;padding:0 6vw;cursor:grab}
+  .menuRow__cardsWrap:active{cursor:grabbing}
+
+  /* card: .menuCard é a área de hover, TAMANHO FIXO, nunca se transforma.
+     .menuCard__inner (filho) é quem o JS/GSAP escala/sobe/embaça — mesma
+     lógica anti-tremor das setas. */
+  .menuCard{position:relative;width:clamp(300px,27vw,392px);flex:0 0 auto;scroll-snap-align:center}
+  .menuCard__inner{pointer-events:none;will-change:transform,opacity,filter}
+
+  .menuCard__imgWrap{position:relative;aspect-ratio:6/5;border-radius:22px;overflow:hidden;background:#15100c;
+    box-shadow:0 18px 42px rgba(0,0,0,.4);transition:box-shadow .5s ease}
+  .menuCard.is-active .menuCard__imgWrap{box-shadow:0 30px 64px rgba(0,0,0,.6),0 0 0 1px rgba(242,200,121,.18)}
+  .menuCard__imgWrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none;user-select:none;-webkit-user-drag:none}
+
+  .menuCard__body{padding:22px 6px 0}
+  .menuCard__top{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+  .menuCard__name{font-size:clamp(1.35rem,1.9vw,1.65rem);font-weight:600;color:#FFFBF4;letter-spacing:-.01em}
+  .menuCard__price{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;color:#F2C879;white-space:nowrap}
+
+  .menuCard__desc{margin-top:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px;line-height:1.7;letter-spacing:.2px;color:#B9A98D;
+    max-height:0;opacity:0;overflow:hidden;
+    transition:max-height .5s cubic-bezier(.16,1,.3,1),opacity .4s ease,margin-top .5s ease}
+  .menuCard.is-active{z-index:5}
+  .menuCard.is-active .menuCard__desc{max-height:6em;opacity:1;margin-top:10px}
+
+  @media(max-width:820px){
+    .menuRow{margin-bottom:7vh}
+    .menuRow__head{padding:0 7vw;flex-direction:column;align-items:flex-start;gap:10px;margin-bottom:3.5vh}
+    .menuRow__track{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 7vw,#000 96%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 7vw,#000 96%,transparent 100%)}
+    .menuCard{width:78vw}
+    .menuRow__arrow{display:none}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .menuRow__dragHint i{animation:none}
+  }
+</style>
+<script>
+(function(){
+  var DRINKS = ${JSON.stringify(DRINKS)};
+  var FOOD = ${JSON.stringify(FOOD)};
+
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasDrag = (typeof window.gsap!=='undefined' && typeof window.Draggable!=='undefined');
+  if(hasDrag){ gsap.registerPlugin(Draggable, window.InertiaPlugin); }
+  var hasInertia = hasDrag && typeof window.InertiaPlugin!=='undefined';
+
+  function buildRow(mount, items, eyebrow, title){
+    mount.innerHTML =
+      '<div class="menuRow__head">'+
+        '<div><div class="menuRow__eyebrow">'+eyebrow+'</div><h2 class="menuRow__title">'+title+'</h2></div>'+
+        '<div class="menuRow__dragHint">DRAG <i>→</i></div>'+
+      '</div>'+
+      '<div class="menuRow__carousel">'+
+        '<button class="menuRow__arrowHit menuRow__arrowHit--prev" aria-label="Previous"><span class="menuRow__arrow">‹</span></button>'+
+        '<div class="menuRow__track"><div class="menuRow__cardsWrap"></div></div>'+
+        '<button class="menuRow__arrowHit menuRow__arrowHit--next" aria-label="Next"><span class="menuRow__arrow">›</span></button>'+
+      '</div>';
+
+    var track=mount.querySelector('.menuRow__track');
+    var wrap=mount.querySelector('.menuRow__cardsWrap');
+    var prevHit=mount.querySelector('.menuRow__arrowHit--prev');
+    var nextHit=mount.querySelector('.menuRow__arrowHit--next');
+
+    items.forEach(function(item){
+      var card=document.createElement('div');
+      card.className='menuCard';
+      card.innerHTML=
+        '<div class="menuCard__inner">'+
+          '<div class="menuCard__imgWrap"><img src="'+item.img+'" alt="'+item.name+'" loading="lazy" decoding="async"/></div>'+
+          '<div class="menuCard__body">'+
+            '<div class="menuCard__top"><span class="menuCard__name">'+item.name+'</span><span class="menuCard__price">'+item.price+'</span></div>'+
+            '<p class="menuCard__desc">'+item.desc+'</p>'+
+          '</div>'+
+        '</div>';
+      wrap.appendChild(card);
+    });
+
+    var cards=Array.prototype.slice.call(wrap.querySelectorAll('.menuCard'));
+    var GAP=34;
+    var step=cards[0].getBoundingClientRect().width + GAP;
+
+    if(reduce || !hasDrag){
+      track.classList.add('menuRow__track--native');
+      prevHit.addEventListener('click',function(){ track.scrollBy({left:-step, behavior: reduce?'auto':'smooth'}); });
+      nextHit.addEventListener('click',function(){ track.scrollBy({left:step, behavior: reduce?'auto':'smooth'}); });
+      return;
+    }
+
+    var activeCard=null;
+    var isTouch=window.matchMedia('(hover: none), (pointer: coarse)').matches;
+
+    function setActive(card){
+      if(activeCard===card) return;
+      activeCard=card;
+      card.classList.add('is-active');
+      cards.forEach(function(c){
+        var inner=c.querySelector('.menuCard__inner');
+        if(c===card){
+          gsap.set(c,{zIndex:5});
+          gsap.to(inner,{scale:1.055, y:-16, opacity:1, filter:'blur(0px)', duration:.55, ease:'power3.out', overwrite:'auto'});
+        } else {
+          c.classList.remove('is-active');
+          gsap.set(c,{zIndex:1});
+          gsap.to(inner,{scale:0.94, y:0, opacity:.4, filter:'blur(4px)', duration:.55, ease:'power3.out', overwrite:'auto'});
+        }
+      });
+    }
+
+    function clearActive(){
+      if(!activeCard) return;
+      activeCard.classList.remove('is-active');
+      activeCard=null;
+      cards.forEach(function(c){
+        gsap.set(c,{zIndex:1});
+        var inner=c.querySelector('.menuCard__inner');
+        gsap.to(inner,{scale:1, y:0, opacity:1, filter:'blur(0px)', duration:.5, ease:'power3.out', overwrite:'auto'});
+      });
+    }
+
+    cards.forEach(function(card){
+      if(isTouch){
+        card.addEventListener('click',function(){
+          if(activeCard===card){ clearActive(); } else { setActive(card); }
+        });
+      } else {
+        card.addEventListener('mouseenter',function(){ setActive(card); });
+        card.addEventListener('mouseleave',function(){ clearActive(); });
+      }
+    });
+    if(isTouch){
+      document.addEventListener('click',function(e){
+        if(activeCard && !activeCard.contains(e.target)){ clearActive(); }
+      });
+    }
+
+    var dragInst=Draggable.create(wrap,{
+      type:'x',
+      bounds:track,
+      inertia:hasInertia,
+      edgeResistance:0.75,
+      dragClickables:true,
+      onDragStart:clearActive,
+      onDrag:updateArrowState,
+      onThrowUpdate:updateArrowState,
+      onDragEnd:updateArrowState,
+    })[0];
+
+    function updateArrowState(){
+      var x=gsap.getProperty(wrap,'x');
+      prevHit.disabled = x >= dragInst.maxX - 1;
+      nextHit.disabled = x <= dragInst.minX + 1;
+    }
+
+    function go(dir){
+      clearActive();
+      var current=gsap.getProperty(wrap,'x');
+      var target=current - dir*step;
+      target=Math.max(dragInst.minX, Math.min(dragInst.maxX, target));
+      gsap.to(wrap,{x:target, duration:.6, ease:'power3.out',
+        onUpdate:function(){ dragInst.update(); },
+        onComplete:updateArrowState});
+    }
+    prevHit.addEventListener('click',function(){ go(-1); });
+    nextHit.addEventListener('click',function(){ go(1); });
+
+    updateArrowState();
+    window.addEventListener('resize',updateArrowState);
+  }
+
+  buildRow(document.getElementById('drinksRow'), DRINKS, '02 / DRINKS', 'Our craft');
+  buildRow(document.getElementById('foodRow'), FOOD, '03 / FOOD', 'Fresh, always');
+})();
+</script>`;
+}
+
+// ============================================================================
+// CONTACT — SHOWPIECE (café, modo cinematic_a), última seção do site.
+// Injetado via placeholder CONTACT_PLACEHOLDER depois da geração do Opus.
+// Portado de teste-contato.html (aprovado): iframe REAL do Google Maps
+// (embed sem API key, "/maps?q=ENDEREÇO&output=embed") com dark mode via
+// filtro CSS (invert+hue-rotate — a Maps Embed API simples não aceita
+// estilo noturno nativo, isso só existe na Maps JS API paga). CTA "Get
+// directions" e o mapa abrem o Google Maps de verdade. Entrada via
+// ScrollTrigger.batch.
+// ============================================================================
+function buildContact(assets) {
+  const ADDRESS = assets.address;
+  const HOURS_LINES = assets.hoursLines; // array de strings
+  const PHONE = assets.phone;
+  const EMAIL = assets.email;
+  const SOCIALS = assets.socials; // array de {label, url}
+  const MAPS_URL = assets.mapsUrl;
+  const MAP_EMBED_URL = assets.mapEmbedUrl;
+  const TEL_HREF = assets.telHref;
+  const MAILTO_HREF = assets.mailtoHref;
+  return `
+<section class="contact" id="contact" aria-label="Contact">
+  <div class="contact__bg" aria-hidden="true"></div>
+  <div class="contact__grain" aria-hidden="true"></div>
+
+  <div class="contact__inner">
+    <div class="contact__info">
+      <div class="contact__eyebrow reveal">05 / VISIT US</div>
+      <h2 class="contact__title reveal">Come say <em>hello.</em></h2>
+
+      <div class="contact__block reveal">
+        <div class="contact__label">Address</div>
+        <p class="contact__text">${ADDRESS}</p>
+      </div>
+
+      <div class="contact__block reveal">
+        <div class="contact__label">Hours</div>
+        <div class="contact__hours">${HOURS_LINES.map(l => `<div><span>${l}</span></div>`).join("")}</div>
+      </div>
+
+      <div class="contact__block reveal">
+        <div class="contact__label">Contact</div>
+        <p class="contact__text">
+          ${PHONE ? `<a class="contact__link" href="${TEL_HREF}">${PHONE}</a><br>` : ""}
+          ${EMAIL ? `<a class="contact__link" href="${MAILTO_HREF}">${EMAIL}</a>` : ""}
+        </p>
+      </div>
+
+      <a class="contact__cta reveal" href="${MAPS_URL}" target="_blank" rel="noopener">Get directions</a>
+
+      <div class="contact__socials reveal">${SOCIALS.map((s, i) => `<a href="${s.url}" target="_blank" rel="noopener">${s.label}</a>${i < SOCIALS.length - 1 ? '<span style="color:#4a4038">·</span>' : ""}`).join("")}</div>
+    </div>
+
+    <div class="contact__map reveal">
+      <iframe class="contact__mapFrame" title="Map" src="${MAP_EMBED_URL}"
+        loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+        allowfullscreen></iframe>
+    </div>
+  </div>
+</section>
+<style>
+  .contact{position:relative;background:#080503;color:#F5EBDD;padding:12vh 6vw 10vh;overflow:hidden}
+  /* fundo chapado + glow recuado — ver nota de continuidade em .story__bg */
+  .contact__bg{position:absolute;inset:0;z-index:0;background:
+    radial-gradient(48% 36% at 22% 38%, rgba(210,140,60,.13) 0%, rgba(180,110,40,0) 68%),
+    #080503}
+  .contact__grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+  .contact__inner{position:relative;z-index:2;max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:8vw;align-items:center}
+
+  .contact__eyebrow{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#E8B36B;text-transform:uppercase;margin-bottom:18px;opacity:.9}
+  .contact__title{font-size:clamp(2.2rem,4.6vw,3.6rem);font-weight:600;line-height:1.05;letter-spacing:-.01em;color:#FFFBF4;margin-bottom:6vh}
+  .contact__title em{font-style:italic;font-weight:500;color:#E8A64A}
+
+  .contact__block{margin-bottom:3.4vh}
+  .contact__label{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a63;margin-bottom:8px}
+  .contact__text{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;line-height:1.7;color:#E8DCC8}
+  .contact__hours{display:flex;flex-direction:column;gap:4px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;color:#E8DCC8}
+
+  .contact__link{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;line-height:1.9;color:#E8DCC8;text-decoration:none;border-bottom:1px solid rgba(232,220,200,.25);transition:color .3s ease,border-color .3s ease}
+  .contact__link:hover{color:#F2C879;border-color:rgba(242,200,121,.5)}
+
+  .contact__cta{display:inline-block;margin-top:1vh;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#0c0805;background:#F2C879;padding:15px 30px;border-radius:999px;text-decoration:none;box-shadow:0 10px 30px rgba(242,200,121,.2);transition:transform .35s cubic-bezier(.16,1,.3,1),box-shadow .35s ease}
+  .contact__cta:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(242,200,121,.32)}
+
+  .contact__socials{display:flex;gap:18px;margin-top:5vh}
+  .contact__socials a{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#8a7a63;text-decoration:none;transition:color .3s ease}
+  .contact__socials a:hover{color:#F2C879}
+
+  .contact__map{position:relative;display:block;aspect-ratio:1/1;border-radius:22px;overflow:hidden;
+    background:#100b07;border:1px solid rgba(255,255,255,.08);box-shadow:0 20px 50px rgba(0,0,0,.4)}
+  .contact__mapFrame{position:absolute;inset:0;width:100%;height:100%;border:0;
+    filter:invert(90%) hue-rotate(180deg) brightness(.95) contrast(.88) saturate(.7);
+    background:#100b07}
+
+  .reveal{opacity:0;transform:translateY(34px)}
+
+  @media(max-width:900px){
+    .contact__inner{grid-template-columns:1fr;gap:7vh}
+    .contact__map{aspect-ratio:16/11;order:-1}
+    .contact{padding:9vh 7vw 8vh}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none}
+  }
+</style>
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGsap = (typeof window.gsap!=='undefined' && typeof window.ScrollTrigger!=='undefined');
+
+  if(reduce || !hasGsap){
+    document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity=1; el.style.transform='none'; });
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  ScrollTrigger.batch('.reveal', {
+    start:'top 88%',
+    onEnter: function(batch){
+      gsap.to(batch, {opacity:1, y:0, duration:1, ease:'power3.out', stagger:.1});
+    },
+    once:true,
+  });
 })();
 </script>`;
 }
@@ -454,6 +1471,7 @@ export default async function handler(req, res) {
       // CAFÉ:
       pour: `${bankBase}/pour.mp4`,
       roast: `${bankBase}/roast.mp4`,
+      vapor: `${bankBase}/capa_vapor.mp4`, // fundo da CAPA (café A)
     };
 
     // ---------- FRAME SEQUENCE (usado só pelo café B) ----------
@@ -464,20 +1482,24 @@ export default async function handler(req, res) {
       cupPattern: `${bankBase}/frames_cup/frame`,
       lattePattern: `${bankBase}/frames_latte/frame`,
       cafeCount: 40,
-      cupReady: true,     // (café A usa seu próprio frame sequence carimbado — frames_pour/ — não este bankFrames)
+      cupReady: true,     // (café A usa PNGs animados via GSAP — cup/graos/leite/gelo — não usa frame sequence)
       latteReady: false,  // true quando frames_latte/ estiver no ar (efeito B)
     };
 
-    // ---------- ASSETS DO SHOWPIECE THE POUR A (café) — FRAME SEQUENCE SCROLL-SCRUB ----------
-    // A cena única (xícara + grãos→leite→gelo fluido) foi extraída do vídeo do
-    // Seedance (pour_scene.mp4) em 90 frames .webp (banco/cafe/frames_pour/).
-    // O scroll controla qual frame é desenhado num <canvas> — estilo Apple,
-    // nunca engasga (não há decode de vídeo/seek envolvido).
-    // poster = um frame estático de fallback (hero do café) caso os frames falhem.
+    // ---------- ASSETS DO SHOWPIECE THE POUR A (café) — FRAME SEQUENCE ----------
+    // 130 frames .webp extraídos de pour_scene_dark.mp4 (10s, 1080p, fundo
+    // PRETO — coreografia grãos→espiral de leite→gelo caindo), SOMENTE
+    // desse vídeo — banco/cafe/pour_scene.mp4 (âmbar) e frames_pour/ antigos
+    // foram apagados do banco pra nunca mais serem confundidos com este.
+    // Amostrado a ~13fps (130 frames/10s), resolução CHEIA 1920x1080 (webp
+    // q80, ~8.4MB total) — sem downscale, prioriza qualidade. poster =
+    // frame001 (mesmo frame do início), fallback se os frames falharem em
+    // carregar. FRAMES_VERSION (no script do buildPourA) cache-busta a URL
+    // pra nunca servir frame antigo em cache do CDN sob o mesmo nome.
     const cafePourAssets = {
-      framesBase: `${bankBase}/frames_pour`,
-      frameCount: 90,
-      poster:     `${bankBase}/hero.jpg`,
+      framesBase: `${bankBase}/frames_pour_dark`,
+      frameCount: 130,
+      poster: `${bankBase}/frames_pour_dark/frame001.webp?v=3`,
     };
     // HTML carimbado do showpiece (idêntico toda geração, scroll-scrub liso).
     const POUR_A_HTML = buildPourA(cafePourAssets);
@@ -493,6 +1515,107 @@ export default async function handler(req, res) {
     const hasVideo = heroVideoBase64 && heroVideoBase64.startsWith("data:video");
     const bookingHref = bookingLink || (whatsapp ? `https://wa.me/${whatsapp}` : (phone ? `tel:${phone}` : "#contact"));
     const whatsappHref = whatsapp ? `https://wa.me/${whatsapp}` : (phone ? `tel:${phone}` : "#contact");
+
+    // ============================================================================
+    // ASSETS + HTML CARIMBADO DAS 5 SEÇÕES NOVAS (CAPA, STORY, GALLERY, MENU,
+    // CONTACT) — só pro café cinematográfico A. Mesma lógica do THE POUR A:
+    // bloco determinístico, o Opus só deixa o marcador no lugar certo.
+    // ============================================================================
+    let CAPA_HTML = "", STORY_HTML = "", GALLERY_HTML = "", MENU_HTML = "", CONTACT_HTML = "";
+    if (isCinematicCafeA) {
+      // ---- CAPA ----
+      // Nome do café dividido em 2 partes pro efeito "palavra normal + palavra
+      // dourada em itálico" — se tiver "&"/"e"/"and" usamos como ponto de corte
+      // natural (ex: "Ember & Oak" -> "Ember" / "& Oak"), senão corta na
+      // primeira palavra (ex: "Grão Café" -> "Grão" / "Café").
+      const nameParts = businessName.trim().split(/\s+/);
+      let capaName1, capaName2;
+      const ampIdx = nameParts.findIndex(w => /^(&|e|and)$/i.test(w));
+      if (ampIdx > 0 && ampIdx < nameParts.length - 1) {
+        capaName1 = nameParts.slice(0, ampIdx).join(" ");
+        capaName2 = nameParts.slice(ampIdx).join(" ");
+      } else if (nameParts.length > 1) {
+        capaName1 = nameParts[0];
+        capaName2 = nameParts.slice(1).join(" ");
+      } else {
+        capaName1 = businessName;
+        capaName2 = "";
+      }
+      const capaAssets = {
+        framesBase: `${bankBase}/frames_capa`,
+        frameCount: 121,
+        poster: `${bankBase}/hero.jpg`,
+        beansSheet: `${bankBase}/graos.png`,
+        cafeName1: capaName1,
+        cafeName2: capaName2,
+        tagline: heroSubtitle || "Your daily ritual, perfected.",
+        subtext: `Artisan coffee roasters · ${city}`,
+        brandLabel: `// ${businessName.toUpperCase()}`,
+        cityLabel: city.toUpperCase(),
+        ctaHref: "#menu",
+      };
+      CAPA_HTML = buildCapa(capaAssets);
+
+      // ---- STORY ----
+      // narrativa é variável (aboutText do form) com um fallback caloroso
+      // padrão pra quando o form não preenche esse campo — sempre trocável
+      // por cafeteria.
+      const storyAssets = {
+        narrative: aboutText || `At ${businessName}, every cup begins long before it reaches your hands. We source our beans with intention, roast them with care, and pour each cup as if it were our first. ${city.split(",")[0]} is more than our address — it's our community. Whether you're here for a quiet morning or a moment between meetings, you'll always find warmth in every cup.`,
+        photo: `${bankBase}/ambiente.jpg`,
+      };
+      STORY_HTML = buildStory(storyAssets);
+
+      // ---- GALLERY ----
+      const galleryAssets = { photos: photoList.slice(0, 6) };
+      GALLERY_HTML = buildGallery(galleryAssets);
+
+      // ---- MENU ----
+      // Itens de cardápio não fazem parte dos dados extraídos do negócio (nome,
+      // endereço, telefone...) — usamos um cardápio realista de café artesanal
+      // como ponto de partida (mesmo padrão de "invent realistic items" já
+      // usado no resto do prompt), com as fotos reais já commitadas no banco.
+      const menuAssets = {
+        drinks: [
+          { name: "Espresso", desc: "Rich, bold, and pulled to order — pure intensity in a single shot", price: "€2.80", img: `${bankBase}/espresso.png` },
+          { name: "Cappuccino", desc: "Silky steamed milk over a double shot, crowned with delicate foam art", price: "€3.50", img: `${bankBase}/cappuccino.png` },
+          { name: "Caffe Latte", desc: "Smooth espresso folded into velvety steamed milk, layered to perfection", price: "€3.80", img: `${bankBase}/latte.png` },
+          { name: "Americano", desc: "Espresso met with hot water — clean, smooth, and honest", price: "€3.00", img: `${bankBase}/americano.png` },
+          { name: "Flat White", desc: "Double ristretto under smooth microfoam — bold yet balanced", price: "€3.60", img: `${bankBase}/flatwhite.png` },
+          { name: "Mocha", desc: "Espresso, rich chocolate, and steamed milk — indulgence in every sip", price: "€4.00", img: `${bankBase}/mocha.png` },
+        ],
+        food: [
+          { name: "Croissant", desc: "Flaky, buttery layers baked fresh each morning", price: "€3.20", img: `${bankBase}/croissant.png` },
+          { name: "Avocado Toast", desc: "Creamy smashed avocado on toasted sourdough, chilli flakes and a hint of lime", price: "€8.50", img: `${bankBase}/avocadotoast.png` },
+          { name: "Carrot Cake", desc: "Moist spiced sponge under a blanket of cream cheese frosting", price: "€4.50", img: `${bankBase}/carrotcake.png` },
+          { name: "Cookie", desc: "Golden edges, gooey centre, melting chocolate in every bite", price: "€2.80", img: `${bankBase}/cookie.png` },
+          { name: "Toastie", desc: "Grilled to golden perfection, oozing with melted cheese", price: "€7.00", img: `${bankBase}/toastie.png` },
+          { name: "Scone", desc: "Warm and crumbly, served with clotted cream and jam", price: "€3.50", img: `${bankBase}/scone.png` },
+        ],
+      };
+      MENU_HTML = buildMenu(menuAssets);
+
+      // ---- CONTACT ----
+      const contactAddress = address || city;
+      const hoursLines = hours
+        ? hours.split(/[\n|;]+/).map(s => s.trim()).filter(Boolean)
+        : ["Mon – Fri  7:00 – 19:00", "Sat – Sun  8:00 – 18:00"];
+      const contactAssets = {
+        address: contactAddress,
+        hoursLines,
+        phone: phone || "",
+        email: email || "",
+        telHref: `tel:${phone.replace(/[^\d+]/g, "")}`,
+        mailtoHref: `mailto:${email}`,
+        socials: [
+          { label: "Instagram", url: "https://instagram.com/" },
+          { label: "Facebook", url: "https://facebook.com/" },
+        ],
+        mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contactAddress)}`,
+        mapEmbedUrl: `https://www.google.com/maps?q=${encodeURIComponent(contactAddress)}&output=embed`,
+      };
+      CONTACT_HTML = buildContact(contactAssets);
+    }
 
     // ---------- MODO EDIÇÃO ----------
     let userPrompt;
@@ -707,7 +1830,22 @@ CLEAN MODE DISCIPLINE:
       const pourFramePattern = bankFrames.lattePattern;
       const pourFrameCount = bankFrames.cafeCount;
       const pourFramesReady = bankFrames.latteReady;
-      const cinematicCafeBlock = isCinematicCafe ? `
+      const cinematicCafeABlock = isCinematicCafeA ? `
+
+═══════════ CAFÉ A — STAMPED SHOWPIECE SHELL (DO NOT DESIGN THIS PAGE) ═══════════
+★★★ CRITICAL — this page is NOT generated by you section-by-section. Every section is a locked, pre-built showpiece component that gets injected by the server after you respond. Your ONLY job is to output a minimal, valid HTML5 document (<!DOCTYPE html> ... <head> with charset/viewport/title only, no inline design CSS, no fonts, no nav, no custom sections) whose <body> contains EXACTLY these 6 placeholder tokens, each on its own line, in this EXACT order, and NOTHING else in the body:
+
+CAPA_PLACEHOLDER
+STORY_PLACEHOLDER
+THE_POUR_A_PLACEHOLDER
+MENU_PLACEHOLDER
+GALLERY_PLACEHOLDER
+CONTACT_PLACEHOLDER
+
+Do NOT build a hero, story, origin, menu, gallery, reviews, faq, or contact section yourself. Do NOT add any CSS, JS, nav, or other markup. Do NOT wrap the tokens in extra elements. Do NOT add commentary. Output only: <!DOCTYPE html> + minimal <head> (charset, viewport, title "${businessName}") + <body> with exactly those 6 lines + </body></html>. The real design, palette, typography and every effect are already built server-side.
+` : "";
+
+      const cinematicCafeBlock = isCinematicCafeB ? `
 
 ═══════════ CAFÉ PREMIUM PAGE — CINEMATIC JOURNEY (AWWWARDS-TIER, COZY & CRAFT) ═══════════
 ★★★ CRITICAL — GENERATE THE COMPLETE SITE FROM <!DOCTYPE html> TO </html>, ALL SECTIONS INCLUDED, ending with the CONTACT section (with the Google Maps iframe) and the closing </body></html>. Do NOT stop early, do NOT leave sections empty. Every section listed below MUST be fully built and filled with real content. Keep each section reasonably compact so the whole page fits — favor completeness over any single section being huge. If you must trade off, make sections shorter but ALWAYS include every one of them through to the contact/map and the final closing tags.
@@ -795,6 +1933,12 @@ LAYOUT DISCIPLINE (keeps the nota 10):
         ? `H. CUSTOM CURSOR — SOFT & ELEGANT (desktop only, ≥1024px): Do NOT use a fire/ember/smoke cursor (wrong mood for coffee). Instead, keep it refined and calm: replace the default cursor with a small, tasteful custom dot — a soft cream/caramel glowing dot with a gentle, slightly-lagging follower ring (a second, larger, semi-transparent circle that eases toward the pointer with a smooth spring), giving a premium, calm feel. Optionally the dot subtly scales up on hover over links/buttons. NO smoke, NO particles, NO fire. Move everything with transform: translate3d() inside a requestAnimationFrame loop (mousemove only stores x/y), will-change: transform, pointer-events:none. Only init if window.matchMedia('(pointer: fine)').matches && innerWidth >= 1024 (touch/coarse keeps normal cursor). Must be silky at 60fps and never laggy. Understated, warm, premium.`
         : `H. CUSTOM CURSOR (desktop only, ≥1024px): a tasteful, minimal custom cursor fitting the niche's mood — e.g. a small accent-coloured dot with a soft easing follower ring. NO fire/smoke unless the niche is about grilling. Move with transform: translate3d() inside a requestAnimationFrame loop, will-change: transform, pointer-events:none, only init if window.matchMedia('(pointer: fine)').matches && innerWidth >= 1024. Silky 60fps, never laggy. Keep it understated and premium.`;
 
+      if (isCinematicCafeA) {
+        userPrompt = `You are outputting a minimal HTML shell only. The real page (hero, THE POUR, gallery, menu, contact) is already fully designed and built server-side as locked components — you are NOT designing anything here, just providing the placeholder skeleton they get injected into.
+
+Output ONLY raw HTML from <!DOCTYPE html> to </html>. No markdown, no code fences, no explanation.
+${cinematicCafeABlock}`;
+      } else {
       userPrompt = `You are the design lead at an award-winning web studio (Awwwards Site of the Day level). A client is paying premium for a website that must look like a €50,000 agency build — NOT like an AI template. Build a complete, single-page, production-ready website.
 
 Output ONLY raw HTML from <!DOCTYPE html> to </html>. No markdown, no code fences, no explanation. All CSS and JS inline.
@@ -882,6 +2026,7 @@ ${sectionHierarchyRule}
 ${sectionIdsLine}
 
 Build it to win an award. Every color and type choice must come from the art direction above. Every section must move.`;
+      }
     }
 
     // ---------- CHAMADA À API COM STREAMING (Opus para criação, Sonnet para edição) ----------
@@ -961,16 +2106,53 @@ Build it to win an award. Every color and type choice must come from the art dir
     html = html.trim();
     html = html.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
 
+    // Injeta GSAP 3 + ScrollTrigger via CDN (cdnjs) no <head> de todo site gerado.
+    // Carimbado aqui (não pedido ao Opus) pra garantir que a tag sempre existe,
+    // igual ao padrão do HERO_VIDEO_SRC/THE_POUR_A_PLACEHOLDER abaixo. Café A
+    // carimbado usa 6 seções (capa+story+pour+menu+gallery+contact) e MENU precisa
+    // de Draggable+InertiaPlugin também — só esses sites pagam esse peso extra
+    // de JS (os outros nichos não usam nada de drag).
+    const GSAP_CDN_TAGS = isCinematicCafeA
+      ? `<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/Draggable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/InertiaPlugin.min.js"></script>`
+      : `<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>`;
+    // Café A carimbado usa Fraunces (serif) + JetBrains Mono (labels) em TODAS
+    // as 6 seções, mas o shell mínimo que o Opus gera não inclui os <link> de
+    // fonte nem um reset — sem isso cada seção cai pro fallback do sistema
+    // (Georgia/monospace) e a margem padrão do <body> (8px) rompe a
+    // continuidade visual entre seções. Carimbado aqui pra garantir sempre.
+    const CAFE_A_HEAD_TAGS = isCinematicCafeA
+      ? `<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet">
+<style>*{margin:0;padding:0;box-sizing:border-box}html,body{background:#080503}body{font-family:'Fraunces',Georgia,serif}</style>`
+      : "";
+    if (/<head[^>]*>/i.test(html)) {
+      html = html.replace(/<head[^>]*>/i, (m) => `${m}\n${GSAP_CDN_TAGS}\n${CAFE_A_HEAD_TAGS}`);
+    } else {
+      html = GSAP_CDN_TAGS + "\n" + CAFE_A_HEAD_TAGS + "\n" + html;
+    }
+
     // Injeta o vídeo real no placeholder (evita mandar base64 gigante no prompt)
     if (hasVideo) {
       html = html.split("HERO_VIDEO_SRC").join(heroVideoBase64);
     }
 
-    // Injeta o showpiece THE POUR A carimbado (só no café cinematográfico A).
-    // Igual à lógica do HERO_VIDEO_SRC: o Opus deixa o marcador, o servidor troca
-    // pelo bloco pronto — garante que o efeito é IDÊNTICO toda vez e nunca trava.
+    // Injeta os 6 showpieces carimbados do café cinematográfico A, na ordem
+    // final CAPA → STORY → THE POUR → MENU → GALLERY → CONTACT. Igual à
+    // lógica do HERO_VIDEO_SRC: o Opus deixa os marcadores, o servidor troca
+    // pelos blocos prontos — garante que os efeitos são IDÊNTICOS toda vez
+    // e nunca travam.
     if (isCinematicCafeA) {
+      html = html.split("CAPA_PLACEHOLDER").join(CAPA_HTML);
+      html = html.split("STORY_PLACEHOLDER").join(STORY_HTML);
       html = html.split("THE_POUR_A_PLACEHOLDER").join(POUR_A_HTML);
+      html = html.split("MENU_PLACEHOLDER").join(MENU_HTML);
+      html = html.split("GALLERY_PLACEHOLDER").join(GALLERY_HTML);
+      html = html.split("CONTACT_PLACEHOLDER").join(CONTACT_HTML);
     }
 
     if (!html.includes("</html>")) {
