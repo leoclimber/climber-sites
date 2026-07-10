@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GALLERY — café A, Awwwards test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#080503}
+  body{font-family:'Fraunces',Georgia,serif}
+  .filler{height:100vh;display:flex;align-items:center;justify-content:center;color:#4a4038;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;letter-spacing:3px;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<div class="filler">↓ scroll to GALLERY ↓</div>
+
+<!-- ============================================================
+     GALLERY — café A, seção "03 / MOMENTS". Arquivo isolado de teste
+     — NÃO usado pelo generate-site.js.
+
+     LAYOUT: masonry via CSS multi-column (column-count), não CSS Grid
+     com spans manuais — cada item já tem seu próprio aspect-ratio
+     (retrato/quadrado/paisagem variados), o que basta pra ler como
+     mosaico editorial sem precisar calcular row/col-span à mão. Fica
+     responsivo de graça só mudando column-count por breakpoint.
+
+     REVEAL: ScrollTrigger.batch() nos itens — GSAP agrupa quem entra
+     na viewport "ao mesmo tempo" (scroll rápido) num único stagger,
+     em vez de cada item ter seu próprio ScrollTrigger individual
+     (mais barato e é o padrão recomendado pra grades/listas).
+
+     HOVER: zoom + brilho na imagem é só CSS transition — não precisa
+     de JS pra isso.
+     ============================================================ -->
+<section class="gal" id="gal" aria-label="Gallery">
+  <div class="gal__bg" aria-hidden="true"></div>
+  <div class="gal__grain" aria-hidden="true"></div>
+
+  <div class="gal__head">
+    <div class="gal__eyebrow gal-reveal">03 / MOMENTS</div>
+    <h2 class="gal__title gal-reveal">Every cup, <em>a moment.</em></h2>
+  </div>
+
+  <div class="gal__grid" id="galGrid">
+    <figure class="g-item gal-reveal" style="--ar:3/4">
+      <img src="banco/cafe/hero.jpg" alt="" loading="lazy" decoding="async"/>
+    </figure>
+    <figure class="g-item gal-reveal" style="--ar:1/1">
+      <img src="banco/cafe/1.jpg" alt="" loading="lazy" decoding="async"/>
+    </figure>
+    <figure class="g-item gal-reveal" style="--ar:4/5">
+      <img src="banco/cafe/2.jpg" alt="" loading="lazy" decoding="async"/>
+    </figure>
+    <figure class="g-item gal-reveal" style="--ar:4/3">
+      <img src="banco/cafe/ambiente.jpg" alt="" loading="lazy" decoding="async"/>
+    </figure>
+    <figure class="g-item gal-reveal" style="--ar:1/1">
+      <img src="banco/cafe/3.jpg" alt="" loading="lazy" decoding="async"/>
+    </figure>
+    <figure class="g-item gal-reveal" style="--ar:3/4">
+      <img src="banco/cafe/4.jpg" alt="" loading="lazy" decoding="async"/>
+    </figure>
+  </div>
+</section>
+
+<div class="filler">↑ end of section ↑</div>
+
+<style>
+  .gal{position:relative;background:#080503;color:#F5EBDD;padding:12vh 6vw 14vh;overflow:hidden}
+
+  .gal__bg{position:absolute;inset:0;z-index:0;background:
+    radial-gradient(55% 40% at 50% 0%, rgba(210,140,60,.14) 0%, rgba(180,110,40,0) 68%),
+    linear-gradient(180deg,#0c0805 0%,#080503 50%,#050302 100%)}
+
+  .gal__grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+  .gal__head{position:relative;z-index:2;margin-bottom:7vh;max-width:640px}
+  .gal__eyebrow{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#E8B36B;text-transform:uppercase;margin-bottom:18px;opacity:.9}
+  .gal__title{font-size:clamp(2rem,4.4vw,3.6rem);font-weight:600;line-height:1.08;letter-spacing:-.01em;color:#FFFBF4}
+  .gal__title em{font-style:italic;font-weight:500;color:#E8A64A}
+
+  .gal__grid{position:relative;z-index:2;column-count:3;column-gap:28px}
+  @media(max-width:1100px){ .gal__grid{column-count:2} }
+  @media(max-width:640px){ .gal__grid{column-count:1} }
+
+  .g-item{position:relative;margin:0 0 28px;break-inside:avoid;border-radius:6px;overflow:hidden;background:#15100c;
+    aspect-ratio:var(--ar,4/5)}
+  .g-item img{display:block;width:100%;height:100%;object-fit:cover;
+    transform:scale(1.001);filter:brightness(1) saturate(1);
+    transition:transform .7s cubic-bezier(.16,1,.3,1),filter .7s ease}
+  .g-item:hover img{transform:scale(1.06);filter:brightness(1.1) saturate(1.08)}
+  .g-item::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+
+  /* estado inicial (antes do reveal) — GSAP anima pra opacity:1 etc */
+  .gal-reveal{opacity:0;transform:translateY(44px) scale(.97)}
+
+  @media(max-width:640px){
+    .gal{padding:9vh 7vw 10vh}
+    .gal__head{margin-bottom:5vh}
+    .g-item{margin-bottom:20px}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .gal-reveal{opacity:1;transform:none}
+    .g-item img{transition:none}
+  }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGsap=(typeof window.gsap!=='undefined' && typeof window.ScrollTrigger!=='undefined');
+
+  if(reduce || !hasGsap){
+    document.querySelectorAll('.gal-reveal').forEach(function(el){ el.style.opacity=1; el.style.transform='none'; });
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  // cabeçalho (eyebrow + título): stagger simples, revela junto ao entrar
+  ScrollTrigger.batch('.gal__head .gal-reveal', {
+    start:'top 88%',
+    onEnter: function(batch){
+      gsap.to(batch, {opacity:1, y:0, scale:1, duration:.9, ease:'power3.out', stagger:.12});
+    },
+    once:true,
+  });
+
+  // grade de fotos: revela em blocos conforme entram na viewport, com
+  // stagger dentro de cada bloco — ScrollTrigger.batch agrupa itens que
+  // cruzam o threshold "ao mesmo tempo" (scroll rápido) num tween só.
+  ScrollTrigger.batch('.gal__grid .gal-reveal', {
+    start:'top 90%',
+    onEnter: function(batch){
+      gsap.to(batch, {opacity:1, y:0, scale:1, duration:1, ease:'power3.out', stagger:.1});
+    },
+    once:true,
+  });
+
+  window.__galReady = true; // hook diagnóstico
+})();
+</script>
+
+</body>
+</html>

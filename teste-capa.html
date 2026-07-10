@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CAPA — café A, Awwwards interativa</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#080503;height:100%}
+  body{font-family:'Fraunces',Georgia,serif}
+  .filler{height:100vh;display:flex;align-items:center;justify-content:center;color:#4a4038;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;letter-spacing:3px;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CAPA — café A, versão final (Awwwards-level). Arquivo isolado —
+     NÃO usado pelo generate-site.js.
+
+     VÍDEO: capa_vapor.mp4 (xícara de espresso + vapor, já escuro por
+     natureza) como fundo full-bleed. De propósito SEM overlay de tela
+     cheia — só um gradiente lateral bem sutil atrás do bloco de texto
+     (mesma lição do teste-hero.html: overlay pesado mata o vídeo).
+
+     GRÃOS: graos.png tem 8 grãos individuais numa folha só (505x302,
+     bboxes extraídas por detecção de componentes conectados no canal
+     alpha — ver histórico). 50 instâncias reaproveitando os 8
+     grãos-fonte, organizadas em 3 "camadas de profundidade" (fundo
+     pequeno/translúcido, meio, frente grande/nítido) pra dar
+     parallax visual mesmo sem mexer no z real. Posição enviesada pras
+     bordas (70% chance) pra não lotar o centro onde ficam texto/xícara
+     do vídeo. Cada grão flutua (CSS) e responde a repulsão de mouse
+     (GSAP quickTo).
+
+     Removi o mecanismo de "xícara enchendo no scroll" da versão
+     anterior — o vídeo já mostra uma xícara real com vapor, então a
+     xícara estática (cup.png) ficaria redundante/competindo. A
+     especificação final não menciona esse elemento; se você quiser
+     de volta, é só pedir.
+     ============================================================ -->
+<section class="capa" id="capa" aria-label="Capa">
+  <!-- dois vídeos idênticos alternando (crossfade) pra disfarçar o corte
+       seco do loop nativo — ver comentário no <script> mais abaixo. -->
+  <div class="capa__videoWrap" id="capaVideoWrap">
+    <video class="capa__video" id="capaVideoA" autoplay muted loop playsinline preload="auto"
+      poster="banco/cafe/hero.jpg"
+      onerror="document.getElementById('capaVideoWrap').classList.add('capa__videoWrap--failed')">
+      <source src="banco/cafe/capa_vapor.mp4" type="video/mp4">
+    </video>
+    <video class="capa__video capa__video--b" id="capaVideoB" muted loop playsinline preload="auto">
+      <source src="banco/cafe/capa_vapor.mp4" type="video/mp4">
+    </video>
+    <img class="capa__poster" src="banco/cafe/hero.jpg" alt="" aria-hidden="true"/>
+  </div>
+  <div class="capa__textScrim" aria-hidden="true"></div>
+  <div class="capa__grain" aria-hidden="true"></div>
+  <div class="capa__beans" id="capaBeans" aria-hidden="true"></div>
+
+  <div class="capa__topbar">
+    <div class="capa__brand" id="capaBrand"></div>
+    <div class="capa__clock"><span id="capaClock">--:--:--</span> · <span id="capaCity"></span></div>
+  </div>
+
+  <div class="capa__stage">
+    <h1 class="capa__name">
+      <span class="cWord" id="cw1"></span>
+      <span class="cWord cWord--gold" id="cw2"></span>
+    </h1>
+    <p class="capa__tagline" id="capaTagline"></p>
+    <p class="capa__subtext" id="capaSubtext"></p>
+  </div>
+
+  <div class="capa__bottom">
+    <a href="#menu" class="capa__cta" id="capaCta">Ver o menu</a>
+    <div class="capa__scroll" id="capaScroll">
+      <span>SCROLL</span>
+      <div class="capa__scrollline"><i></i></div>
+    </div>
+  </div>
+</section>
+
+<div class="filler">↓ resto do site iria aqui ↓</div>
+
+<style>
+  .capa{position:relative;height:100vh;min-height:640px;overflow:hidden;background:#080503;color:#F5EBDD}
+
+  .capa__videoWrap{position:absolute;inset:-3vh;z-index:0}
+  .capa__video,.capa__poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .capa__video--b{opacity:0}
+  .capa__poster{opacity:0;pointer-events:none;z-index:1}
+  .capa__videoWrap--failed .capa__video{display:none}
+  .capa__videoWrap--failed .capa__poster{opacity:1}
+
+  /* legibilidade só atrás do texto — gradiente lateral, não tela cheia */
+  .capa__textScrim{position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:linear-gradient(100deg, rgba(4,2,1,.5) 0%, rgba(4,2,1,.26) 34%, transparent 60%)}
+
+  .capa__grain{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+  .capa__beans{position:absolute;inset:0;z-index:2;pointer-events:none}
+  .grain{position:absolute;pointer-events:none}
+  .grain__float{will-change:transform}
+  .grain__repel{will-change:transform}
+  .grain__sprite{will-change:transform}
+
+  .capa__topbar{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:center;padding:34px 6vw;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#E8B36B;opacity:0;text-shadow:0 2px 6px rgba(0,0,0,.85)}
+  .capa__clock{font-variant-numeric:tabular-nums;color:#CBB89A}
+  .capa__clock span{color:#F2C879}
+
+  .capa__stage{position:relative;z-index:5;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:0 6vw}
+
+  .capa__name{display:flex;flex-direction:column;gap:.02em;min-width:0;max-width:100%}
+  .cWord{display:inline-block;font-size:clamp(3rem,13vw,10rem);line-height:.96;font-weight:700;letter-spacing:-.02em;color:#FFFBF4;
+    text-shadow:0 4px 30px rgba(0,0,0,.7);
+    opacity:0;filter:blur(14px);transform:translateY(36px)}
+  .cWord--gold{font-style:italic;font-weight:600;color:#E8A64A}
+
+  .capa__tagline{margin-top:.6em;font-family:'Fraunces',Georgia,serif;font-style:italic;font-weight:500;font-size:clamp(1.05rem,2vw,1.6rem);color:#F2E4CE;text-shadow:0 3px 16px rgba(0,0,0,.75);
+    opacity:0;transform:translateY(18px)}
+  .capa__subtext{margin-top:.55em;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:#CBB89A;text-shadow:0 2px 10px rgba(0,0,0,.8);
+    opacity:0;transform:translateY(14px)}
+
+  .capa__bottom{position:absolute;bottom:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:center;padding:0 6vw 42px}
+
+  .capa__cta{opacity:0;pointer-events:auto;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#0c0805;background:#F2C879;padding:15px 28px;border-radius:999px;text-decoration:none;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:transform .35s cubic-bezier(.16,1,.3,1),box-shadow .35s ease}
+  .capa__cta:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+
+  .capa__scroll{opacity:0;display:flex;flex-direction:column;align-items:center;gap:10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:3px;color:#CBB89A;text-shadow:0 2px 8px rgba(0,0,0,.8)}
+  .capa__scrollline{width:1px;height:34px;background:rgba(255,255,255,.3);position:relative;overflow:hidden}
+  .capa__scrollline i{position:absolute;left:0;top:-40%;width:100%;height:40%;background:#F2C879;animation:capaScrollDrop 1.8s ease-in-out infinite}
+  @keyframes capaScrollDrop{0%{top:-40%}100%{top:100%}}
+
+  @media(max-width:820px){
+    .capa__topbar{padding:26px 7vw;font-size:10px}
+    .cWord{font-size:clamp(2.4rem,15vw,4.4rem)}
+    .capa__tagline{font-size:1rem}
+    .capa__bottom{padding:0 7vw 30px}
+    .capa__scroll{display:none}
+    .capa__textScrim{background:linear-gradient(180deg, rgba(4,2,1,.3) 0%, rgba(4,2,1,.55) 55%, rgba(4,2,1,.72) 100%)}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .cWord,.capa__tagline,.capa__subtext{opacity:1;filter:none;transform:none}
+    .capa__topbar,.capa__cta,.capa__scroll{opacity:1}
+    .capa__scrollline i{animation:none;display:none}
+    .grain__float{animation:none!important}
+  }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+  // ============================================================
+  // VARIÁVEIS — trocar aqui pra reusar em outra cafeteria.
+  // ============================================================
+  var CAFE_NAME_1 = 'Ember';
+  var CAFE_NAME_2 = '& Oak';               // parte dourada/itálica
+  var TAGLINE     = 'Your daily ritual, perfected.';
+  var SUBTEXT     = 'Artisan coffee roasters · Dublin';
+  var BRAND_LABEL = '// EMBER & OAK';
+  var CITY_LABEL  = 'DUBLIN, IE';
+
+  document.getElementById('cw1').textContent = CAFE_NAME_1;
+  document.getElementById('cw2').textContent = CAFE_NAME_2;
+  document.getElementById('capaTagline').textContent = TAGLINE;
+  document.getElementById('capaSubtext').textContent = SUBTEXT;
+  document.getElementById('capaBrand').textContent = BRAND_LABEL;
+  document.getElementById('capaCity').textContent = CITY_LABEL;
+
+  // ============================================================
+  // LOOP DE VÍDEO SEM CORTE — dois <video> idênticos (A/B), sempre um
+  // visível ("active") e o outro tocando escondido no fundo ("idle").
+  // Quando o active chega a ~CROSSFADE_DUR do fim, dispara o crossfade:
+  // reinicia o idle do zero e cross-anima a opacidade (transição CSS)
+  // dos dois em paralelo, terminando bem perto de quando o active
+  // originalmente chegaria no fim. Depois troca os papéis. O atributo
+  // `loop` nativo fica como rede de segurança (se o JS atrasar por
+  // qualquer motivo, o vídeo ainda loopa sozinho, só que com corte seco
+  // de novo — nunca trava/congela).
+  // ============================================================
+  (function setupVideoCrossfade(){
+    var vA=document.getElementById('capaVideoA');
+    var vB=document.getElementById('capaVideoB');
+    if(!vA || !vB) return;
+    var CROSSFADE=0.6; // segundos
+    vA.style.transition='opacity '+CROSSFADE+'s linear';
+    vB.style.transition='opacity '+CROSSFADE+'s linear';
+
+    var active=vA, idle=vB, crossfading=false;
+
+    function watch(video){
+      video.addEventListener('timeupdate',function(){
+        if(video!==active || crossfading) return;
+        var dur=video.duration;
+        if(!dur || !isFinite(dur)) return;
+        if(video.currentTime >= dur - CROSSFADE){
+          crossfading=true;
+          idle.currentTime=0;
+          var p=idle.play();
+          if(p && p.catch) p.catch(function(){});
+          active.style.opacity=0;
+          idle.style.opacity=1;
+          setTimeout(function(){
+            var old=active;
+            active=idle;
+            idle=old;
+            crossfading=false;
+          }, CROSSFADE*1000 + 80);
+        }
+      });
+    }
+    watch(vA);
+    watch(vB);
+  })();
+
+  // ---- relógio ao vivo ----
+  var clockEl=document.getElementById('capaClock');
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function tick(){
+    var d=new Date();
+    clockEl.textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  }
+  tick();
+  setInterval(tick,1000);
+
+  // ============================================================
+  // GRÃOS INTERATIVOS — 50 instâncias, 3 camadas de profundidade,
+  // reaproveitando 8 sprites-fonte extraídos de graos.png.
+  // ============================================================
+  var SHEET_URL='banco/cafe/graos.png', SHEET_W=505, SHEET_H=302;
+  var BEAN_SPRITES=[
+    {x:176,y:1,w:63,h:69}, {x:25,y:39,w:79,h:72}, {x:388,y:46,w:72,h:76}, {x:217,y:99,w:84,h:81},
+    {x:326,y:177,w:73,h:76}, {x:103,y:181,w:82,h:73}, {x:427,y:218,w:72,h:70}, {x:0,y:229,w:64,h:73},
+  ];
+  var GRAIN_COUNT=68;
+  // 3 camadas: fundo (pequeno/translúcido) -> meio -> frente (grande/nítido)
+  var TIERS=[
+    {sizeMin:11, sizeMax:19, opMin:.28, opMax:.48, z:1},
+    {sizeMin:19, sizeMax:31, opMin:.55, opMax:.78, z:2},
+    {sizeMin:31, sizeMax:50, opMin:.85, opMax:1,   z:3},
+  ];
+  var beansWrap=document.getElementById('capaBeans');
+  var grains=[];
+
+  function rand(a,b){ return a+Math.random()*(b-a); }
+
+  // posição enviesada pras bordas (70% das vezes) pra sobrar espaço
+  // livre no meio, onde ficam texto e a xícara/vapor do vídeo.
+  function biasedPos(){
+    var x,y;
+    if(Math.random()<0.7){
+      x = Math.random()<0.5 ? rand(0,26) : rand(72,100);
+      y = rand(4,96);
+    } else {
+      x = rand(0,100);
+      y = rand(4,96);
+    }
+    return {x:x,y:y};
+  }
+
+  for(var i=0;i<GRAIN_COUNT;i++){
+    var tier = TIERS[i % TIERS.length];
+    var sp=BEAN_SPRITES[i%BEAN_SPRITES.length];
+    var dispW=rand(tier.sizeMin,tier.sizeMax);
+    var scale=dispW/sp.w;
+    var dispH=sp.h*scale;
+    var pos=biasedPos();
+    var rot=rand(-30,30);
+    var mirror=Math.random()<0.5?-1:1;
+    var floatDur=rand(3,6.4);
+    var floatDelay=rand(0,4.5);
+    var floatAmp=rand(9,24);
+    var op=rand(tier.opMin,tier.opMax);
+
+    var home=document.createElement('div');
+    home.className='grain';
+    home.style.left=pos.x+'%';
+    home.style.top=pos.y+'%';
+    home.style.zIndex=tier.z;
+
+    var floatEl=document.createElement('div');
+    floatEl.className='grain__float';
+    floatEl.style.animation='grainFloat'+(i%3)+' '+floatDur+'s ease-in-out '+floatDelay+'s infinite';
+    floatEl.style.setProperty('--amp',floatAmp+'px');
+
+    var repelEl=document.createElement('div');
+    repelEl.className='grain__repel';
+
+    var sprite=document.createElement('div');
+    sprite.className='grain__sprite';
+    sprite.style.width=dispW+'px';
+    sprite.style.height=dispH+'px';
+    sprite.style.opacity=op;
+    sprite.style.filter = tier.z===1 ? 'blur(1.1px) drop-shadow(0 3px 5px rgba(0,0,0,.4))' : 'drop-shadow(0 6px 10px rgba(0,0,0,.5))';
+    sprite.style.backgroundImage='url("'+SHEET_URL+'")';
+    sprite.style.backgroundSize=(SHEET_W*scale)+'px '+(SHEET_H*scale)+'px';
+    sprite.style.backgroundPosition=(-sp.x*scale)+'px '+(-sp.y*scale)+'px';
+    sprite.style.transform='rotate('+rot+'deg) scaleX('+mirror+')';
+
+    repelEl.appendChild(sprite);
+    floatEl.appendChild(repelEl);
+    home.appendChild(floatEl);
+    beansWrap.appendChild(home);
+
+    grains.push({home:home, repel:repelEl, baseX:0, baseY:0, tier:tier.z});
+  }
+
+  var styleTag=document.createElement('style');
+  styleTag.textContent=
+    '@keyframes grainFloat0{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(var(--amp)) rotate(4deg)}}'+
+    '@keyframes grainFloat1{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(calc(var(--amp) * -1)) rotate(-5deg)}}'+
+    '@keyframes grainFloat2{0%,100%{transform:translateX(0) translateY(0)}50%{transform:translateX(calc(var(--amp) * .6)) translateY(calc(var(--amp) * .8))}}';
+  document.head.appendChild(styleTag);
+
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGsap=(typeof window.gsap!=='undefined' && typeof window.ScrollTrigger!=='undefined');
+
+  function layoutGrains(){
+    grains.forEach(function(g){
+      var r=g.home.getBoundingClientRect();
+      g.baseX=r.left; g.baseY=r.top;
+    });
+  }
+  window.addEventListener('resize',layoutGrains);
+
+  if(!reduce && hasGsap){
+    gsap.registerPlugin(ScrollTrigger);
+
+    grains.forEach(function(g){
+      g.qx=gsap.quickTo(g.repel,'x',{duration:.5,ease:'power3.out'});
+      g.qy=gsap.quickTo(g.repel,'y',{duration:.5,ease:'power3.out'});
+    });
+    layoutGrains();
+    setTimeout(layoutGrains,600);
+
+    // repel forte e nítido: raio ~150px, empurrão bem visível (~85px no pico)
+    var REPEL_R=150, MAX_PUSH=85;
+    window.addEventListener('mousemove',function(e){
+      grains.forEach(function(g){
+        var dx=g.baseX-e.clientX, dy=g.baseY-e.clientY;
+        var dist=Math.hypot(dx,dy)||0.0001;
+        if(dist<REPEL_R){
+          var strength=(1-dist/REPEL_R);
+          strength = strength*strength*(3-2*strength); // smoothstep: empurrão mais suave na borda do raio
+          var push=strength*MAX_PUSH;
+          g.qx(dx/dist*push); g.qy(dy/dist*push);
+        } else {
+          g.qx(0); g.qy(0);
+        }
+      });
+    },{passive:true});
+
+    // ---- texto kinético: nome -> tagline -> subtexto ----
+    var tl=gsap.timeline({defaults:{ease:'power3.out'}});
+    tl.to('.capa__topbar',{opacity:.9,duration:.8},0)
+      .to('#cw1',{opacity:1,filter:'blur(0px)',y:0,duration:1,ease:'power4.out'},.15)
+      .to('#cw2',{opacity:1,filter:'blur(0px)',y:0,duration:1.1,ease:'power4.out'},.35)
+      .to('#capaTagline',{opacity:1,y:0,duration:.8},.85)
+      .to('#capaSubtext',{opacity:1,y:0,duration:.7},1.0)
+      .to('#capaCta',{opacity:1,duration:.7},1.05)
+      .to('#capaScroll',{opacity:.85,duration:.6},1.2);
+    window.__capaTl=tl;
+  } else {
+    document.querySelectorAll('.cWord').forEach(function(w){ w.style.opacity=1; w.style.filter='none'; w.style.transform='none'; });
+    document.getElementById('capaTagline').style.opacity=1;
+    document.getElementById('capaTagline').style.transform='none';
+    document.getElementById('capaSubtext').style.opacity=1;
+    document.getElementById('capaSubtext').style.transform='none';
+    document.querySelector('.capa__topbar').style.opacity=.9;
+    document.getElementById('capaCta').style.opacity=1;
+    document.getElementById('capaScroll').style.opacity=.85;
+  }
+
+  window.__capaGrains=grains; // hook diagnóstico
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HERO — café A, Awwwards test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#080503;height:100%}
+  body{font-family:'Fraunces',Georgia,serif}
+  .filler{height:100vh;display:flex;align-items:center;justify-content:center;color:#4a4038;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;letter-spacing:3px;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     HERO — café A, referência Awwwards (CIAO vídeo de fundo vivo +
+     SŌM texto kinético). Arquivo isolado de teste — NÃO usado pelo
+     generate-site.js.
+
+     REGRA DE OURO: o vídeo (pour.mp4) fica SEM overlay escuro cobrindo
+     a tela e SEM filtro que apague cor/brilho — nenhum
+     saturate/brightness reduzido nele. A legibilidade do texto vem
+     100% de text-shadow forte (multi-camada), não de escurecer o
+     vídeo. Isso é deliberado: overlay de tela cheia foi tentado antes
+     e "matava" o vídeo — o pedido explícito foi vídeo vivo/vibrante.
+     ============================================================ -->
+<header class="heroY" id="heroY">
+  <div class="heroY__videoWrap" id="heroYVideoWrap">
+    <video class="heroY__video" id="heroYVideo" autoplay muted loop playsinline preload="auto"
+      poster="banco/cafe/hero.jpg"
+      onerror="document.getElementById('heroYVideoWrap').classList.add('heroY__videoWrap--failed')">
+      <source src="banco/cafe/pour.mp4" type="video/mp4">
+    </video>
+    <img class="heroY__poster" src="banco/cafe/hero.jpg" alt="" aria-hidden="true"/>
+  </div>
+  <div class="heroY__grain" aria-hidden="true"></div>
+
+  <div class="heroY__topbar">
+    <div class="heroY__eyebrow" id="heroYBrand">// ARTISAN COFFEE CO.</div>
+    <div class="heroY__clock"><span id="heroYClock">--:--:--</span> · <span id="heroYCity">DUBLIN, IE</span></div>
+  </div>
+
+  <div class="heroY__stage" id="heroYStage">
+    <h1 class="heroY__title">
+      <span class="heroY__line">
+        <span class="kWord" id="kw1">Crafted</span>
+        <span class="kWord" id="kw2">with</span>
+      </span>
+      <span class="heroY__line">
+        <span class="kWord kWord--gold" id="kw3">intention.</span>
+      </span>
+    </h1>
+  </div>
+
+  <div class="heroY__bottom">
+    <a href="#menu" class="heroY__cta" id="heroYCta">Ver o menu</a>
+    <div class="heroY__scroll" id="heroYScroll">
+      <span>SCROLL</span>
+      <div class="heroY__scrollline"><i></i></div>
+    </div>
+  </div>
+</header>
+
+<div class="filler">↓ resto do site iria aqui (parallax é visível rolando daqui) ↓</div>
+
+<style>
+  .heroY{position:relative;height:100vh;min-height:640px;overflow:hidden;background:#080503;color:#F5EBDD}
+
+  /* vídeo: SEM filtro de cor/brilho — vivo, cores do café ao natural */
+  .heroY__videoWrap{position:absolute;inset:-4vh;z-index:0;will-change:transform}
+  .heroY__video,.heroY__poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .heroY__poster{opacity:0;pointer-events:none;z-index:1}
+  .heroY__videoWrap--failed .heroY__video{display:none}
+  .heroY__videoWrap--failed .heroY__poster{opacity:1}
+
+  /* grain muito sutil — textura, não escurece nada (blend overlay a 4%) */
+  .heroY__grain{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:.04;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+  .heroY__topbar{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;justify-content:space-between;align-items:center;padding:34px 6vw;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#F2E4CE;opacity:0;text-shadow:0 2px 6px rgba(0,0,0,.9),0 6px 22px rgba(0,0,0,.75)}
+  .heroY__clock{font-variant-numeric:tabular-nums;color:#F2E4CE}
+  .heroY__clock span{color:#F7CD7E}
+
+  .heroY__stage{position:relative;z-index:5;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;padding:0 6vw;will-change:transform}
+
+  /* min-width:0 nos dois: .heroY__title é flex-child de .heroY__stage
+     (align-items:flex-start) e por padrão flex-item tem min-width:auto,
+     que trava a largura no conteúdo NÃO quebrado — sem isso "Crafted with"
+     estourava a borda direita no mobile em vez de deixar o flex-wrap agir. */
+  .heroY__title{display:flex;flex-direction:column;gap:.03em;min-width:0;max-width:100%}
+  .heroY__line{display:flex;flex-wrap:wrap;gap:clamp(10px,2vw,32px);overflow:visible;min-width:0;max-width:100%}
+  /* text-shadow forte multi-camada = a legibilidade inteira vem daqui, não do vídeo */
+  .kWord{display:inline-block;font-size:clamp(3rem,13vw,11rem);line-height:.96;font-weight:700;letter-spacing:-.02em;color:#FFFBF4;
+    text-shadow:0 3px 10px rgba(0,0,0,.9), 0 14px 46px rgba(0,0,0,.75), 0 1px 2px rgba(0,0,0,.95);
+    opacity:0;filter:blur(12px);transform:translateY(40px)}
+  .kWord--gold{font-style:italic;font-weight:600;color:#F0B252}
+
+  .heroY__bottom{position:absolute;bottom:0;left:0;right:0;z-index:6;display:flex;justify-content:space-between;align-items:center;padding:0 6vw 42px}
+
+  .heroY__cta{opacity:0;pointer-events:auto;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#0c0805;background:#F2C879;padding:15px 28px;border-radius:999px;text-decoration:none;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:transform .35s cubic-bezier(.16,1,.3,1),box-shadow .35s ease}
+  .heroY__cta:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+
+  .heroY__scroll{opacity:0;display:flex;flex-direction:column;align-items:center;gap:10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:3px;color:#F2E4CE;text-shadow:0 2px 8px rgba(0,0,0,.9)}
+  .heroY__scrollline{width:1px;height:34px;background:rgba(255,255,255,.35);position:relative;overflow:hidden}
+  .heroY__scrollline i{position:absolute;left:0;top:-40%;width:100%;height:40%;background:#F7CD7E;animation:heroYScrollDrop 1.8s ease-in-out infinite}
+  @keyframes heroYScrollDrop{0%{top:-40%}100%{top:100%}}
+
+  @media(max-width:820px){
+    .heroY__topbar{padding:26px 7vw;font-size:10px}
+    .kWord{font-size:clamp(2.4rem,15vw,4.6rem)}
+    .heroY__bottom{padding:0 7vw 30px}
+    .heroY__scroll{display:none}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .kWord{opacity:1;filter:none;transform:none}
+    .heroY__topbar,.heroY__cta,.heroY__scroll{opacity:1}
+    .heroY__scrollline i{animation:none;display:none}
+  }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+  // ---- nome/cidade como variáveis (fácil trocar por cliente) ----
+  var BRAND_LABEL = '// ARTISAN COFFEE CO.';
+  var CITY_LABEL = 'DUBLIN, IE';
+  document.getElementById('heroYBrand').textContent = BRAND_LABEL;
+  document.getElementById('heroYCity').textContent = CITY_LABEL;
+
+  // ---- relógio ao vivo ----
+  var clockEl=document.getElementById('heroYClock');
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function tick(){
+    var d=new Date();
+    clockEl.textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  }
+  tick();
+  setInterval(tick,1000);
+
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGsap=(typeof window.gsap!=='undefined' && typeof window.ScrollTrigger!=='undefined');
+  var tl=null;
+
+  if(!reduce && hasGsap){
+    gsap.registerPlugin(ScrollTrigger);
+
+    // ---- texto kinético: palavra por palavra, blur->foco + subida + fade ----
+    tl=gsap.timeline({defaults:{ease:'power3.out'}});
+    tl.to('.heroY__topbar',{opacity:.9,duration:.8},0)
+      .to('#kw1',{opacity:1,filter:'blur(0px)',y:0,duration:1,ease:'power4.out'},.15)
+      .to('#kw2',{opacity:1,filter:'blur(0px)',y:0,duration:1,ease:'power4.out'},.32)
+      .to('#kw3',{opacity:1,filter:'blur(0px)',y:0,duration:1.1,ease:'power4.out'},.5)
+      .to('#heroYCta',{opacity:1,duration:.7},.95)
+      .to('#heroYScroll',{opacity:.85,duration:.6},1.1);
+
+    // ---- parallax leve: vídeo de fundo mais devagar que o texto ----
+    ScrollTrigger.create({
+      trigger:'#heroY', start:'top top', end:'bottom top', scrub:1,
+      onUpdate:function(self){
+        var p=self.progress;
+        document.getElementById('heroYVideoWrap').style.transform='translateY('+(p*7)+'%) scale('+(1+p*0.06)+')';
+        document.getElementById('heroYStage').style.transform='translateY('+(p*18)+'%)';
+        document.getElementById('heroYStage').style.opacity=String(1-p*0.85);
+      }
+    });
+  } else {
+    // sem GSAP (CDN falhou) ou reduced-motion: estado final estático, sem timeline/parallax.
+    document.querySelectorAll('.kWord').forEach(function(w){ w.style.opacity=1; w.style.filter='none'; w.style.transform='none'; });
+    document.querySelector('.heroY__topbar').style.opacity=.9;
+    document.getElementById('heroYCta').style.opacity=1;
+    document.getElementById('heroYScroll').style.opacity=.85;
+  }
+
+  window.__heroTl=tl; window.__heroHasGsap=hasGsap; window.__heroReduce=reduce; // hooks p/ diagnóstico headless
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>THE POUR — cinematic frame scroll-scrub test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Fraunces:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0b0806;font-family:'Fraunces',Georgia,serif}
+  .filler{height:100vh;display:flex;align-items:center;justify-content:center;color:#4a4038;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;letter-spacing:3px;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<div class="filler">↓ scroll to THE POUR ↓</div>
+
+<!-- ============================================================
+     THE POUR — CINEMATIC FRAME SCROLL-SCRUB (Site of the Day style,
+     ref. CIAO Energy / SŌM). Arquivo isolado de teste — NÃO usado
+     pelo generate-site.js.
+
+     Usa as 90 frames .webp já extraídas de pour_scene.mp4
+     (banco/cafe/frames_pour/) desenhadas num <canvas>. GSAP
+     ScrollTrigger pina a seção (pin:true) e o scrub (scrub:1) liga o
+     progresso do scroll ao índice de frame — o scrub já suaviza o
+     "playhead" internamente, então a troca de frame acompanha o
+     scroll sem precisar de um loop de lerp manual (só o fallback
+     vanilla, se o CDN falhar, reimplementa isso com rAF+lerp).
+
+     O texto "Poured with intention." fica oculto (opacity 0, blur,
+     deslocado) até o progresso passar de ~78% (perto do clímax da
+     cena — leite girando/vapor no auge) e então entra suave via
+     transição CSS (blur→nítido, fade, leve subida).
+     ============================================================ -->
+<section class="pourS" id="pourS" aria-label="The Pour">
+  <div class="pourS__stage">
+    <canvas class="pourS__canvas" id="pourSCanvas" aria-hidden="true"></canvas>
+    <img class="pourS__fallback" id="pourSFallback" src="banco/cafe/hero.jpg" alt="" style="display:none"/>
+    <div class="pourS__vignette" aria-hidden="true"></div>
+    <div class="pourS__eyebrow">// THE POUR</div>
+    <div class="pourS__caption" id="pourSCaption">
+      <div class="pourS__ti">Poured with <em>intention.</em></div>
+    </div>
+  </div>
+</section>
+
+<div class="filler">↑ end of section ↑</div>
+
+<style>
+  .pourS{position:relative;height:100vh;overflow:hidden;background:#0b0806}
+  .pourS__stage{position:relative;height:100%;width:100%}
+
+  .pourS__canvas,.pourS__fallback{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.1) contrast(1.04);pointer-events:none}
+
+  .pourS__vignette{position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:
+      linear-gradient(180deg, rgba(8,5,3,.55) 0%, transparent 22%, transparent 62%, rgba(8,5,3,.7) 100%),
+      radial-gradient(120% 90% at 50% 50%, transparent 48%, rgba(5,3,2,.55) 100%)}
+
+  .pourS__eyebrow{position:absolute;top:38px;left:6vw;z-index:5;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:3px;color:#E8B36B;opacity:.75}
+
+  .pourS__caption{position:absolute;left:0;right:0;bottom:12vh;z-index:5;text-align:center;pointer-events:none;
+    opacity:0;filter:blur(14px);transform:translateY(28px);
+    transition:opacity 1.1s cubic-bezier(.16,1,.3,1),filter 1.1s cubic-bezier(.16,1,.3,1),transform 1.1s cubic-bezier(.16,1,.3,1)}
+  .pourS__caption.show{opacity:1;filter:blur(0);transform:translateY(0)}
+  .pourS__ti{font-size:clamp(1.8rem,3.4vw,3rem);font-style:italic;font-weight:600;color:#FBF3E7;letter-spacing:-.3px;text-shadow:0 4px 30px rgba(0,0,0,.6)}
+  .pourS__ti em{color:#E8B36B}
+
+  @media(prefers-reduced-motion:reduce){
+    .pourS__caption{transition:none}
+  }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+  var section=document.getElementById('pourS');
+  if(!section)return;
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var canvas=document.getElementById('pourSCanvas');
+  var ctx=canvas.getContext('2d');
+  var fallback=document.getElementById('pourSFallback');
+  var caption=document.getElementById('pourSCaption');
+
+  var FRAME_COUNT=90;
+  var FRAMES_BASE='banco/cafe/frames_pour';
+  var CAPTION_AT=0.78; // progresso a partir do qual o texto entra
+
+  function frameUrl(i){ return FRAMES_BASE+'/frame'+String(i).padStart(3,'0')+'.webp'; }
+  var frames=[], failed=false, sized=false, revealed=false, dpr=Math.min(window.devicePixelRatio||1,2);
+
+  function onFrameError(){
+    if(failed)return; failed=true;
+    canvas.style.display='none'; fallback.style.display='block';
+  }
+  for(var i=1;i<=FRAME_COUNT;i++){
+    var img=new Image();
+    img.onerror=onFrameError;
+    img.src=frameUrl(i);
+    frames.push(img);
+  }
+
+  function sizeCanvas(img){
+    canvas.width=Math.round((img.naturalWidth||1280)*dpr);
+    canvas.height=Math.round((img.naturalHeight||720)*dpr);
+    sized=true;
+  }
+
+  function drawAt(p){
+    if(failed)return;
+    var fi=Math.max(0,Math.min(FRAME_COUNT-1,Math.round(p*(FRAME_COUNT-1))));
+    var frame=frames[fi];
+    if(frame && frame.complete && frame.naturalWidth){
+      if(!sized) sizeCanvas(frame);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(frame,0,0,canvas.width,canvas.height);
+      if(!revealed){ revealed=true; fallback.style.display='none'; }
+    }
+  }
+
+  function paint(p){
+    drawAt(p);
+    caption.classList.toggle('show', p>=CAPTION_AT);
+  }
+
+  function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+  function computeProgress(){
+    var rect=section.getBoundingClientRect();
+    var total=section.offsetHeight-window.innerHeight;
+    var passed=clamp(-rect.top,0,total);
+    return total>0?passed/total:0;
+  }
+
+  if(reduce){
+    paint(0.6);
+    return;
+  }
+
+  var hasGsap=(typeof window.gsap!=='undefined' && typeof window.ScrollTrigger!=='undefined');
+
+  if(hasGsap){
+    gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.create({
+      trigger:section, start:'top top', pin:true, scrub:1, anticipatePin:1,
+      end:function(){ return '+='+Math.round(window.innerHeight*3.5); },
+      invalidateOnRefresh:true,
+      onUpdate:function(self){ paint(self.progress); },
+    });
+    paint(0);
+  } else {
+    // fallback vanilla — sem GSAP: sticky via CSS + scroll listener + rAF lerp
+    // (mesma técnica da versão frame-sequence "oficial" já validada no projeto).
+    section.style.position='relative';
+    var stage=section.querySelector('.pourS__stage');
+    stage.style.position='sticky'; stage.style.top='0';
+    var target=0, current=0;
+    function onScroll(){ target=computeProgress(); }
+    function loop(){
+      current += (target-current)*0.12;
+      if(Math.abs(target-current)<0.0005) current=target;
+      paint(current);
+      requestAnimationFrame(loop);
+    }
+    window.addEventListener('scroll',onScroll,{passive:true});
+    window.addEventListener('resize',onScroll,{passive:true});
+    onScroll();
+    loop();
+  }
+})();
+</script>
+
+</body>
+</html>
