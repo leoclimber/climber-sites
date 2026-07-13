@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CAPA FLEX — xícara para dentro do quadro tracejado (brewdistrict24.com)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Abril+Fatface&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#583328}
+  body{font-family:'Abril Fatface',Georgia,serif}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CORREÇÃO vs. tentativa anterior: eu tinha escopado errado o
+     "quadro tracejado" — ele É real (existe no carrossel
+     beerInfoWrapper/canWrapper deles, que fica DENTRO do mesmo hero,
+     logo abaixo do título, não numa seção separada mais embaixo).
+     Também troquei a mecânica de scroll: antes eram DOIS slots
+     medidos via getBoundingClientRect em pontos diferentes da
+     página (frágil, não disparava certo no scroll real). Agora é
+     UMA seção pinada só (ScrollTrigger pin:true + scrub numa única
+     timeline), com a xícara sempre com opacity:1 do início ao fim —
+     nunca some, só translada e encolhe.
+
+     ÚNICAS diferenças propositais: lata 3D -> cup.png 2D sem girar;
+     fontes pagas -> Abril Fatface + Archivo; textos -> café.
+
+     Seção clara "ABOUT/WELCOME TO THE ROASTERY" (canContainers/
+     aboutBlock) mantida como estava — já validada.
+     ============================================================ -->
+
+<section class="heroPin" id="heroPin">
+  <div class="stage" id="stage">
+
+    <!-- MOLDURA FIXA — chrome decorativo próprio do Ember & Oak (não
+         copia logo/raios/marca do site de referência: é um padrão
+         genérico de "nav no topo + badges nos cantos + círculo
+         lateral" com identidade e conteúdo autorais). Fica visível
+         o tempo todo (sem tween de opacity) enquanto a capa está
+         pinada, pra tela nunca ficar "vazia" de moldura. -->
+    <nav class="topNav" id="topNav">
+      <div class="topNavSide topNavLeft">
+        <a href="#">Home</a><a href="#">Menu</a><a href="#">Contact</a>
+      </div>
+      <div class="topNavWordmark">Ember &amp; Oak</div>
+      <div class="topNavSide topNavRight">
+        <div class="topNavSocials">
+          <a href="#" aria-label="Instagram">◐</a><a href="#" aria-label="Facebook">◑</a>
+        </div>
+        <a href="#" class="topNavButton">Visit Us</a>
+      </div>
+    </nav>
+
+    <div class="cornerBadge cornerBadgeLeft">
+      <svg class="beanIcon" viewBox="0 0 24 36"><path d="M12 1C5 1 1 9 1 18s4 17 11 17 11-8 11-17S19 1 12 1z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 3C8.5 8 8.5 28 12 33" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+      <span>Est. 2019</span>
+    </div>
+
+    <div class="cornerBadge cornerBadgeRight">
+      <span>Open Daily</span>
+      <svg class="clockIcon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </div>
+
+    <div class="sideCircleRight" id="sideCircleRight">
+      <svg class="rotatingText" viewBox="0 0 120 120">
+        <defs><path id="circlePath" d="M60,60 m-50,0 a50,50 0 1,1 100,0 a50,50 0 1,1 -100,0"/></defs>
+        <text font-size="7.2" letter-spacing="2" fill="#F8F7E5">
+          <textPath href="#circlePath">SPECIALTY COFFEE &#183; DUBLIN &#183; SPECIALTY COFFEE &#183; DUBLIN &#183; </textPath>
+        </text>
+      </svg>
+      <div class="sideCircleArrow">↓</div>
+    </div>
+
+    <div class="sideBadgeRight" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M4 9h13a3 3 0 0 1 0 6h-1M4 9v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8M4 9V6h12v3" fill="none" stroke="#583328" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <!-- ESTADO 1 — abertura: título + subtítulo -->
+    <div class="heroText" id="heroText">
+      <h2 class="hugeTitle">
+        <span class="extra" id="hName1"></span>
+        <span class="extra extraTitle" id="hName2"></span>
+      </h2>
+      <h3 class="normalMediumTitle" id="hTagline"></h3>
+    </div>
+
+    <!-- TEXTO DO MEIO — aparece enquanto a xícara desce, entre o
+         hero sumir e o quadro chegar, pra tela nunca ficar vazia. -->
+    <div class="midText" id="midText">Roasted with soul</div>
+
+    <!-- QUADRO — tracejado, fixo no centro, onde a xícara pousa -->
+    <div class="dashedFrame" id="dashedFrame"></div>
+
+    <!-- XÍCARA — elemento ÚNICO, sempre opacity:1 (nunca some).
+         Só translada (y) e encolhe (scale) num único tween contínuo. -->
+    <div class="cupWrapper" id="cupWrapper">
+      <img class="cupImg" src="cup.png" alt="" draggable="false">
+    </div>
+
+    <!-- ESTADO 2 — quadro, lado esquerdo. Estrutura real deles tem
+         DOIS blocos independentes nessa coluna (nome/vol no topo,
+         ingredientes embaixo deslocado à direita) — replico essa
+         divisão em vez de um bloco único. Conteúdo é do Ember & Oak,
+         não o texto real deles. -->
+    <div class="frameLeftTop" id="frameLeftTop">
+      <div class="fName"><span id="pName1"></span> <span class="accent" id="pName2"></span></div>
+      <div class="fTagline">Specialty Coffee · 12oz</div>
+    </div>
+    <div class="frameLeftBottom" id="frameLeftBottom">
+      <div class="fIngredientsLabel">Ingredients</div>
+      <div class="fIngredients">Single-origin arabica<br>Filtered water<br>Steamed milk</div>
+    </div>
+
+    <!-- ESTADO 2 — quadro, lado direito: descrição no topo, grid
+         embaixo deslocado à esquerda (espelhando o padrão real). -->
+    <div class="frameRightTop" id="frameRightTop">
+      <div class="fEyebrow">// Specialty Coffee</div>
+      <p class="fDesc">Small batch beans, roasted weekly and poured with care in the heart of Dublin.</p>
+    </div>
+    <div class="frameRightBottom" id="frameRightBottom">
+      <div class="infoGrid">
+        <div class="gridRow">
+          <div class="gridItem"><span class="tinyTitle">Est.</span><span class="normalTitle">2019</span></div>
+          <div class="gridDivider" aria-hidden="true"></div>
+          <div class="gridItem"><span class="tinyTitle">Roasted in</span><span class="normalTitle">Dublin</span></div>
+        </div>
+        <div class="dottedRow"><svg viewBox="0 0 400 1" preserveAspectRatio="none"><line x1="0" y1=".5" x2="400" y2=".5"/></svg></div>
+        <div class="gridRow">
+          <div class="gridItem"><span class="tinyTitle">Origin</span><span class="normalTitle">Single Origin</span></div>
+          <div class="gridDivider" aria-hidden="true"></div>
+          <div class="gridItem"><span class="tinyTitle">Craft</span><span class="normalTitle">Handcrafted</span></div>
+        </div>
+      </div>
+      <a href="#" class="fButton">Visit Us</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ========== SEÇÃO 2 — canContainers/aboutBlock (mantida como estava, já validada) ========== -->
+<div class="canContainers" id="canContainers">
+  <div class="blockContainerContent">
+    <div class="blockContainer almostWhite">
+      <div class="innerAnimContainer">
+        <section class="aboutBlock" id="aboutBlock">
+
+          <div class="contentWrapper small">
+            <h2 class="smallTitle">About Ember &amp; Oak</h2>
+            <div class="mediumTitle">Welcome to the roastery. <br>This <span class="tinyTitle">A small room that smells of caramel and toasted grain</span> is where we slow down <span class="tinyTitle small">Enjoy <br>every <br>cup</span> together.</div>
+          </div>
+
+          <div class="contentWrapper smaller">
+            <div class="cols">
+              <div class="col"><p>Every bag is roasted in small batches, a few kilos at a time, so what you drink this week was still green a fortnight ago. We taste every roast before it leaves the room.</p></div>
+              <div class="col"><p>No shortcuts, no flavourings, no rush. Just water, beans and time — poured one cup at a time for the neighbourhood that keeps coming back for more.</p></div>
+            </div>
+            <div class="lines">
+              <div class="line"></div>
+              <div class="dottedLine"><svg viewBox="0 0 853 1" preserveAspectRatio="none"><line x1="0" y1=".5" x2="853" y2=".5"/></svg></div>
+            </div>
+          </div>
+
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  :root{
+    --cor: #C87941;
+  }
+
+  /* --------------------------------------------------------------
+     PIN — uma seção só, alta o bastante pra dar percurso de scroll
+     (240vh); .stage fica pinada 100vh enquanto o progresso 0->1
+     dirige TUDO: fade do hero, translação/escala contínua da
+     xícara (nunca opacity:0), reveal do quadro + textos.
+     -------------------------------------------------------------- */
+  /* 214vh medido de verdade no site real (getBoundingClientRect de
+     .headerBigBlock: 1817.6px numa viewport de 849px de altura =
+     ~214vh) — não é valor chutado. */
+  .heroPin{position:relative;height:214vh;background:#583328}
+  .stage{position:relative;height:100vh;overflow:hidden;color:#F8F7E5}
+
+  /* Sem transform aqui — a centralização (-50%,-50%) é aplicada via
+     GSAP (xPercent/yPercent), pra poder somar o deslize contínuo em
+     y por cima sem conflitar com uma segunda fonte de transform. */
+  /* O tamanho REAL medido (9.5625vw) é calibrado pra coluna CENTRALIZADA
+     e larga (76.5vw) deles, onde o título fica sozinho, sem disputar
+     espaço com o produto. Nossa composição é diferente (título à
+     esquerda, na MESMA altura da xícara centralizada) — nesse layout
+     9.5625vw estoura em cima da xícara. Reduzido pra um tamanho
+     proporcional que não sobrepõe o produto de forma ilegível. */
+  .heroText{position:absolute;left:6vw;top:40%;
+    z-index:3;text-align:left;width:34vw;max-width:460px}
+  .hugeTitle{font-family:'Abril Fatface',Georgia,serif;font-size:5vw;line-height:.95;
+    text-transform:uppercase;font-weight:400;color:#F8F7E5;margin-bottom:1vw}
+  .hugeTitle .extra{display:block}
+  .hugeTitle .extraTitle{color:var(--cor)}
+  .normalMediumTitle{font-family:'Archivo',sans-serif;font-size:2.6875vw;letter-spacing:.1em;
+    text-transform:uppercase;font-weight:500;color:#F8F7E5}
+
+  @keyframes rotateLeft{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+
+  /* --------------------------------------------------------------
+     MOLDURA FIXA — nav no topo, badges nos cantos, círculo lateral
+     rotativo, badge dourado. Tudo com identidade própria do Ember &
+     Oak (sem logo/raios/marca do site de referência). Sempre
+     opacity:1 — não são tocados pela timeline de scroll.
+     -------------------------------------------------------------- */
+  .topNav{position:absolute;top:0;left:0;width:100%;z-index:6;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:2.2vw 3vw;font-family:'Archivo',sans-serif}
+  .topNavSide{display:flex;align-items:center;gap:1.8vw}
+  .topNavLeft a{color:#F8F7E5;text-decoration:none;font-size:.75vw;letter-spacing:.15em;
+    text-transform:uppercase;opacity:.85}
+  .topNavWordmark{font-family:'Abril Fatface',Georgia,serif;font-size:1.3vw;
+    text-transform:uppercase;letter-spacing:.05em;color:#F8F7E5}
+  .topNavSocials{display:flex;gap:.9vw}
+  .topNavSocials a{color:#F8F7E5;text-decoration:none;font-size:.9vw;opacity:.85}
+  .topNavButton{color:#583328;background:#F8F7E5;text-decoration:none;font-size:.7vw;
+    letter-spacing:.15em;text-transform:uppercase;padding:.7vw 1.4vw;border-radius:2vw}
+
+  .cornerBadge{position:absolute;bottom:3vh;z-index:6;display:flex;align-items:center;gap:.6vw;
+    font-family:'Archivo',sans-serif;font-size:.75vw;letter-spacing:.15em;text-transform:uppercase;color:#F8F7E5}
+  .cornerBadgeLeft{left:3vw}
+  .cornerBadgeRight{right:3vw}
+  .beanIcon,.clockIcon{width:1.4vw;height:1.4vw;color:#F8F7E5}
+
+  /* Direita, no topo (top:22%) — livre do nome (agora à esquerda,
+     top:56%) e livre do frameRight/badge dourado (que ficam mais
+     pro centro-baixo, top:50%/80%). */
+  .sideCircleRight{position:absolute;right:3vw;top:22%;transform:translateY(-50%);z-index:6;
+    width:7.625vw;height:7.625vw;max-width:100px;max-height:100px}
+  .sideCircleRight .rotatingText{position:absolute;inset:0;width:100%;height:100%;animation:rotateLeft 24s linear infinite}
+  .sideCircleArrow{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:1.1vw;color:#F8F7E5}
+
+  /* O frameRight agora ocupa aprox. 50%-86% de altura (centrado em
+     top:68%); o badge fica no vão livre entre o círculo giratório
+     (top:22%) e essa faixa. */
+  .sideBadgeRight{position:absolute;right:3vw;top:38%;transform:translateY(-50%);z-index:6;
+    width:5vw;height:5vw;max-width:64px;max-height:64px;border-radius:50%;background:var(--cor);
+    display:flex;align-items:center;justify-content:center}
+  .sideBadgeRight svg{width:45%;height:45%}
+
+  .midText{position:absolute;left:50%;top:24%;transform:translate(-50%,-50%);z-index:3;
+    font-family:'Abril Fatface',Georgia,serif;font-size:2.6vw;text-transform:uppercase;
+    letter-spacing:.02em;color:#F8F7E5;text-align:center;white-space:nowrap;opacity:0;pointer-events:none}
+
+  /* QUADRO TRACEJADO — no site real é um retângulo SVG com
+     stroke-dasharray animado (.canInAnimation svg rect); aqui
+     simplificado pra uma borda CSS dashed que só ganha opacidade
+     conforme a xícara chega. Tamanho/posição ajustados pra conter a
+     xícara no tamanho real medido do pouso (18.13x31.38vw) com
+     margem. top:68% (não 50%) — dá espaço pra xícara descer de
+     verdade a partir do centro (ver JS). */
+  .dashedFrame{position:absolute;left:50%;top:68%;width:27vw;height:40vw;
+    max-width:360px;max-height:530px;border:2px dashed rgba(248,247,229,.55);
+    border-radius:1.5vw;opacity:0;z-index:2;pointer-events:none}
+
+  /* XÍCARA — z-index:1 (abaixo de todo texto, igual ao real: model
+     z-index:1 < título z-index:2). SEMPRE opacity:1 — nunca
+     desaparece. Tamanho de ABERTURA medido de verdade no site real
+     (.model .canvasWrapper: 584.1x584.1px numa viewport de 1584px =
+     36.88vw quadrado) — width/height abaixo são esse valor exato. */
+  .cupWrapper{position:absolute;left:50%;top:50%;width:36.88vw;height:36.88vw;
+    max-width:600px;max-height:600px;z-index:1;pointer-events:none}
+  .cupImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+    filter:drop-shadow(0 1.2vw 2vw rgba(0,0,0,.5))}
+
+  /* text-align:right — no site real, .beerIntroSlider/.beerIngredientsSlider
+     (nome + ingredientes) são alinhados à direita dentro da própria
+     caixa, fazendo o texto "abraçar" o produto central. Tamanhos de
+     fonte abaixo são os medidos ao vivo no site real (getBoundingClientRect
+     + getComputedStyle): mediumTitle=4vw, normalTitle=1.5vw, tinyTitle=.875vw. */
+  /* Estrutura em DOIS blocos por lado, espelhando a divisão real
+     (.beerIntroSlider no topo + .beerIngredientsSlider embaixo
+     deslocado; .beerInfoSlider no topo + .beerDetailsSlider embaixo
+     deslocado do outro lado). left:7.125vw / left:18.25vw medidos
+     no real — a caixa de baixo desloca ~11vw à direita da de cima;
+     espelhado do lado direito (desloca à esquerda). */
+  .frameLeftTop{position:absolute;left:7vw;top:60%;transform:translateY(-100%);z-index:3;
+    max-width:24vw;opacity:0;text-align:right}
+  .frameLeftBottom{position:absolute;left:15vw;top:64%;z-index:3;
+    max-width:20vw;opacity:0;text-align:right}
+  .fName{font-family:'Abril Fatface',Georgia,serif;font-size:4vw;line-height:1.1;
+    text-transform:uppercase;color:#F8F7E5}
+  .fName .accent{color:var(--cor)}
+  .fTagline{margin-top:.5vw;font-family:'Archivo',sans-serif;font-size:1.5vw;
+    letter-spacing:.05em;text-transform:uppercase;color:rgba(248,247,229,.7)}
+  .fIngredientsLabel{font-family:'Archivo',sans-serif;font-size:.875vw;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--cor);margin-bottom:.5vw}
+  .fIngredients{font-family:'Archivo',sans-serif;font-size:1.5vw;line-height:1.4;
+    color:rgba(248,247,229,.75)}
+
+  .frameRightTop{position:absolute;right:7vw;top:60%;transform:translateY(-100%);z-index:3;
+    max-width:24vw;opacity:0}
+  .frameRightBottom{position:absolute;right:15vw;top:64%;z-index:3;
+    max-width:22vw;opacity:0}
+  .fEyebrow{font-family:'Archivo',sans-serif;font-size:1.125vw;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--cor);margin-bottom:.6vw;display:block}
+  .fDesc{font-family:'Abril Fatface',Georgia,serif;font-size:1vw;line-height:1.5;
+    color:rgba(248,247,229,.85)}
+
+  /* tinyTitle=.875vw, normalTitle=1.5vw — medidos ao vivo no site
+     real (.beerDetailsSlider .tinyTitle/.normalTitle). */
+  .infoGrid{width:100%}
+  .gridRow{display:flex;align-items:flex-start}
+  .gridItem{flex:1;padding:.6vw 0}
+  .gridDivider{width:1px;align-self:stretch;background:rgba(248,247,229,.25);margin:0 1.2vw}
+  .tinyTitle{font-family:'Archivo',sans-serif;font-size:.875vw;letter-spacing:.2em;
+    text-transform:uppercase;font-weight:500;color:var(--cor);margin-bottom:.5vw;display:block}
+  .normalTitle{font-family:'Abril Fatface',Georgia,serif;font-size:1.5vw;color:#F8F7E5;display:block}
+  .dottedRow{width:100%;margin:.4vw 0}
+  .dottedRow svg{width:100%;height:1px;display:block}
+  .dottedRow svg line{stroke:rgba(248,247,229,.35);stroke-width:1;stroke-dasharray:2 6}
+
+  /* Botão — presente no real (o deles é "Order now"); equivalente
+     genérico com a marca do café. */
+  .fButton{display:inline-block;margin-top:1.2vw;font-family:'Archivo',sans-serif;
+    font-size:.8vw;letter-spacing:.15em;text-transform:uppercase;color:#583328;
+    background:#F8F7E5;text-decoration:none;padding:.7vw 1.6vw;border-radius:2vw}
+
+  @media(max-width:900px){
+    .heroText{width:88vw;top:40%}
+    .hugeTitle{font-size:10vw}
+    .normalMediumTitle{font-size:2.6vw}
+    .dashedFrame{width:50vw;height:50vw;top:56%}
+    .cupWrapper{width:44vw;height:44vw;top:56%}
+    .frameLeftTop{left:8vw;max-width:40vw;top:80%;transform:translateY(-100%)}
+    .frameLeftBottom{left:8vw;max-width:40vw;top:84%;transform:none}
+    .frameRightTop{right:8vw;max-width:40vw;top:80%;transform:translateY(-100%)}
+    .frameRightBottom{right:8vw;max-width:40vw;top:84%;transform:none}
+    .fName{font-size:5vw}
+    .fTagline,.fEyebrow{font-size:2.2vw}
+    .fIngredientsLabel{font-size:2vw}
+    .fIngredients{font-size:2.4vw;max-width:36vw}
+    .fDesc{font-size:2.8vw}
+    .tinyTitle{font-size:1.9vw}
+    .normalTitle{font-size:2.8vw}
+    /* sem override de heroPin aqui — herda os 214vh medidos (não
+     tenho medição real separada pra mobile, não vou inventar um
+     valor diferente). */
+
+    .topNavLeft{display:none}
+    .topNavWordmark{font-size:3.2vw}
+    .topNavSocials{display:none}
+    .topNavButton{font-size:2.2vw;padding:1.8vw 3.2vw}
+    .cornerBadge{font-size:2vw;bottom:2vh}
+    .beanIcon,.clockIcon{width:3.6vw;height:3.6vw}
+    .sideCircleRight{display:none}
+    .sideBadgeRight{width:11vw;height:11vw}
+    .midText{font-size:5.5vw;top:18%;white-space:normal;width:80vw}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .heroText,.cupWrapper,.dashedFrame,.frameLeftTop,.frameLeftBottom,.frameRightTop,.frameRightBottom{transition:none}
+  }
+
+  /* --------------------------------------------------------------
+     SEÇÃO 2 — canContainers/aboutBlock (idêntico à versão anterior
+     já validada: fundo claro real .almostWhite, texto escuro real).
+     -------------------------------------------------------------- */
+  .canContainers{position:relative;overflow:hidden}
+
+  .blockContainer{position:relative;overflow:hidden;padding:13.125vw 0}
+  .blockContainer.almostWhite{background:#F8F7E5;color:#1D1D1D}
+
+  .aboutBlock{position:relative}
+  .aboutBlock .contentWrapper{position:relative;z-index:1;text-align:center;margin:0 auto}
+  .aboutBlock .contentWrapper.small{padding:0 8.875vw}
+  .aboutBlock .contentWrapper.smaller{padding:0 18vw}
+
+  .smallTitle{font-family:'Archivo',sans-serif;font-size:1.125vw;letter-spacing:.1em;text-transform:uppercase;font-weight:500;color:#1D1D1D;display:block;margin-bottom:1.25vw}
+
+  .mediumTitle{font-family:'Abril Fatface',Georgia,serif;font-size:4vw;line-height:4.375vw;text-transform:uppercase;font-weight:400;color:#1D1D1D;
+    opacity:0;transform:translateY(3.125vw);transition:opacity .45s,transform .45s}
+  .aboutBlock.is-inview .mediumTitle{opacity:1;transform:translateY(0)}
+  .mediumTitle .tinyTitle{display:none}
+
+  .cols{margin:2.5vw 0 5vw 0;width:calc(100% + 1vw);margin-left:-.5vw;text-align:left}
+  .cols .col{width:calc(50% - 1vw);margin:0 .5vw;display:inline-block;vertical-align:top;
+    opacity:0;transform:translateY(3.125vw);transition:opacity .45s,transform .45s,pointer-events .45s}
+  .cols .col:last-child{transition-delay:.15s}
+  .aboutBlock.is-inview .cols .col{opacity:1;transform:translateY(0)}
+  .cols .col p{font-family:'Abril Fatface',Georgia,serif;font-size:1.1vw;line-height:1.6;color:#1D1D1D}
+
+  .lines{margin-top:2.5vw}
+  .lines .line{height:1px;background:#1D1D1D;margin:0 auto;margin-bottom:.625vw;width:0;transition:width .45s ease-out}
+  .lines .dottedLine{width:0;margin:0 auto;overflow:hidden;transition:width .45s .3s ease-out}
+  .lines .dottedLine svg{width:100%;height:1px;display:block}
+  .lines .dottedLine svg line{fill:none;stroke:#1D1D1D;stroke-width:1px;stroke-dasharray:2.7}
+  .aboutBlock.is-inview .lines .line,.aboutBlock.is-inview .lines .dottedLine{width:100%}
+
+  @media(max-width:1080px){
+    .blockContainer{padding:19.444vw 0}
+    .aboutBlock .contentWrapper.small{padding:0 2.778vw}
+    .aboutBlock .contentWrapper.smaller{padding:0 8.333vw}
+    .smallTitle{font-size:2.222vw}
+    .mediumTitle{font-size:5vw;line-height:5.556vw}
+    .cols{margin:4.63vw 0 9.259vw 0}
+    .cols .col{width:calc(50% - 1.481vw);margin:0 .7405vw}
+    .cols .col p{font-size:2vw}
+  }
+  @media(max-width:580px){
+    .blockContainer{padding:36.206vw 0}
+    .aboutBlock .contentWrapper.small{padding:0 5.172vw}
+    .aboutBlock .contentWrapper.smaller{padding:0 5.172vw}
+    .smallTitle{font-size:4.138vw}
+    .mediumTitle{font-size:7.587vw;line-height:8.621vw}
+    .cols{margin:6.481vw 0 17.241vw 0}
+    .cols .col{width:calc(100% - 2.759vw);margin:0 1.3795vw;display:block}
+    .cols .col:first-child{margin-bottom:5.517vw}
+    .cols .col p{font-size:4vw}
+  }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+  var CAFE = {
+    name1: 'Ember',
+    name2: '& Oak',
+    tagline: 'Specialty Coffee · Dublin',
+  };
+  document.getElementById('hName1').textContent = CAFE.name1;
+  document.getElementById('hName2').textContent = CAFE.name2;
+  document.getElementById('hTagline').textContent = CAFE.tagline;
+  document.getElementById('pName1').textContent = CAFE.name1;
+  document.getElementById('pName2').textContent = CAFE.name2;
+
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGsap = (typeof window.gsap !== 'undefined' && typeof window.ScrollTrigger !== 'undefined');
+
+  var heroText = document.getElementById('heroText');
+  var midText = document.getElementById('midText');
+  var dashedFrame = document.getElementById('dashedFrame');
+  var cupWrapper = document.getElementById('cupWrapper');
+  var frameLeftTop = document.getElementById('frameLeftTop');
+  var frameLeftBottom = document.getElementById('frameLeftBottom');
+  var frameRightTop = document.getElementById('frameRightTop');
+  var frameRightBottom = document.getElementById('frameRightBottom');
+  var aboutBlock = document.getElementById('aboutBlock');
+
+  if (reduce || !hasGsap){
+    // estado final estático: xícara pousada (tamanho real do pouso,
+    // 18.13x31.38vw), quadro e textos visíveis.
+    heroText.style.opacity = 0;
+    midText.style.opacity = 0;
+    cupWrapper.style.left = '50%';
+    cupWrapper.style.top = '68%';
+    cupWrapper.style.width = '18.13vw';
+    cupWrapper.style.height = '31.38vw';
+    cupWrapper.style.transform = 'translate(-50%,-50%)';
+    dashedFrame.style.opacity = 1;
+    dashedFrame.style.transform = 'translate(-50%,-50%)';
+    frameLeftTop.style.opacity = 1;
+    frameLeftBottom.style.opacity = 1;
+    frameRightTop.style.opacity = 1;
+    frameRightBottom.style.opacity = 1;
+    aboutBlock.classList.add('is-inview');
+    window.__capaFlexReady = true;
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  // xPercent/yPercent:-50 = centralização persistente; y/width/height
+  // adicionais tweenados por cima (GSAP soma como componentes
+  // separados do transform, não sobrescreve a centralização).
+  gsap.set(heroText, {yPercent:-50});
+  // Xícara começa EXATAMENTE no centro vertical (y:0) — sem offset.
+  gsap.set(cupWrapper, {xPercent:-50, yPercent:-50, y:0});
+  gsap.set(dashedFrame, {xPercent:-50, yPercent:-50, opacity:0});
+  // frameLeftTop/frameRightTop usam yPercent:-100 (equivalente ao
+  // translateY(-100%) que tinham em CSS — precisa ir pro GSAP porque
+  // ele vai tocar x/opacity desses elementos e sobrescreveria um
+  // transform só-CSS).
+  gsap.set([frameLeftTop, frameRightTop], {yPercent:-100, opacity:0});
+  gsap.set(frameLeftTop, {x:-24});
+  gsap.set(frameRightTop, {x:24});
+  gsap.set(frameLeftBottom, {opacity:0, x:-24});
+  gsap.set(frameRightBottom, {opacity:0, x:24});
+
+  var tl = gsap.timeline({
+    scrollTrigger:{
+      trigger: '#heroPin',
+      start: 'top top',
+      end: 'bottom bottom',
+      scrub: 0.4,
+      pin: '#stage',
+      invalidateOnRefresh: true,
+    },
+    defaults:{ease:'none'}
+  });
+
+  // Título NUNCA usa opacity — desliza continuamente pra cima
+  // (parallax, mesmo espírito do data-scroll-speed real deles) e
+  // sai de quadro naturalmente pelo movimento (overflow:hidden do
+  // .stage recorta), coordenado com a descida da xícara. A tela
+  // nunca fica vazia: título subindo + xícara descendo ao mesmo
+  // tempo, sempre algo em movimento.
+  tl.to(heroText, {y:'-62vh', duration:0.85}, 0);
+
+  // Xícara desce do CENTRO (top:50%) até a posição do quadro
+  // (top:68% → delta de 18vh) num ÚNICO tween contínuo, ENCOLHENDO
+  // do tamanho real de abertura (36.88vw quadrado) pro tamanho real
+  // de pouso (18.13x31.38vw) — ambos medidos no site real. Opacity
+  // nunca é tocada (permanece 1 sempre) — a xícara nunca desaparece.
+  tl.to(cupWrapper, {y:'18vh', width:'18.13vw', height:'31.38vw', duration:0.7}, 0);
+
+  // 0.6 -> 0.72: quadro tracejado ganha presença. Atrasado (era
+  // 0.5) — só aparece quando a xícara já encolheu quase todo o
+  // caminho (nos tamanhos intermediários do tween ela passa por
+  // larguras maiores que o quadro; revelar cedo demais deixava a
+  // xícara "vazando" visivelmente pra fora da moldura).
+  tl.to(dashedFrame, {opacity:1, duration:0.12}, 0.6);
+
+  // 0.68 -> 1: textos do quadro revelam com fade, depois do quadro.
+  tl.to([frameLeftTop, frameRightTop], {opacity:1, x:0, duration:0.2}, 0.68);
+  tl.to([frameLeftBottom, frameRightBottom], {opacity:1, x:0, duration:0.2}, 0.78);
+
+  window.addEventListener('resize', function(){ ScrollTrigger.refresh(); });
+  // Fontes carregam de forma assíncrona (Abril Fatface/Archivo via
+  // Google Fonts) — se o layout mudar de tamanho depois que o
+  // ScrollTrigger já calculou o range do pin, a altura do scroll
+  // pode ficar errada até o próximo refresh. Força um refresh assim
+  // que as fontes reais terminarem de carregar.
+  if (document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){ ScrollTrigger.refresh(); });
+  }
+
+  // Reveal do aboutBlock (IntersectionObserver, igual ao mecanismo
+  // real deles de adicionar a classe .is-inview no scroll).
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if (entry.isIntersecting) aboutBlock.classList.add('is-inview');
+    });
+  }, {threshold:.35});
+  io.observe(aboutBlock);
+
+  window.__capaFlexReady = true; // hook diagnóstico
+})();
+</script>
+
+</body>
+</html>
