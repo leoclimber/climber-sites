@@ -1,0 +1,2 @@
+Cenas React Three Fiber, Spline e sequências Theatre.js vivem aqui.
+Todo arquivo desta pasta é 'use client' — mantém a árvore de Server Components do resto do app livre do bundle de three.js.
