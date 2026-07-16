@@ -67,7 +67,13 @@ export function Hero() {
     // Metade da duração anterior (300vh → 150vh) — mesmas proporções de
     // fase internamente (0-25% textos saindo / 25-80% imersão / 80-100%
     // clip-path abrindo), só comprimidas pra exigir menos rolagem.
-    <section id="hero" ref={containerRef} className="relative z-20 h-[150vh] w-full">
+    // Desktop (lg+): +40% de altura (150vh -> 210vh) pra dar mais fôlego
+    // de rolagem à imersão — as frações de fase acima não mudam porque
+    // tudo é dirigido por scrollYProgress (0-1 relativo à altura do
+    // container), nunca por vh/pixel absoluto. Mobile mantém 150vh: o
+    // dedo já rende pouco progresso por swipe, mais altura ali significa
+    // só mais swipes repetidos pra atravessar a mesma imersão.
+    <section id="hero" ref={containerRef} className="relative z-20 h-[150vh] w-full lg:h-[210vh]">
       <div
         className="sticky top-0 h-screen w-full overflow-hidden"
         style={{ background: "#150c07" }}
