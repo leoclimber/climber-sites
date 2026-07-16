@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import type { MotionValue } from "framer-motion";
@@ -37,27 +37,50 @@ function SceneWhiteout({ progress }: { progress: MotionValue<number> }) {
 }
 
 export function HeroCanvas({ progress }: { progress: MotionValue<number> }) {
-  return (
-    <Canvas
-      dpr={[1, 1.75]}
-      gl={{ antialias: true, powerPreference: "high-performance" }}
-      camera={{ fov: 60, near: 0.1, far: 200 }}
-    >
-      <SceneWhiteout progress={progress} />
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  // Canvas do R3F usa frameloop="always" por padrão — continua rodando o
+  // useFrame (grãos, estrias, bloom) pra sempre, mesmo com o sticky do
+  // Hero já scrollado pra fora da viewport (ele continua montado, só
+  // visualmente fora da tela). Isso competia por GPU com a seção Pour
+  // logo abaixo. IntersectionObserver pausa o render loop quando o
+  // canvas não está visível.
+  const [isVisible, setIsVisible] = useState(true);
 
-      <Suspense fallback={null}>
-        <CoffeeField progress={progress} />
-      </Suspense>
-      <HyperspaceStreaks progress={progress} />
-      <EffectComposer multisampling={0}>
-        <Bloom
-          luminanceThreshold={0.42}
-          luminanceSmoothing={0.3}
-          intensity={0.4}
-          radius={0.5}
-          mipmapBlur
-        />
-      </EffectComposer>
-    </Canvas>
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="absolute inset-0">
+      <Canvas
+        dpr={[1, 1.75]}
+        gl={{ antialias: true, powerPreference: "high-performance" }}
+        camera={{ fov: 60, near: 0.1, far: 200 }}
+        frameloop={isVisible ? "always" : "never"}
+      >
+        <SceneWhiteout progress={progress} />
+
+        <Suspense fallback={null}>
+          <CoffeeField progress={progress} />
+        </Suspense>
+        <HyperspaceStreaks progress={progress} />
+        <EffectComposer multisampling={0}>
+          <Bloom
+            luminanceThreshold={0.42}
+            luminanceSmoothing={0.3}
+            intensity={0.4}
+            radius={0.5}
+            mipmapBlur
+          />
+        </EffectComposer>
+      </Canvas>
+    </div>
   );
 }

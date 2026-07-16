@@ -1,4 +1,5 @@
 import { Hero } from "@/components/sections/hero";
+import { Pour } from "@/components/sections/pour";
 import { Services } from "@/components/sections/services";
 import { Gallery } from "@/components/sections/gallery";
 import { Testimonials } from "@/components/sections/testimonials";
@@ -11,6 +12,7 @@ export default function Home() {
           overlay dentro do próprio pin do Hero (ver AboutReveal em
           components/sections/about.tsx), não uma div rolando por baixo. */}
       <Hero />
+      <Pour />
       <Services />
       <Gallery />
       <Testimonials />
