@@ -19,16 +19,15 @@ import {
 // cortada, então essa mesma % sempre cai no mesmo lugar visual.
 // Ajuste: a medição original (onde o CONTEÚDO claro termina) deixava a
 // fina faixa avermelhada do bezel físico visível entre o vídeo e a
-// madeira — o pedido agora é cobrir até TOCAR a madeira, eliminando essa
-// faixa por completo (não "deixar o bezel visível" como antes). Valores
-// abaixo re-medidos na transição madeira<->escuro (não conteúdo<->escuro)
-// pra esquerda/direita/topo. Base ficou igual: já cobria limpo sem
-// overshoot, esticar mais ali estouraria pra cima da madeira.
+// madeira — o pedido foi cobrir até TOCAR a madeira, eliminando essa
+// faixa por completo. Topo/esquerda/direita confirmados corretos (não
+// mexer). Base: +1.5pp de altura — ainda sobrava uma fina linha da
+// moldura original embaixo, top/left/width intocados.
 const FRAME = {
   top: 25.7, // %
   left: 32.3, // %
   width: 35.55, // %
-  height: 41.05, // %
+  height: 42.55, // % (era 41.05 — +1.5pp só na base)
 };
 
 // Aspect ratio REAL da imagem (medido: 2560x1387 = 1.84571). NÃO é 16:9
@@ -72,6 +71,15 @@ function easeInOutQuint(t: number) {
   return t < 0.5 ? 16 * t ** 5 : 1 - (-2 * t + 2) ** 5 / 2;
 }
 
+// Transição pro Menu: mesma lógica do iris wipe do hero (about.tsx) — a
+// próxima seção nasce da anterior, não corta. Nos últimos 15% do scroll
+// do Pour, uma cortina #1C1614 (mesmo fundo do Menu) sobe de baixo pra
+// cima cobrindo a galeria. Usa laggedProgress (spring), não easedProgress
+// (a curva quint é específica do encaixe do vídeo na moldura) — a cortina
+// é um efeito à parte, scrub simples ligado ao scroll.
+const MENU_TRANSITION_START = 0.85;
+const MENU_TRANSITION_BG = "#1C1614";
+
 export function Pour() {
   const containerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -93,6 +101,11 @@ export function Pour() {
   const easedProgress = useTransform(laggedProgress, (p) =>
     easeInOutQuint(Math.max(0, Math.min(1, p)))
   );
+
+  const menuTransitionClip = useTransform(laggedProgress, (p) => {
+    const t = Math.max(0, Math.min(1, (p - MENU_TRANSITION_START) / (1 - MENU_TRANSITION_START)));
+    return `inset(${(1 - t) * 100}% 0 0 0)`;
+  });
 
   // Interpola em % relativas ao container-pai (aspect-ratio real da
   // imagem) do estado "cobre 100vw/100vh" (calculado, pode passar de
@@ -197,6 +210,15 @@ export function Pour() {
             </motion.div>
           </div>
         </div>
+
+        {/* Cortina de transição pro Menu: nasce da própria seção, não
+            corta — mesma lógica do iris wipe do hero. Cobre o viewport
+            inteiro (irmã do container com aspect-ratio, que pode ficar
+            letterboxed), não só a imagem. */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-20"
+          style={{ backgroundColor: MENU_TRANSITION_BG, clipPath: menuTransitionClip }}
+        />
       </div>
     </section>
   );

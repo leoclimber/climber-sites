@@ -80,6 +80,15 @@ const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 // devia travar.
 const WHEEL_GESTURE_GAP_MS = 400;
 
+// Distingue um vazamento de corrida (touchend processa fora do ciclo de
+// rAF que detecta o cruzamento, empurra a posição uns px além ANTES do
+// gate travar de vez — medido até ~40px, mas o timing varia com o
+// dispositivo/navegador, então não dá pra confiar numa janela de tempo)
+// de um salto GRANDE e deliberado (scrollIntoView, link-âncora): esse
+// é sempre uma distância grande. Abaixo do limiar -> corrida, re-clampa.
+// Acima -> navegação de verdade, deixa passar e já destrava o gate.
+const GATE_LEAK_THRESHOLD_PX = 200;
+
 export function SmoothScroll() {
   useEffect(() => {
     const lenis = new Lenis({
@@ -121,16 +130,24 @@ export function SmoothScroll() {
       }
       const { aboutSettled } = anchors;
 
-      // Já travado: re-clampa em TODO emit subsequente, não só no que
-      // disparou o gate. O toque em mobile processa touchmove/touchend de
-      // forma síncrona fora do ciclo de rAF que dispara este 'scroll' —
-      // numa rajada rápida, um touchend pode empurrar a posição um pouco
-      // além de aboutSettled ANTES do emit que detectaria o cruzamento
-      // rodar. Reforçar em todo emit (não só uma vez) fecha essa brecha:
-      // qualquer vazamento é corrigido no próximo emit, não passa batido.
       if (aboutGateActive) {
-        if (l.scroll !== aboutSettled) {
+        const drift = l.scroll - aboutSettled;
+        if (drift > 0 && drift < GATE_LEAK_THRESHOLD_PX) {
+          // Vazamento pequeno (corrida do touchend) — corrige.
           lenis.scrollTo(aboutSettled, { immediate: true, force: true });
+          prevScroll = aboutSettled;
+          return;
+        }
+        if (drift >= GATE_LEAK_THRESHOLD_PX || drift < 0) {
+          // Salto grande (navegação externa tipo scrollIntoView) ou já
+          // voltou pra antes do anchor — não é a corrida que o gate
+          // existe pra pegar. Deixa passar e destrava, senão o wheel/touch
+          // ficaria preso num isStopped que essa navegação externa nunca
+          // vai destravar sozinha.
+          aboutGateActive = false;
+          lenis.start();
+          prevScroll = l.scroll;
+          return;
         }
         prevScroll = aboutSettled;
         return;
@@ -163,11 +180,25 @@ export function SmoothScroll() {
         lenis.start();
       }
     }
+    // Teclado (PageDown/ArrowDown/Space/End/...) também conta como "gesto
+    // novo" — sem isso, alguém navegando por teclado ficaria com o wheel
+    // destravando mas o teclado nunca, uma inconsistência de acessibilidade
+    // desnecessária.
+    function trackKeyGesture() {
+      if (aboutGateActive) {
+        aboutGateActive = false;
+        lenis.start();
+      }
+    }
     window.addEventListener("wheel", trackWheelGesture, {
       capture: true,
       passive: true,
     });
     window.addEventListener("touchstart", trackTouchGesture, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("keydown", trackKeyGesture, {
       capture: true,
       passive: true,
     });
@@ -207,6 +238,7 @@ export function SmoothScroll() {
       window.removeEventListener("touchstart", trackTouchGesture, {
         capture: true,
       });
+      window.removeEventListener("keydown", trackKeyGesture, { capture: true });
       cancelAnimationFrame(rafId);
       lenis.destroy();
     };
