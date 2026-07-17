@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useMotionTemplate,
+  useMotionValueEvent,
   useReducedMotion,
   useScroll,
   useSpring,
@@ -71,23 +72,27 @@ function easeInOutQuint(t: number) {
   return t < 0.5 ? 16 * t ** 5 : 1 - (-2 * t + 2) ** 5 / 2;
 }
 
-// Transição pro Menu: mesma lógica do iris wipe do hero (about.tsx) — a
-// próxima seção nasce da anterior, não corta. Nos últimos 15% do scroll
-// do Pour, uma cortina #1C1614 (mesmo fundo do Menu) sobe de baixo pra
-// cima cobrindo a galeria. Usa laggedProgress (spring), não easedProgress
-// (a curva quint é específica do encaixe do vídeo na moldura) — a cortina
-// é um efeito à parte, scrub simples ligado ao scroll.
-const MENU_TRANSITION_START = 0.85;
-const MENU_TRANSITION_BG = "#1C1614";
-
 export function Pour() {
   const containerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const start = useCoverStartInContainer();
 
+  // offset ["start start", "end start"] (não "end end"): progresso 1 no
+  // instante em que o FUNDO da section toca o TOPO da viewport — ou seja,
+  // scrollY == wrapperTop + wrapperHeight, que é EXATAMENTE onde o Menu
+  // (próxima seção, fluxo normal) começa. Com "end end" (fórmula antiga),
+  // progresso 1 exige wrapperHeight = scrub + 1vh (pra um scrub de 150vh,
+  // wrapperHeight teria que ser 250vh) — e o Menu, seguindo no fluxo
+  // normal, só começa em wrapperTop+250vh, 100vh (1 viewport) DEPOIS do
+  // progresso bater 1. Esse resto de 100vh é matemática pura da fórmula
+  // "end end", não vem de sticky nem de childHeight nenhum — é por isso
+  // que só trocar a altura do filho sticky nunca eliminava o vão (medido
+  // em três tentativas diferentes). Com "end start", wrapperHeight=150vh
+  // já entrega os dois: scrub de exatos 150vh E progresso 1 cai no mesmo
+  // scrollY onde o Menu já está.
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start start", "end end"],
+    offset: ["start start", "end start"],
   });
 
   // Emula o "scrub:3" do GSAP (lag numérico de suavização, não
@@ -102,10 +107,33 @@ export function Pour() {
     easeInOutQuint(Math.max(0, Math.min(1, p)))
   );
 
-  const menuTransitionClip = useTransform(laggedProgress, (p) => {
-    const t = Math.max(0, Math.min(1, (p - MENU_TRANSITION_START) / (1 - MENU_TRANSITION_START)));
-    return `inset(${(1 - t) * 100}% 0 0 0)`;
+  // "settled" == scrollYProgress CRU (não o spring) bateu 1 == vídeo já
+  // encaixado na moldura E o sticky (filho de 1px, ver return abaixo)
+  // acabou de soltar. Descoberta medindo (não estimada), em duas etapas:
+  // 1) só trocar a altura do filho sticky não adianta nada — quem decide
+  //    onde o Menu começa é a altura da SECTION (fluxo normal), não a do
+  //    filho; resolvido trocando o offset pra "end start" (ver acima).
+  // 2) com a section do tamanho exato e o filho sticky encolhido a 1px
+  //    (precisa ser ~0 pra ficar "grudado" pelos 150vh inteiros do
+  //    scrub, não só uma fração), o conteúdo (imagem+vídeo), sendo
+  //    position:absolute preso a ESSE filho, continua existindo e
+  //    "deslizando" normalmente por cima do Menu depois que o filho
+  //    solta — o filho em si é minúsculo, mas o conteúdo dentro dele não
+  //    é, e ele não desaparece sozinho só porque o pin acabou. Resolvido
+  //    desmontando o conteúdo (não só escondendo com opacity) no exato
+  //    instante em que settled vira true: no frame anterior o vídeo já
+  //    está 100% encaixado (é a ÚLTIMA coisa que devia aparecer mesmo),
+  //    então tirar do DOM ali não cort a nada — só impede o resto de
+  //    ficar visível deslizando por cima do Menu.
+  const [settled, setSettled] = useState(false);
+  useMotionValueEvent(scrollYProgress, "change", (p) => {
+    if (p >= 1) setSettled(true);
+    else if (p < 0.98) setSettled(false);
   });
+  useEffect(() => {
+    setSettled(scrollYProgress.get() >= 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Interpola em % relativas ao container-pai (aspect-ratio real da
   // imagem) do estado "cobre 100vw/100vh" (calculado, pode passar de
@@ -159,66 +187,102 @@ export function Pour() {
 
   return (
     // Sem ScrollTrigger pin real (Nothing também não usa) — pin feito do
-    // mesmo jeito que hero/about: wrapper alto + sticky.
-    <section id="pour" ref={containerRef} className="relative h-[250vh] w-full">
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
-        {/* Container-pai: aspect-ratio REAL da imagem, width:100%,
-            max-width:100vw, centralizado verticalmente. object-fit:fill
-            (não cover) — a imagem nunca é cortada, então a % da moldura
-            medida acima cai sempre no mesmo lugar visual, em qualquer
-            tela. Sem overflow:hidden aqui: o vídeo (filho) precisa poder
-            visualmente "vazar" pra fora dele no estado inicial pra cobrir
-            o viewport inteiro quando o container fica mais baixo que
-            100vh (letterbox). */}
-        <div className="absolute left-1/2 top-1/2 w-full -translate-x-1/2 -translate-y-1/2">
-          <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
-            <Image
-              src="/images/pour/galeria.jpg"
-              alt=""
-              fill
-              sizes="100vw"
-              style={{ objectFit: "fill" }}
-            />
-
-            {/* Vídeo: filho do mesmo container-pai, posição/tamanho
-                estáticos em CSS (top:0,left:0,100%x100% — nunca anima).
-                Só transform (translate+scale) anima, GPU-composited. */}
-            <motion.div
-              className="absolute inset-0 overflow-hidden bg-black"
-              style={{
-                x: xPercent,
-                y: yPercent,
-                scaleX,
-                scaleY,
-                z: 0,
-                opacity: 1,
-                transformOrigin: "0% 0%",
-                willChange: "transform",
-              }}
+    // mesmo jeito que hero/about: wrapper alto + sticky. Wrapper com a
+    // altura EXATA do scrub (150vh + 1px, ver offset acima) — sem sobra.
+    // Filho sticky de 1px (não h-screen): precisa ficar "grudado" pelos
+    // 150vh inteiros do scrub, e o "range preso" de um sticky é sempre
+    // (altura-do-wrapper − altura-do-filho) — com wrapper=150vh, o filho
+    // só pode ser ~0 pra não cortar o scrub pela metade.
+    //
+    // z-10 explícito (achado medindo, não estimado): sem isso, o texto do
+    // Menu (seção estática normal, sem position) aparecia visível por
+    // cima da galeria/vídeo sempre que as duas caixas se sobrepunham na
+    // viewport durante o pin — mesmo a section aqui sendo position:
+    // relative. Explícito remove a ambiguidade, igual ao z-20 que hero.tsx
+    // já usa pro mesmo tipo de garantia.
+    <section
+      id="pour"
+      ref={containerRef}
+      className="relative z-10 w-full bg-black"
+      style={{ height: "calc(150vh + 1px)" }}
+    >
+      <div className="sticky top-0 w-full" style={{ height: "1px" }}>
+        {/* Conteúdo inteiro desmonta no instante "settled" (ver hook
+            acima) — não é só escondido (opacity/visibility): sendo
+            position:absolute preso a este filho de 1px, se ficasse
+            montado continuaria "deslizando" visível por cima do Menu
+            pelos ~1000px da própria altura (achado medindo — é o que
+            gerava o vão de novo, só que pela altura do CONTEÚDO em vez
+            da do filho). Desmontar exatamente quando deixa de ser a
+            última coisa que devia aparecer resolve os dois. */}
+        {!settled && (
+          <>
+            {/* Fundo de segurança: 100vh cheios, independente do tamanho
+                computado da imagem/aspect-ratio abaixo — sem isso,
+                qualquer folga de meio-pixel entre a imagem letterboxed e
+                a borda da viewport deixava passar uma fresta do Menu por
+                baixo (achado medindo). */}
+            <div className="absolute inset-x-0 top-0 bg-black" style={{ height: "100vh" }} />
+            {/* Container-pai: aspect-ratio REAL da imagem, width:100%,
+                max-width:100vw, centralizado verticalmente. object-fit:
+                fill (não cover) — a imagem nunca é cortada, então a % da
+                moldura medida acima cai sempre no mesmo lugar visual, em
+                qualquer tela. Sem overflow:hidden em nenhum ancestor
+                (achado medindo): clipa o conteúdo sticky à porção do
+                PRÓPRIO BOX DO ANCESTOR que ainda resta "à frente" na
+                viewport, não à viewport inteira — perto do fim do scrub
+                isso cortava uma faixa preta crescente no topo da tela.
+                top:50vh (não top-1/2 = 50%): centraliza relativo à
+                ALTURA DA VIEWPORT, não à altura deste filho (1px — 50%
+                de 1px não centraliza nada). Com o filho preso em top:0
+                (viewport-top) durante o pin, 50vh bate no centro
+                vertical da tela. */}
+            <div
+              className="absolute left-1/2 w-full -translate-x-1/2 -translate-y-1/2"
+              style={{ top: "50vh" }}
             >
-              <video
-                className="h-full w-full object-cover"
-                style={{ opacity: 1, mixBlendMode: "normal" }}
-                autoPlay
-                muted
-                loop
-                playsInline
-              >
-                <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
-                <source src="/video/pour/pour-loop.mp4" />
-              </video>
-            </motion.div>
-          </div>
-        </div>
+              <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
+                <Image
+                  src="/images/pour/galeria.jpg"
+                  alt=""
+                  fill
+                  sizes="100vw"
+                  style={{ objectFit: "fill" }}
+                />
 
-        {/* Cortina de transição pro Menu: nasce da própria seção, não
-            corta — mesma lógica do iris wipe do hero. Cobre o viewport
-            inteiro (irmã do container com aspect-ratio, que pode ficar
-            letterboxed), não só a imagem. */}
-        <motion.div
-          className="pointer-events-none absolute inset-0 z-20"
-          style={{ backgroundColor: MENU_TRANSITION_BG, clipPath: menuTransitionClip }}
-        />
+                {/* Vídeo: filho do mesmo container-pai, posição/tamanho
+                    estáticos em CSS (top:0,left:0,100%x100% — nunca
+                    anima). Só transform (translate+scale) anima,
+                    GPU-composited. */}
+                <motion.div
+                  className="absolute inset-0 overflow-hidden bg-black"
+                  style={{
+                    x: xPercent,
+                    y: yPercent,
+                    scaleX,
+                    scaleY,
+                    z: 0,
+                    opacity: 1,
+                    transformOrigin: "0% 0%",
+                    willChange: "transform",
+                  }}
+                >
+                  <video
+                    className="h-full w-full object-cover"
+                    style={{ opacity: 1, mixBlendMode: "normal" }}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  >
+                    <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
+                    <source src="/video/pour/pour-loop.mp4" />
+                  </video>
+                </motion.div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

@@ -32,39 +32,61 @@ import Lenis from "lenis";
 // anchors de verdade são os 3 pontos onde uma zona de scrub começa/termina:
 // topo do Hero, fim do Hero (Sobre Nós já revelado e assentado — mesmo
 // ponto onde o pin do Hero solta), e topo do THE POUR (onde o pin do vídeo
-// engata). Calculados via getBoundingClientRect em tempo real (não
-// cacheados) porque dependem de vh e mudam com resize.
-function getScrollAnchors() {
+// engata). Calculados via getBoundingClientRect (dependem de vh, por isso
+// recalculados no resize, não hardcoded) — mas arredondados com Math.round:
+// getBoundingClientRect() devolve sub-pixel (fração), enquanto o scrollY que
+// o navegador de fato aplica depois de um scrollTo é sempre inteiro. Um
+// anchor fracionário (ex: 3240.4) nunca é alcançável de verdade — o scroll
+// assenta em 3240 ou 3241 e o gate never vê drift 0, ficando preso num
+// "quase lá" que reaciona pra sempre (era a causa do RangeError de call
+// stack: scrollTo(alvo fracionário) -> assenta arredondado -> drift pequeno
+// mas != 0 -> corrige de novo -> emit -> mesmo drift -> loop infinito).
+function computeScrollAnchors() {
   const hero = document.getElementById("hero");
   const pour = document.getElementById("pour");
-  if (!hero || !pour) return null;
+  const menu = document.getElementById("menu");
+  if (!hero || !pour || !menu) return null;
 
   const vh = window.innerHeight;
   const heroTop = hero.getBoundingClientRect().top + window.scrollY;
   const pourTop = pour.getBoundingClientRect().top + window.scrollY;
+  const menuTop = menu.getBoundingClientRect().top + window.scrollY;
 
   return {
-    heroStart: heroTop, // progresso 0 do Hero (texto entrando)
-    aboutSettled: heroTop + hero.offsetHeight - vh, // progresso 1 do Hero (Sobre Nós revelado, pin solta)
-    pourStart: pourTop, // progresso 0 do Pour (vídeo no tamanho cheio, pin engata)
-    pourSettled: pourTop + pour.offsetHeight - vh, // progresso 1 do Pour (vídeo já encolhido na moldura)
+    heroStart: Math.round(heroTop), // progresso 0 do Hero (texto entrando)
+    aboutSettled: Math.round(heroTop + hero.offsetHeight - vh), // progresso 1 do Hero (Sobre Nós revelado, pin solta)
+    pourStart: Math.round(pourTop), // progresso 0 do Pour (vídeo no tamanho cheio, pin engata)
+    // SEM "-vh" nem "-childHeight": o useScroll do Pour usa offset
+    // ["start start","end start"] (ver pour.tsx) — progresso 1 acontece
+    // quando o FUNDO da section toca o TOPO da viewport, ou seja,
+    // scrollY == pourTop + pour.offsetHeight, exatamente onde o Menu
+    // (próxima seção, fluxo normal) começa. Por isso bate exato com
+    // menuStart logo abaixo (mesmo cálculo, mesmo número).
+    pourSettled: Math.round(pourTop + pour.offsetHeight), // progresso 1 do Pour (vídeo já encolhido na moldura, pin solta)
+    menuStart: Math.round(menuTop), // início real do conteúdo do Menu
   };
 }
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
-// Snap OBRIGATÓRIO só em Sobre Nós: o reveal (stagger do título + foto)
-// toca uma vez e dura ~2s — se uma rolada forte atravessar o ponto de
-// assentamento, a pessoa perde o efeito de vez. THE POUR não precisa disso
-// (vídeo em loop, não perde nada) e Hero/imersão não precisa (é scrub
-// contínuo, não dá pra pular sem atravessar).
+// Snap OBRIGATÓRIO em dois pontos: Sobre Nós (aboutSettled) e o fim do
+// encolhimento do vídeo em THE POUR (pourSettled). Sobre Nós: o reveal
+// (stagger do título + foto) toca uma vez e dura ~2s — se uma rolada forte
+// atravessar o ponto de assentamento, a pessoa perde o efeito de vez.
+// THE POUR: sem a âncora, uma rolada forte atravessa o encaixe do vídeo na
+// moldura direto pro vão seguinte — a pessoa nunca registra que aquilo é
+// um vídeo de verdade, só viu ele encolher e sumir. Precisa de um beat
+// parado ali (chegou, viu que é vídeo) antes de seguir. Hero/imersão não
+// precisa (é scrub contínuo, não dá pra pular sem atravessar).
 //
 // Implementado com a própria trava do Lenis (`stop()`/`start()`), não
-// reimplementando wheel/touch na mão: ao cruzar aboutSettled na direção de
+// reimplementando wheel/touch na mão: ao cruzar o anchor na direção de
 // avanço, força a posição exata pra lá e chama `stop()` — o próprio
 // onWheel/touch do Lenis já faz `if (isStopped) preventDefault(); return`
 // internamente, então absorve QUALQUER wheel/swipe subsequente
 // (mesmo o resto de uma inércia forte de swipe no celular) até destravar.
+// Só um anchor fica ativo por vez (estão em posições de scroll diferentes),
+// por isso um único par de variáveis (gateActive/gateTarget) serve pros dois.
 // Destrava assim que um gesto NOVO e DISTINTO começa: um `wheel` depois de
 // um hiato de silêncio (heurística de "gesto novo" pro mouse/trackpad,
 // que não tem um evento de início/fim nativo) ou um `touchstart` (que já
@@ -119,23 +141,78 @@ export function SmoothScroll() {
       };
     }
 
-    let aboutGateActive = false;
+    // Cacheado, não recalculado a cada 'scroll' — getBoundingClientRect a
+    // cada frame de scroll (potencialmente dezenas por segundo, inclusive
+    // reentrante durante um snap, ver isSnapping abaixo) é caro à toa: a
+    // posição documento dos anchors só muda com resize (vh) ou mudança de
+    // layout, não com o próprio scroll. Recalcula no mount e no resize.
+    let anchors = computeScrollAnchors();
+    function refreshAnchors() {
+      anchors = computeScrollAnchors();
+    }
+    window.addEventListener("resize", refreshAnchors);
+
+    let gateActive = false;
+    let gateTarget = 0;
     let prevScroll = window.scrollY;
 
+    // Reentrância: TODO scrollTo (mesmo immediate) dispara um `emit()`
+    // síncrono dentro da própria chamada, que re-invoca handleLenisScroll
+    // ANTES de scrollTo retornar (stack: handleLenisScroll -> scrollTo ->
+    // emit -> handleLenisScroll de novo). isSnapping é o guard que corta
+    // esse reentro: enquanto um snap nosso está em curso, o handler nem
+    // olha os anchors, só atualiza prevScroll e sai — nenhuma chamada de
+    // scrollTo pode nascer de dentro de outra. Some junto com o Math.round
+    // dos anchors (a causa raiz do loop: alvo fracionário vs. scrollY
+    // sempre inteiro), mas fica como segunda trava — se algum outro drift
+    // inesperado aparecer, ele não vira um novo RangeError.
+    let isSnapping = false;
+    let snapSafetyTimeout: ReturnType<typeof setTimeout> | undefined;
+
+    function snapImmediate(target: number) {
+      isSnapping = true;
+      lenis.scrollTo(target, { immediate: true, force: true });
+      isSnapping = false;
+    }
+
+    // Soft-snap (duration-based) roda em várias frames — precisa do
+    // onComplete pra destravar no fim natural do glide, MAS se um novo
+    // scroll do usuário interromper o tween no meio, o Lenis nunca chama
+    // esse onComplete (o tween antigo é só substituído por um novo) —
+    // sem o timeout de segurança, isSnapping ficaria travado true pra
+    // sempre e o handler pararia de reagir a qualquer anchor depois disso.
+    function snapSoft(target: number) {
+      isSnapping = true;
+      clearTimeout(snapSafetyTimeout);
+      lenis.scrollTo(target, {
+        duration: 0.9,
+        easing: easeOutCubic,
+        onComplete: () => {
+          isSnapping = false;
+        },
+      });
+      snapSafetyTimeout = setTimeout(() => {
+        isSnapping = false;
+      }, 1500);
+    }
+
     function handleLenisScroll(l: Lenis) {
-      const anchors = getScrollAnchors();
+      if (isSnapping) {
+        prevScroll = l.scroll;
+        return;
+      }
       if (!anchors) {
         prevScroll = l.scroll;
         return;
       }
-      const { aboutSettled } = anchors;
+      const { aboutSettled, pourSettled } = anchors;
 
-      if (aboutGateActive) {
-        const drift = l.scroll - aboutSettled;
+      if (gateActive) {
+        const drift = l.scroll - gateTarget;
         if (drift > 0 && drift < GATE_LEAK_THRESHOLD_PX) {
           // Vazamento pequeno (corrida do touchend) — corrige.
-          lenis.scrollTo(aboutSettled, { immediate: true, force: true });
-          prevScroll = aboutSettled;
+          snapImmediate(gateTarget);
+          prevScroll = gateTarget;
           return;
         }
         if (drift >= GATE_LEAK_THRESHOLD_PX || drift < 0) {
@@ -144,21 +221,27 @@ export function SmoothScroll() {
           // existe pra pegar. Deixa passar e destrava, senão o wheel/touch
           // ficaria preso num isStopped que essa navegação externa nunca
           // vai destravar sozinha.
-          aboutGateActive = false;
+          gateActive = false;
           lenis.start();
           prevScroll = l.scroll;
           return;
         }
-        prevScroll = aboutSettled;
+        prevScroll = gateTarget;
         return;
       }
 
-      if (l.direction >= 0 && prevScroll < aboutSettled && l.scroll >= aboutSettled) {
-        aboutGateActive = true;
-        lenis.scrollTo(aboutSettled, { immediate: true, force: true });
-        lenis.stop();
-        prevScroll = aboutSettled;
-        return;
+      // Na ordem em que aparecem rolando pra baixo: fim do Hero (Sobre Nós
+      // assentado), depois fim do encolhimento do vídeo em THE POUR.
+      const hardAnchors = [aboutSettled, pourSettled];
+      for (const anchor of hardAnchors) {
+        if (l.direction >= 0 && prevScroll < anchor && l.scroll >= anchor) {
+          gateActive = true;
+          gateTarget = anchor;
+          snapImmediate(anchor);
+          lenis.stop();
+          prevScroll = anchor;
+          return;
+        }
       }
 
       prevScroll = l.scroll;
@@ -168,15 +251,15 @@ export function SmoothScroll() {
     let lastWheelTime = 0;
     function trackWheelGesture() {
       const now = performance.now();
-      if (aboutGateActive && now - lastWheelTime > WHEEL_GESTURE_GAP_MS) {
-        aboutGateActive = false;
+      if (gateActive && now - lastWheelTime > WHEEL_GESTURE_GAP_MS) {
+        gateActive = false;
         lenis.start();
       }
       lastWheelTime = now;
     }
     function trackTouchGesture() {
-      if (aboutGateActive) {
-        aboutGateActive = false;
+      if (gateActive) {
+        gateActive = false;
         lenis.start();
       }
     }
@@ -185,8 +268,8 @@ export function SmoothScroll() {
     // destravando mas o teclado nunca, uma inconsistência de acessibilidade
     // desnecessária.
     function trackKeyGesture() {
-      if (aboutGateActive) {
-        aboutGateActive = false;
+      if (gateActive) {
+        gateActive = false;
         lenis.start();
       }
     }
@@ -212,33 +295,40 @@ export function SmoothScroll() {
     // nenhum efeito. THE POUR fica só com esse soft-snap (não é obrigatório
     // como Sobre Nós porque o vídeo é loop, não perde nada se pular).
     function onScrollEnd() {
-      const anchors = getScrollAnchors();
-      if (!anchors) return;
-      const { heroStart, aboutSettled, pourStart, pourSettled } = anchors;
+      if (isSnapping || !anchors) return;
+      const { heroStart, aboutSettled, pourStart, pourSettled, menuStart } = anchors;
       const y = window.scrollY;
 
       const insideHeroScrub = y >= heroStart && y <= aboutSettled;
       const insidePourScrub = y >= pourStart && y <= pourSettled;
       if (insideHeroScrub || insidePourScrub) return;
 
-      // Vão entre o fim do Hero (Sobre Nós assentado) e o início do Pour
-      // (pin do vídeo engatando) — o único trecho "solto" entre as duas
-      // zonas protegidas.
+      // Vão 1: fim do Hero (Sobre Nós assentado) -> início do Pour (pin do
+      // vídeo engatando).
       if (y > aboutSettled && y < pourStart) {
         const target = lenis.direction >= 0 ? pourStart : aboutSettled;
-        lenis.scrollTo(target, { duration: 0.9, easing: easeOutCubic });
+        snapSoft(target);
+        return;
       }
-      // Antes do Hero ou depois do Pour: sem anchor pedido, não mexe.
+      // Vão 2: fim do encolhimento do vídeo (pourSettled, pin solta) ->
+      // início do conteúdo real do Menu.
+      if (y > pourSettled && y < menuStart) {
+        const target = lenis.direction >= 0 ? menuStart : pourSettled;
+        snapSoft(target);
+      }
+      // Antes do Hero ou depois do Menu: sem anchor pedido, não mexe.
     }
     window.addEventListener("scrollend", onScrollEnd);
 
     return () => {
       window.removeEventListener("scrollend", onScrollEnd);
+      window.removeEventListener("resize", refreshAnchors);
       window.removeEventListener("wheel", trackWheelGesture, { capture: true });
       window.removeEventListener("touchstart", trackTouchGesture, {
         capture: true,
       });
       window.removeEventListener("keydown", trackKeyGesture, { capture: true });
+      clearTimeout(snapSafetyTimeout);
       cancelAnimationFrame(rafId);
       lenis.destroy();
     };
