@@ -205,7 +205,7 @@ export function SmoothScroll() {
         prevScroll = l.scroll;
         return;
       }
-      const { aboutSettled, pourSettled } = anchors;
+      const { aboutSettled } = anchors;
 
       if (gateActive) {
         const drift = l.scroll - gateTarget;
@@ -230,9 +230,15 @@ export function SmoothScroll() {
         return;
       }
 
-      // Na ordem em que aparecem rolando pra baixo: fim do Hero (Sobre Nós
-      // assentado), depois fim do encolhimento do vídeo em THE POUR.
-      const hardAnchors = [aboutSettled, pourSettled];
+      // Único hard anchor: fim do Hero (Sobre Nós assentado). O anchor do
+      // fim do encolhimento do vídeo em THE POUR (pourSettled) foi
+      // removido de propósito — depois do encaixe, o Pour virou rolagem de
+      // página comum (seção sobe e sai, ver pour.tsx #pour-static), então
+      // travar o scroll ali contradiz o próprio pedido ("seção empurra
+      // seção", sem transição/corte). Sem esse gate, a pessoa atravessa o
+      // ponto de encaixe do vídeo na mesma rolada contínua, como em
+      // qualquer transição normal entre seções.
+      const hardAnchors = [aboutSettled];
       for (const anchor of hardAnchors) {
         if (l.direction >= 0 && prevScroll < anchor && l.scroll >= anchor) {
           gateActive = true;
@@ -296,7 +302,7 @@ export function SmoothScroll() {
     // como Sobre Nós porque o vídeo é loop, não perde nada se pular).
     function onScrollEnd() {
       if (isSnapping || !anchors) return;
-      const { heroStart, aboutSettled, pourStart, pourSettled, menuStart } = anchors;
+      const { heroStart, aboutSettled, pourStart, pourSettled } = anchors;
       const y = window.scrollY;
 
       const insideHeroScrub = y >= heroStart && y <= aboutSettled;
@@ -310,12 +316,13 @@ export function SmoothScroll() {
         snapSoft(target);
         return;
       }
-      // Vão 2: fim do encolhimento do vídeo (pourSettled, pin solta) ->
-      // início do conteúdo real do Menu.
-      if (y > pourSettled && y < menuStart) {
-        const target = lenis.direction >= 0 ? menuStart : pourSettled;
-        snapSoft(target);
-      }
+      // "Vão 2" (pourSettled -> menuStart) foi removido de propósito.
+      // Depois do encaixe do vídeo (pourSettled), #pour-static (ver
+      // pour.tsx) e #menu são só seções normais de página, uma embaixo da
+      // outra, sem pin nenhum ali — é rolagem comum, exatamente como o
+      // resto de qualquer site. Um soft-snap ali empurraria a pessoa por
+      // cima de uma seção inteira sempre que a rolagem assentasse nesse
+      // trecho, o que é o oposto de "seção empurra seção".
       // Antes do Hero ou depois do Menu: sem anchor pedido, não mexe.
     }
     window.addEventListener("scrollend", onScrollEnd);

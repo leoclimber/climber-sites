@@ -186,23 +186,24 @@ export function Pour() {
   }
 
   return (
-    // Sem ScrollTrigger pin real (Nothing também não usa) — pin feito do
-    // mesmo jeito que hero/about: wrapper alto + sticky. Wrapper com a
-    // altura EXATA do scrub (150vh + 1px, ver offset acima) — sem sobra.
-    // Filho sticky de 1px (não h-screen): precisa ficar "grudado" pelos
-    // 150vh inteiros do scrub, e o "range preso" de um sticky é sempre
-    // (altura-do-wrapper − altura-do-filho) — com wrapper=150vh, o filho
-    // só pode ser ~0 pra não cortar o scrub pela metade.
-    //
-    // z-10 explícito (achado medindo, não estimado): sem isso, o texto do
-    // Menu (seção estática normal, sem position) aparecia visível por
-    // cima da galeria/vídeo sempre que as duas caixas se sobrepunham na
-    // viewport durante o pin — mesmo a section aqui sendo position:
-    // relative. Explícito remove a ambiguidade, igual ao z-20 que hero.tsx
-    // já usa pro mesmo tipo de garantia.
-    <section
-      id="pour"
-      ref={containerRef}
+    <>
+      {/* Sem ScrollTrigger pin real (Nothing também não usa) — pin feito do
+          mesmo jeito que hero/about: wrapper alto + sticky. Wrapper com a
+          altura EXATA do scrub (150vh + 1px, ver offset acima) — sem sobra.
+          Filho sticky de 1px (não h-screen): precisa ficar "grudado" pelos
+          150vh inteiros do scrub, e o "range preso" de um sticky é sempre
+          (altura-do-wrapper − altura-do-filho) — com wrapper=150vh, o filho
+          só pode ser ~0 pra não cortar o scrub pela metade.
+
+          z-10 explícito (achado medindo, não estimado): sem isso, o texto do
+          Menu (seção estática normal, sem position) aparecia visível por
+          cima da galeria/vídeo sempre que as duas caixas se sobrepunham na
+          viewport durante o pin — mesmo a section aqui sendo position:
+          relative. Explícito remove a ambiguidade, igual ao z-20 que hero.tsx
+          já usa pro mesmo tipo de garantia. */}
+      <section
+        id="pour"
+        ref={containerRef}
       className="relative z-10 w-full bg-black"
       style={{ height: "calc(150vh + 1px)" }}
     >
@@ -284,6 +285,63 @@ export function Pour() {
           </>
         )}
       </div>
-    </section>
+      </section>
+
+      {/* Depois que o vídeo encaixa na moldura (settled), a section acima
+          desmonta seu conteúdo pinado e ESTA section (fluxo normal, sem
+          sticky, sem position:fixed) assume — o mesmo enquadramento final
+          (moldura na mesma posição/tamanho: FRAME.top/left/width/height,
+          sem escala nenhuma), só que agora como bloco comum de página, que
+          sobe e sai da tela rolando junto com o resto do scroll, "seção
+          empurra seção" — exatamente como pedido: nada de pin residual
+          aqui, nada de fade, é só a próxima seção da página. No instante
+          da troca as duas versões ocupam pixel-a-pixel a mesma posição de
+          tela (mesma centralização vertical, mesmo FRAME), então a troca
+          de uma pra outra é imperceptível — não tem salto porque não tem
+          diferença visual nenhuma entre "o frame pinado no último frame"
+          e "o frame normal no primeiro frame".
+
+          SEMPRE montada (não condicionada a `settled`), de propósito: essa
+          section fica em fluxo normal logo depois de #pour (altura fixa,
+          150vh+1px, que NÃO muda com settled) — enquanto o pin de #pour
+          ainda está ativo, ela simplesmente fica abaixo da dobra, fora da
+          viewport, exatamente como qualquer conteúdo de página ainda não
+          alcançado pelo scroll. Monta/desmonta condicionalmente aqui
+          mudava a ALTURA TOTAL do documento no exato instante em que o
+          scroll cruza o ponto de encaixe — e mexer no tamanho do
+          documento bem no meio de uma rolada ativa é o que fazia o Lenis
+          (que cacheia o limite de scroll) entrar em conflito com a
+          posição real, medido como o scroll "grudando" num valor ou
+          pulando pra trás de forma imprevisível logo depois do encaixe. */}
+        <section
+          id="pour-static"
+          className="relative flex w-full items-center justify-center bg-black"
+          style={{ height: "100vh" }}
+        >
+          <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
+            <Image
+              src="/images/pour/galeria.jpg"
+              alt=""
+              fill
+              sizes="100vw"
+              style={{ objectFit: "fill" }}
+            />
+            <div
+              className="absolute overflow-hidden bg-black"
+              style={{
+                top: `${FRAME.top}%`,
+                left: `${FRAME.left}%`,
+                width: `${FRAME.width}%`,
+                height: `${FRAME.height}%`,
+              }}
+            >
+              <video className="h-full w-full object-cover" autoPlay muted loop playsInline>
+                <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
+                <source src="/video/pour/pour-loop.mp4" />
+              </video>
+            </div>
+          </div>
+        </section>
+    </>
   );
 }
