@@ -72,10 +72,53 @@ function easeInOutQuint(t: number) {
   return t < 0.5 ? 16 * t ** 5 : 1 - (-2 * t + 2) ** 5 / 2;
 }
 
+// #pour-static (ver return abaixo) fica montada desde o load, bem abaixo
+// da dobra, por vários segundos até o scroll alcançar ela — vídeos
+// <video autoplay> fora da viewport nessa situação ficam sujeitos ao
+// throttling de decode que os navegadores aplicam a mídia invisível (não
+// é um bug deste código: é o navegador suspendendo/nunca iniciando o
+// decode de um <video> que nunca ficou visível). Resultado observado:
+// autoplay "pega" no load mas o decode fica suspenso, e quando a moldura
+// finalmente entra em cena o elemento mostra só o quadro preto inicial.
+// Corrigido não confiando no autoplay passivo: observa a própria section
+// com IntersectionObserver (threshold 0 — qualquer pedação visível conta)
+// e chama play()/pause() explicitamente a cada mudança. play() enquanto
+// visível (mesmo parcial) garante decode ativo bem antes/durante o tempo
+// em que a moldura aparece; pause() só dispara quando a section sai
+// INTEIRA da viewport (isIntersecting vira false), exatamente a regra
+// pedida.
+function usePlayWhileVisible<T extends HTMLElement>() {
+  const sectionRef = useRef<T>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    const video = videoRef.current;
+    if (!section || !video) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0 }
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  return { sectionRef, videoRef };
+}
+
 export function Pour() {
   const containerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const start = useCoverStartInContainer();
+  const { sectionRef: pourStaticRef, videoRef: pourStaticVideoRef } =
+    usePlayWhileVisible<HTMLElement>();
 
   // offset ["start start", "end start"] (não "end end"): progresso 1 no
   // instante em que o FUNDO da section toca o TOPO da viewport — ou seja,
@@ -315,6 +358,7 @@ export function Pour() {
           pulando pra trás de forma imprevisível logo depois do encaixe. */}
         <section
           id="pour-static"
+          ref={pourStaticRef}
           className="relative flex w-full items-center justify-center bg-black"
           style={{ height: "100vh" }}
         >
@@ -335,7 +379,14 @@ export function Pour() {
                 height: `${FRAME.height}%`,
               }}
             >
-              <video className="h-full w-full object-cover" autoPlay muted loop playsInline>
+              <video
+                ref={pourStaticVideoRef}
+                className="h-full w-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+              >
                 <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
                 <source src="/video/pour/pour-loop.mp4" />
               </video>
