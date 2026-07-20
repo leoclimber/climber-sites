@@ -61,7 +61,7 @@ function GalleryPhoto({
           whileHover={{ scale: 1.06, filter: "brightness(1.08)" }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <Image src={src} alt="" fill sizes={sizes} className="object-cover" />
+          <Image src={src} alt="" fill sizes={sizes} className="object-cover object-center" />
         </motion.div>
       </motion.div>
       {children}
@@ -132,26 +132,31 @@ export function Gallery() {
           horizontal nenhum) — a coluna da ambiente encosta em x=0 e a
           coluna direita encosta em x=100vw.
 
-          Desktop: grid de 2 colunas (58/42) x 3 linhas. As linhas 1-2 são
-          alturas FIXAS mas DIFERENTES (34vh/21vh — croissant "vertical
-          alta" bem maior que espresso "baixa", zigue-zague editorial, não
-          dois retângulos iguais); ambiente atravessa as duas (grid-row
-          1/3), então a altura dela bate EXATA com croissant+gap+espresso
-          empilhados — zero espaço morto, garantido pelo próprio grid, sem
-          calcular nada na mão. A 3ª linha (220px fixos, largura total
-          1/3) é a faixa da carrotcake — alta o bastante pra não esmagar
-          a foto, ao contrário da tentativa anterior.
+          Desktop: grid de 2 colunas (58/42) x 3 linhas. Alturas das
+          linhas pensadas pra caber o ASSUNTO inteiro de qualquer foto de
+          cliente (não só esta), não pra maximizar densidade — croissant
+          34vh (já mostra a foto inteira, com margem folgada ao redor no
+          original, não precisou mexer), espresso 30vh (era 21vh —
+          apertava a xícara) e a faixa da carrotcake 380px (era 220px —
+          cortava o bolo no meio, agora alta o bastante pra mostrar a
+          fatia inteira). Ambiente atravessa as duas primeiras linhas
+          (grid-row 1/3), então a altura dela é CONSEQUÊNCIA do grid
+          (croissant+gap+espresso) — sobe automaticamente pra 68vh+12px
+          com o espresso mais alto, continua mostrando a sala inteira sem
+          precisar de nenhum ajuste próprio. Zero espaço morto garantido
+          pelo grid, não calculado na mão. object-center (ver
+          GalleryPhoto) em todas — o crop do cover sempre parte do meio,
+          onde normalmente está o assunto.
 
-          Mobile (<768px): a MESMA lista de 4 fotos vira uma coluna só,
-          mas com alturas DIFERENTES por foto (60/50/40/55vh) — ritmo
-          editorial na vertical, não "todas do mesmo tamanho empilhadas"
-          (isso pareceria amador). <style> com media query porque inline
-          style não suporta @media. */}
+          Mobile (<768px): mesma lista em coluna única, alturas variadas
+          mas TODAS >= 45vh (era 40vh no espresso — baixo demais pro
+          crop caber a xícara inteira). <style> com media query porque
+          inline style não suporta @media. */}
       <style>{`
         .space-mosaic {
           display: grid;
           grid-template-columns: 58fr 42fr;
-          grid-template-rows: 34vh 21vh 220px;
+          grid-template-rows: 34vh 30vh 380px;
           gap: 12px;
         }
         .space-mosaic .space-ambiente { grid-column: 1 / 2; grid-row: 1 / 3; }
@@ -161,7 +166,7 @@ export function Gallery() {
         @media (max-width: 767px) {
           .space-mosaic {
             grid-template-columns: 1fr;
-            grid-template-rows: 60vh 50vh 40vh 55vh;
+            grid-template-rows: 60vh 50vh 45vh 55vh;
             gap: 10px;
           }
           .space-mosaic .space-ambiente,
