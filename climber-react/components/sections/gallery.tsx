@@ -34,8 +34,8 @@ function GalleryPhoto({
   children?: React.ReactNode;
 }) {
   // Gatilho POR FOTO (não da seção inteira): cada uma revela quando ELA
-  // MESMA entra na viewport, conforme a pessoa rola dentro do mosaico —
-  // não um flash único disparado pela seção.
+  // MESMA entra na viewport, conforme a pessoa rola — no mobile isso
+  // funciona igual, cada foto dispara sozinha conforme o dedo rola.
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.2, once: true });
 
@@ -49,11 +49,16 @@ function GalleryPhoto({
         animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
         transition={{ duration: REVEAL_DURATION, ease: EASE_LAYER, delay: index * REVEAL_STAGGER }}
       >
-        {/* Hover: escala interna independente (1 -> 1.04) — camada
-            própria pra não conflitar com o scale do reveal acima. */}
+        {/* Hover: zoom (1 -> 1.06) + leve clareamento (brightness 1 ->
+            1.08), 0.6s ease-out — camada própria pra não conflitar com o
+            scale do reveal acima. Só reage a ESTA foto (whileHover é
+            escopado ao próprio elemento, não propaga pras vizinhas). No
+            mobile isso simplesmente nunca dispara (sem ponteiro de
+            hover) — não precisa de nenhum tratamento especial. */}
         <motion.div
           className="absolute inset-0"
-          whileHover={{ scale: 1.04 }}
+          initial={{ scale: 1, filter: "brightness(1)" }}
+          whileHover={{ scale: 1.06, filter: "brightness(1.08)" }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <Image src={src} alt="" fill sizes={sizes} className="object-cover" />
@@ -124,49 +129,60 @@ export function Gallery() {
 
       {/* Mosaico full-bleed: FORA do container com max-width/padding
           acima, direto como filho da section (que não tem padding
-          horizontal nenhum) — por isso a coluna da ambiente encosta em
-          x=0 e a coluna de detalhes encosta em x=100vw, sem faixa branca
-          nenhuma. Grid CSS de verdade (não margins soltas): ambiente
-          ocupa a coluna 1 (60%) atravessando as 3 linhas; croissant,
-          carrotcake e espresso empilham na coluna 2 (40%), uma por
-          linha. Como as 3 linhas são frações iguais (1fr) de uma altura
-          de container FIXA (85vh), a soma das 3 bate exato com a altura
-          da ambiente — zero espaço morto, sem calcular nada na mão.
-          <style> com media query faz o colapso pra 1 coluna no mobile
-          (inline style não suporta @media, por isso não dá pra fazer só
-          com style={{}} nos itens). */}
+          horizontal nenhum) — a coluna da ambiente encosta em x=0 e a
+          coluna direita encosta em x=100vw.
+
+          Desktop: grid de 2 colunas (58/42) x 3 linhas. As linhas 1-2 são
+          alturas FIXAS mas DIFERENTES (34vh/21vh — croissant "vertical
+          alta" bem maior que espresso "baixa", zigue-zague editorial, não
+          dois retângulos iguais); ambiente atravessa as duas (grid-row
+          1/3), então a altura dela bate EXATA com croissant+gap+espresso
+          empilhados — zero espaço morto, garantido pelo próprio grid, sem
+          calcular nada na mão. A 3ª linha (220px fixos, largura total
+          1/3) é a faixa da carrotcake — alta o bastante pra não esmagar
+          a foto, ao contrário da tentativa anterior.
+
+          Mobile (<768px): a MESMA lista de 4 fotos vira uma coluna só,
+          mas com alturas DIFERENTES por foto (60/50/40/55vh) — ritmo
+          editorial na vertical, não "todas do mesmo tamanho empilhadas"
+          (isso pareceria amador). <style> com media query porque inline
+          style não suporta @media. */}
       <style>{`
         .space-mosaic {
           display: grid;
-          grid-template-columns: 60fr 40fr;
-          grid-template-rows: repeat(3, 1fr);
-          height: 85vh;
+          grid-template-columns: 58fr 42fr;
+          grid-template-rows: 34vh 21vh 220px;
           gap: 12px;
         }
-        .space-mosaic .space-ambiente { grid-column: 1 / 2; grid-row: 1 / 4; }
-        .space-mosaic .space-detail-1 { grid-column: 2 / 3; grid-row: 1 / 2; }
-        .space-mosaic .space-detail-2 { grid-column: 2 / 3; grid-row: 2 / 3; }
-        .space-mosaic .space-detail-3 { grid-column: 2 / 3; grid-row: 3 / 4; }
+        .space-mosaic .space-ambiente { grid-column: 1 / 2; grid-row: 1 / 3; }
+        .space-mosaic .space-croissant { grid-column: 2 / 3; grid-row: 1 / 2; }
+        .space-mosaic .space-espresso { grid-column: 2 / 3; grid-row: 2 / 3; }
+        .space-mosaic .space-carrotcake { grid-column: 1 / 3; grid-row: 3 / 4; }
         @media (max-width: 767px) {
           .space-mosaic {
             grid-template-columns: 1fr;
-            grid-template-rows: repeat(4, 50vh);
-            height: auto;
+            grid-template-rows: 60vh 50vh 40vh 55vh;
+            gap: 10px;
           }
           .space-mosaic .space-ambiente,
-          .space-mosaic .space-detail-1,
-          .space-mosaic .space-detail-2,
-          .space-mosaic .space-detail-3 {
+          .space-mosaic .space-croissant,
+          .space-mosaic .space-espresso,
+          .space-mosaic .space-carrotcake {
             grid-column: 1 / 2;
           }
           .space-mosaic .space-ambiente { grid-row: 1 / 2; }
-          .space-mosaic .space-detail-1 { grid-row: 2 / 3; }
-          .space-mosaic .space-detail-2 { grid-row: 3 / 4; }
-          .space-mosaic .space-detail-3 { grid-row: 4 / 5; }
+          .space-mosaic .space-croissant { grid-row: 2 / 3; }
+          .space-mosaic .space-espresso { grid-row: 3 / 4; }
+          .space-mosaic .space-carrotcake { grid-row: 4 / 5; }
         }
       `}</style>
       <div className="space-mosaic">
-        <GalleryPhoto src="/images/gallery/ambiente.jpg" sizes="(max-width: 767px) 100vw, 60vw" index={0} className="space-ambiente">
+        <GalleryPhoto
+          src="/images/gallery/ambiente.jpg"
+          sizes="(max-width: 767px) 100vw, 58vw"
+          index={0}
+          className="space-ambiente"
+        >
           {/* Legenda sobre gradiente de legibilidade, canto inferior
               esquerdo — mesma linguagem do caption do About. */}
           <div
@@ -193,21 +209,21 @@ export function Gallery() {
 
         <GalleryPhoto
           src="/images/gallery/croissant.png"
-          sizes="(max-width: 767px) 100vw, 40vw"
+          sizes="(max-width: 767px) 100vw, 42vw"
           index={1}
-          className="space-detail-1"
-        />
-        <GalleryPhoto
-          src="/images/gallery/carrotcake.png"
-          sizes="(max-width: 767px) 100vw, 40vw"
-          index={2}
-          className="space-detail-2"
+          className="space-croissant"
         />
         <GalleryPhoto
           src="/images/gallery/espresso.png"
-          sizes="(max-width: 767px) 100vw, 40vw"
+          sizes="(max-width: 767px) 100vw, 42vw"
+          index={2}
+          className="space-espresso"
+        />
+        <GalleryPhoto
+          src="/images/gallery/carrotcake.png"
+          sizes="100vw"
           index={3}
-          className="space-detail-3"
+          className="space-carrotcake"
         />
       </div>
     </section>
