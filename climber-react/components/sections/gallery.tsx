@@ -12,105 +12,74 @@ const RULE_COLOR = "rgba(60,40,30,0.15)";
 
 // Reveal de entrada de cada foto: cortina clip-path abrindo de baixo pra
 // cima (mesma mecânica de about.tsx) + de-zoom simultâneo da imagem.
-// Independente por foto (useInView próprio de cada uma, não um trigger
-// único de seção).
+// Independente por foto (useInView próprio de cada uma) — revelam uma
+// após a outra conforme o scroll desce, não todas juntas.
 const REVEAL_EASE: [number, number, number, number] = [0.76, 0, 0.24, 1];
 const REVEAL_DURATION = 1.3;
-const REVEAL_SCALE_FROM = 1.2;
+const REVEAL_SCALE_FROM = 1.15;
 const EASE_POWER3_OUT: [number, number, number, number] = [0.215, 0.61, 0.355, 1];
 
-// A imagem interna é ~135% da altura da moldura — o excedente (17.5% em
-// cima, 17.5% embaixo) é o espaço que o parallax (e a leve respiração de
-// escala da herói) usam pra deslizar sem NUNCA expor fundo vazio.
+// A imagem interna é 128% da altura da moldura — o excedente (14% em
+// cima, 14% embaixo) é o espaço que o parallax (±8%) usa pra deslizar sem
+// NUNCA expor fundo vazio (14% de folga de cada lado contra um
+// deslocamento máximo de 8% — margem confortável).
 // transform:translateY(%) no CSS/Framer é relativo à altura do PRÓPRIO
-// elemento (135% da moldura), não à moldura — por isso a conversão: um
-// deslocamento pedido em % da MOLDURA vira %/1.35 no elemento em si.
-const OVERSCAN_HEIGHT_PERCENT = 135;
+// elemento (128% da moldura), não à moldura — por isso a conversão: um
+// deslocamento pedido em % da MOLDURA vira %/1.28 no elemento em si.
+const OVERSCAN_HEIGHT_PERCENT = 128;
 const OVERSCAN_EDGE_PERCENT = (OVERSCAN_HEIGHT_PERCENT - 100) / 2;
-function frameToElementPercent(framePercent: number) {
-  return (framePercent * 100) / OVERSCAN_HEIGHT_PERCENT;
-}
+const PARALLAX_FRAME_PERCENT = 8;
+const PARALLAX_ELEMENT_PERCENT = (PARALLAX_FRAME_PERCENT * 100) / OVERSCAN_HEIGHT_PERCENT;
 
 interface PhotoSpec {
   src: string;
-  // Intensidade do parallax em % RELATIVA À MOLDURA (herói discreta,
-  // detalhes mais fortes — dá profundidade/ritmo, nem todas se movem
-  // igual).
-  parallax: number;
   sizes: string;
-  // Deslocamento lateral no reveal (só os detalhes têm personalidade
-  // própria aqui — a herói entra reta, sem x).
-  revealX?: number;
-  // Respiração contínua de escala ligada a scroll (só a herói: 1 -> 1.05).
-  breathingScaleTo?: number;
 }
 
-function GalleryPhoto({
-  photo,
-  aspectRatio,
-  className,
-}: {
-  photo: PhotoSpec;
-  aspectRatio: string;
-  className?: string;
-}) {
+function GalleryPhoto({ photo, className }: { photo: PhotoSpec; className?: string }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const inView = useInView(frameRef, { amount: 0.25, once: true });
 
-  // Um único useScroll por foto alimenta DUAS motion values distintas:
-  // y (parallax, todas as fotos) e scale (respiração, só a herói — pras
-  // outras o range de saída é [1,1], um no-op). Vivem em camadas
-  // SEPARADAS do scale de-zoom do reveal (que é outro motion value, esse
-  // sim disparado uma vez por tempo) — um elemento não pode ter dois
-  // "scale" ao mesmo tempo, por isso a divisão em camadas abaixo.
+  // Parallax contínuo: enquanto a moldura atravessa a viewport (do
+  // instante em que o TOPO dela toca o FUNDO da tela até o instante em
+  // que a BASE dela toca o TOPO da tela), a imagem desliza por dentro. A
+  // moldura em si (este ref) nunca se move — só a imagem.
   const { scrollYProgress } = useScroll({
     target: frameRef,
     offset: ["start end", "end start"],
   });
-  const edge = frameToElementPercent(photo.parallax);
-  const y = useTransform(scrollYProgress, [0, 1], [`-${edge}%`, `${edge}%`]);
-  const breathingScale = useTransform(
+  const y = useTransform(
     scrollYProgress,
     [0, 1],
-    [1, photo.breathingScaleTo ?? 1]
+    [`-${PARALLAX_ELEMENT_PERCENT}%`, `${PARALLAX_ELEMENT_PERCENT}%`]
   );
 
-  const frameStyle: CSSProperties = { aspectRatio };
+  const frameStyle: CSSProperties = { position: "relative", overflow: "hidden", width: "100%" };
 
   return (
-    <div
-      ref={frameRef}
-      className={`relative w-full overflow-hidden ${className ?? ""}`}
-      style={frameStyle}
-    >
-      {/* Cortina: abre de baixo pra cima (mesma linguagem do About) +
-          leve deslocamento lateral nos detalhes (x:40px->0) pra terem
-          personalidade própria, não entrarem iguais à herói. */}
+    <div ref={frameRef} className={className} style={frameStyle}>
+      {/* Cortina: abre de baixo pra cima (mesma linguagem do About). */}
       <motion.div
         className="absolute inset-0"
-        initial={{ clipPath: "inset(100% 0 0 0)", x: photo.revealX ?? 0 }}
-        animate={{
-          clipPath: inView ? "inset(0% 0 0 0)" : "inset(100% 0 0 0)",
-          x: inView ? 0 : photo.revealX ?? 0,
-        }}
+        initial={{ clipPath: "inset(100% 0 0 0)" }}
+        animate={{ clipPath: inView ? "inset(0% 0 0 0)" : "inset(100% 0 0 0)" }}
         transition={{ duration: REVEAL_DURATION, ease: REVEAL_EASE }}
       >
-        {/* Camada de respiração (scale, contínua/scroll) + parallax (y,
-            contínua/scroll) — as duas convivem no mesmo elemento sem
-            conflito, o Framer compõe num único transform. top/height são
-            o overscan estático (não animam). */}
+        {/* Camada de parallax (y, contínua/scroll) — top/height são o
+            overscan estático (não animam). */}
         <motion.div
           className="absolute inset-x-0"
           style={{
             top: `-${OVERSCAN_EDGE_PERCENT}%`,
             height: `${OVERSCAN_HEIGHT_PERCENT}%`,
             y,
-            scale: breathingScale,
           }}
         >
-          {/* Camada de-zoom do reveal (scale 1.2->1, dispara uma vez) —
-              precisa ser um elemento PRÓPRIO porque a camada de cima já
-              usa `scale` pra respiração contínua. */}
+          {/* Camada de-zoom do reveal (scale 1.15->1, dispara uma vez) —
+              elemento PRÓPRIO porque a camada de cima já usa `y` (não
+              conflita com scale, mas mantém a mesma separação em camadas
+              usada no resto do site: cada motion value time-based numa
+              camada, cada motion value scroll-linked noutra). */}
           <motion.div
             className="absolute inset-0"
             initial={{ scale: REVEAL_SCALE_FROM }}
@@ -125,25 +94,26 @@ function GalleryPhoto({
   );
 }
 
-// Foto-herói: o ambiente do café — domina a composição, não é close de
-// produto. Discreta no parallax (-8%/+8%) mas com uma respiração de
-// escala sutil (1 -> 1.05) pra dar vida sem chamar atenção demais.
-const HERO_PHOTO: PhotoSpec = {
-  src: "/images/gallery/ambiente.jpg",
-  parallax: 8,
-  sizes: "72vw",
-  breathingScaleTo: 1.05,
-};
-
-// Detalhes: apoio atmosférico (xícaras em cena, não produto isolado),
-// parallax mais forte que a herói pra dar profundidade — e cada um com
-// intensidade levemente diferente entre si, pra não se moverem iguais.
-const DETAIL_PHOTOS: PhotoSpec[] = [
-  { src: "/images/gallery/flatwhite.png", parallax: 18, sizes: "24vw", revealX: 40 },
-  { src: "/images/gallery/cappuccino.png", parallax: 14, sizes: "24vw", revealX: 40 },
-];
+// As 4 fotos: ambiente é a mais importante (foto 1), as outras são apoio
+// atmosférico — xícaras em cena, não produto isolado. Tamanhos e posições
+// (largura/altura/alinhamento/margin-top) ficam definidos direto no JSX
+// abaixo, não aqui, porque cada uma tem uma composição própria (ver
+// comentário grande na seção de fotos).
+const PHOTO_1: PhotoSpec = { src: "/images/gallery/ambiente.jpg", sizes: "55vw" };
+const PHOTO_2: PhotoSpec = { src: "/images/gallery/flatwhite.png", sizes: "40vw" };
+const PHOTO_3: PhotoSpec = { src: "/images/gallery/cappuccino.png", sizes: "45vw" };
+const PHOTO_4: PhotoSpec = { src: "/images/gallery/space-4.jpg", sizes: "50vw" };
 
 const TITLE_LINES = ["WHERE IT ALL", "HAPPENS"];
+
+// Truque de "breakout" pra sangrar até a borda REAL da viewport (mesmo
+// usado em about.tsx pro lado direito): com o pai centralizado via
+// mx-auto, margin-{left,right}: calc(50% - 50vw) desloca a borda
+// correspondente do elemento até x=0 ou x=100vw, independente da
+// largura/padding do container — a álgebra cancela o termo do container,
+// funciona pra qualquer largura de foto.
+const BLEED_LEFT: CSSProperties = { marginLeft: "calc(50% - 50vw)" };
+const BLEED_RIGHT: CSSProperties = { marginLeft: "auto", marginRight: "calc(50% - 50vw)" };
 
 export function Gallery() {
   const titleRef = useRef<HTMLDivElement>(null);
@@ -203,30 +173,31 @@ export function Gallery() {
           </motion.h2>
         </div>
 
-        {/* Composição assimétrica e hierárquica: a herói (ambiente do
-            café) domina, sangrando até a borda ESQUERDA real da
-            viewport (margin-left: calc(50% - 50vw), o mesmo truque de
-            "breakout" que about.tsx usa do lado direito pra foto dele).
-            Os dois detalhes ficam à direita, empilhados verticalmente
-            com bastante espaço entre si — nunca lado a lado. */}
-        <div className="relative flex items-start" style={{ minHeight: "88vh", gap: "4vw" }}>
-          <div
-            className="relative flex-shrink-0"
-            style={{ width: "72vw", height: "88vh", marginLeft: "calc(50% - 50vw)" }}
-          >
-            <GalleryPhoto photo={HERO_PHOTO} aspectRatio="auto" className="h-full" />
+        {/* Sequência escalonada tipo revista editorial: 4 fotos em fluxo
+            vertical NORMAL (bloco simples, sem grid/flex — cada uma numa
+            linha, empilhadas por margin-top), tamanhos variados mas
+            próximos (40-55vw), alternando esquerda/direita via o truque
+            de sangria acima. Regra crítica: margin-top é sempre POSITIVO
+            e maior que zero — nenhuma foto pode encostar/sobrepor a
+            anterior, sempre sobra respiro vertical entre elas. */}
+        <div className="relative">
+          <div style={{ position: "relative", width: "55vw", height: "62vh", ...BLEED_LEFT }}>
+            <GalleryPhoto photo={PHOTO_1} className="h-full" />
             {/* Legenda sobre gradiente de legibilidade, canto inferior
-                esquerdo — mesma linguagem do caption do About. */}
+                esquerdo — mesma linguagem do caption do About. Absolute
+                relativo a ESTE wrapper (position:relative acima), não à
+                moldura interna da foto. */}
             <div
               className="pointer-events-none absolute inset-x-0 bottom-0"
               style={{
-                height: "30%",
-                background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)",
+                height: "15.5vh" /* 25% de 62vh */,
+                background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)",
               }}
             />
             <div
-              className="absolute bottom-0 left-0 flex items-center gap-1"
+              className="absolute bottom-0 flex items-center gap-1"
               style={{
+                left: 0,
                 padding: "2vw",
                 fontSize: "0.7rem",
                 letterSpacing: "0.2em",
@@ -239,35 +210,33 @@ export function Gallery() {
             </div>
           </div>
 
-          {/* Coluna de detalhes: tamanho/posição recalibrados pra ter
-              presença de verdade (32vw x 38vh cada, não miniaturas) e
-              formar um bloco coeso encostado na herói — topo do detalhe 1
-              quase alinhado ao topo da herói (8vh, não 20vh), gap curto
-              (6vh) até o detalhe 2. Juntos, a coluna ocupa ~90vh (8+38+6+
-              38), quase a mesma altura da herói (88vh) — equilíbrio
-              esquerda/direita real, não dois selos soltos no vazio. */}
-          <div className="relative flex flex-1 flex-col">
-            <div style={{ marginTop: "8vh", width: "32vw", height: "38vh" }}>
-              <GalleryPhoto photo={DETAIL_PHOTOS[0]} aspectRatio="auto" className="h-full" />
-            </div>
-            <div style={{ marginTop: "6vh", width: "32vw", height: "38vh" }}>
-              <GalleryPhoto photo={DETAIL_PHOTOS[1]} aspectRatio="auto" className="h-full" />
-            </div>
-            <p
-              className="uppercase"
-              style={{
-                marginTop: "3vh",
-                width: "32vw",
-                textAlign: "left",
-                fontSize: "0.7rem",
-                letterSpacing: "0.3em",
-                color: INK,
-                opacity: 0.45,
-              }}
-            >
-              Est. 2019 — Dublin
-            </p>
+          <div style={{ width: "40vw", height: "48vh", marginTop: "6vh", ...BLEED_RIGHT }}>
+            <GalleryPhoto photo={PHOTO_2} className="h-full" />
           </div>
+
+          <div style={{ width: "45vw", height: "52vh", marginTop: "8vh", ...BLEED_LEFT }}>
+            <GalleryPhoto photo={PHOTO_3} className="h-full" />
+          </div>
+
+          <div style={{ width: "50vw", height: "52vh", marginTop: "6vh", ...BLEED_RIGHT }}>
+            <GalleryPhoto photo={PHOTO_4} className="h-full" />
+          </div>
+
+          <p
+            className="uppercase"
+            style={{
+              marginTop: "4vh",
+              width: "50vw",
+              textAlign: "right",
+              fontSize: "0.7rem",
+              letterSpacing: "0.3em",
+              color: INK,
+              opacity: 0.45,
+              ...BLEED_RIGHT,
+            }}
+          >
+            Est. 2019 — Dublin
+          </p>
         </div>
       </div>
     </section>
