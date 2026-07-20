@@ -10,75 +10,73 @@ const BG = "#EDE7DC";
 const INK = "#151008";
 const RULE_COLOR = "rgba(60,40,30,0.15)";
 
-const EASE_LAYER: [number, number, number, number] = [0.16, 1, 0.3, 1];
 const EASE_POWER3_OUT: [number, number, number, number] = [0.215, 0.61, 0.355, 1];
 
-// Cada foto revela sozinha, lenta (1.2s — dá pra apreciar) — e mesmo que
-// duas entrem geometricamente perto uma da outra (o mosaico inteiro cabe
-// numa tela só), o stagger de 0.25s por índice garante que a animação de
-// uma nunca começa junto com a da anterior.
+// Reveal em cascata (mesma linguagem do SOBRE NÓS): cortina clip-path
+// abrindo de baixo pra cima + de-zoom simultâneo, com stagger curto entre
+// as 4 fotos — disparado UMA VEZ pela seção inteira (não por foto), não
+// pelo scroll de cada uma isoladamente.
+const REVEAL_EASE: [number, number, number, number] = [0.76, 0, 0.24, 1];
 const REVEAL_DURATION = 1.2;
-const REVEAL_STAGGER = 0.25;
+const REVEAL_SCALE_FROM = 1.15;
+const REVEAL_STAGGER = 0.09;
 
 function GalleryPhoto({
   src,
-  width,
-  height,
   sizes,
   index,
+  sectionInView,
   className,
   children,
 }: {
   src: string;
-  width: number;
-  height: number;
   sizes: string;
   index: number;
+  sectionInView: boolean;
   className: string;
   children?: React.ReactNode;
 }) {
-  // Gatilho POR FOTO (não da seção inteira): cada uma revela quando ELA
-  // MESMA entra na viewport, conforme a pessoa rola — no mobile isso
-  // funciona igual, cada foto dispara sozinha conforme o dedo rola.
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { amount: 0.2, once: true });
+  const delay = index * REVEAL_STAGGER;
 
   return (
-    <div ref={ref} className={`relative block w-full overflow-hidden ${className}`}>
-      {/* Reveal: fade + sobe 50px + de-zoom leve (0.94->1), 1.2s, ease
-          [0.16,1,0.3,1] — lento e visível, não um pop instantâneo. */}
+    // Container com overflow:hidden e ALTURA FIXA (vem do grid, ver
+    // <style> abaixo) — essa é a correção do bug de scroll travando no
+    // hover: o container NUNCA muda de tamanho, só o conteúdo dentro
+    // dele anima. Antes (versão masonry), o container em si era
+    // dimensionado pelo conteúdo (sem `fill`), o que deixava a hierarquia
+    // de camadas instável durante o hover em imagens grandes — voltando
+    // pro padrão `fill` + moldura de tamanho fixo, o hover é puramente
+    // cosmético (GPU, transform/filter) e nunca mexe em layout.
+    <div className={`relative overflow-hidden ${className}`}>
+      {/* Cortina: abre de baixo pra cima. */}
       <motion.div
-        initial={{ opacity: 0, y: 50, scale: 0.94 }}
-        animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
-        transition={{ duration: REVEAL_DURATION, ease: EASE_LAYER, delay: index * REVEAL_STAGGER }}
+        className="absolute inset-0"
+        initial={{ clipPath: "inset(100% 0 0 0)" }}
+        animate={{ clipPath: sectionInView ? "inset(0% 0 0 0)" : "inset(100% 0 0 0)" }}
+        transition={{ duration: REVEAL_DURATION, ease: REVEAL_EASE, delay }}
       >
-        {/* Hover: zoom (1 -> 1.06) + leve clareamento (brightness 1 ->
-            1.08), 0.6s ease-out. O pai (div acima, overflow-hidden) tem o
-            tamanho EXATO da imagem renderizada (masonry: sem crop, sem
-            altura forçada) — então o zoom do hover fica contido dentro
-            da própria moldura, não vaza nem empurra o layout ao redor.
-            Só reage a ESTA foto (whileHover escopado ao próprio
-            elemento). No mobile isso simplesmente nunca dispara (sem
-            ponteiro de hover) — não precisa de tratamento especial. */}
+        {/* De-zoom do reveal (scale 1.15 -> 1), dispara junto com a
+            cortina, mesmo delay. */}
         <motion.div
-          initial={{ scale: 1, filter: "brightness(1)" }}
-          whileHover={{ scale: 1.06, filter: "brightness(1.08)" }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="absolute inset-0"
+          initial={{ scale: REVEAL_SCALE_FROM }}
+          animate={{ scale: sectionInView ? 1 : REVEAL_SCALE_FROM }}
+          transition={{ duration: REVEAL_DURATION, ease: REVEAL_EASE, delay }}
         >
-          {/* SEM `fill` + object-fit:cover (isso corta) — width/height
-              reais da imagem-fonte + CSS width:100%/height:auto: a
-              moldura assume a forma exata da foto, escalada
-              proporcionalmente pra largura da coluna, mostrando 100% do
-              conteúdo sempre. Funciona pra QUALQUER proporção de foto de
-              cliente, não só paisagem 16:9 como estas 4. */}
-          <Image
-            src={src}
-            width={width}
-            height={height}
-            alt=""
-            sizes={sizes}
-            style={{ width: "100%", height: "auto", display: "block" }}
-          />
+          {/* Hover: camada PRÓPRIA, só a <img> (via este wrapper) cresce
+              — o container (overflow-hidden acima) fica exatamente do
+              mesmo tamanho o tempo todo, então o zoom nunca vaza nem
+              empurra o layout, e o scroll do mouse sobre a foto nunca é
+              capturado por nada. Só reage à foto sob o cursor
+              (whileHover é escopado ao próprio elemento). */}
+          <motion.div
+            className="absolute inset-0"
+            initial={{ scale: 1, filter: "brightness(1)" }}
+            whileHover={{ scale: 1.05, filter: "brightness(1.06)" }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          >
+            <Image src={src} alt="" fill sizes={sizes} className="object-cover object-center" />
+          </motion.div>
         </motion.div>
       </motion.div>
       {children}
@@ -89,6 +87,12 @@ function GalleryPhoto({
 const TITLE_LINES = ["WHERE IT ALL", "HAPPENS"];
 
 export function Gallery() {
+  const sectionRef = useRef<HTMLElement>(null);
+  // Gatilho ÚNICO pra seção inteira — cada foto entra em cascata a partir
+  // dele (delay = index * REVEAL_STAGGER em cada uma), não um useInView
+  // por foto.
+  const sectionInView = useInView(sectionRef, { amount: 0.2, once: true });
+
   const titleRef = useRef<HTMLDivElement>(null);
   const titleInView = useInView(titleRef, { amount: 0.4, once: true });
 
@@ -101,7 +105,12 @@ export function Gallery() {
   const titleY = useTransform(sectionProgress, [0, 1], ["0%", "-6%"]);
 
   return (
-    <section id="gallery" className="relative w-full" style={{ backgroundColor: BG, paddingBottom: "10vh" }}>
+    <section
+      id="gallery"
+      ref={sectionRef}
+      className="relative w-full overflow-hidden"
+      style={{ backgroundColor: BG, paddingBottom: "10vh" }}
+    >
       {/* Título: continua dentro do container centralizado/com padding
           (não faz parte do full-bleed) — mantido como estava. */}
       <div
@@ -144,59 +153,59 @@ export function Gallery() {
         </div>
       </div>
 
-      {/* Mosaico full-bleed masonry: FORA do container com max-width/
+      {/* Grid editorial full-bleed: FORA do container com max-width/
           padding acima, direto como filho da section (que não tem
           padding horizontal nenhum) — encosta em x=0 e x=100vw.
 
-          Masonry de verdade (CSS multi-column, `columns`, não grid de
-          alturas fixas): cada foto NUNCA é cortada — a moldura (a div
-          com overflow-hidden em GalleryPhoto) assume a altura exata que
-          a própria imagem resulta ao ser escalada pra largura da coluna
-          (width:100%/height:auto), não uma altura imposta de fora. Isso
-          é o que garante "funciona com qualquer foto de cliente,
-          qualquer proporção" — não depende de nenhum número mágico de
-          altura calibrado pra ESTAS 4 fotos específicas.
+          2 colunas (58/42) x 3 linhas de altura FIXA mas generosa —
+          croissant 34vh e espresso 30vh (altas o bastante pra mostrar a
+          xícara/croissant inteiros com object-fit:cover, não é um
+          recorte apertado), ambiente atravessa as duas primeiras linhas
+          (grid-row 1/3, altura = croissant+gap+espresso automaticamente,
+          garantido pelo grid) e a faixa da carrotcake (380px) atravessa
+          a largura toda na 3ª linha — alta o bastante pra mostrar a
+          fatia de bolo inteira. Composição inteira ~100vh: as 4 fotos
+          convivem juntas na tela, não uma por vez.
 
-          ambiente usa column-span:all (quebra pra fora do fluxo de 2
-          colunas, vira um item full-width sozinho) — é o jeito de dar
-          peso visual maior a ela SEM cortar: continua na proporção
-          natural dela, só que ocupando a largura toda em vez de meia
-          coluna. As outras 3 (croissant/espresso/carrotcake) fluem no
-          masonry de 2 colunas abaixo, cada uma na sua altura natural.
-
-          gap: column-gap resolve o espaço HORIZONTAL entre colunas;
-          margin-bottom em cada item resolve o espaço VERTICAL entre
-          itens empilhados na mesma coluna (columns não tem row-gap).
-
-          Mobile (<768px): columns:1 — todo o masonry vira uma pilha
-          única na ordem natural do DOM (ambiente primeiro), cada foto
-          ainda na proporção real dela (nada de altura forçada). */}
+          Mobile (<768px): mesma lista em coluna única, alturas variadas
+          mas generosas (60/50/45/55vh). <style> com media query porque
+          inline style não suporta @media. */}
       <style>{`
-        .space-masonry {
-          columns: 2;
-          column-gap: 12px;
+        .space-grid {
+          display: grid;
+          grid-template-columns: 58fr 42fr;
+          grid-template-rows: 34vh 30vh 380px;
+          gap: 12px;
         }
-        .space-masonry > div {
-          break-inside: avoid;
-          margin-bottom: 12px;
-        }
-        .space-hero {
-          column-span: all;
-        }
+        .space-grid .space-ambiente { grid-column: 1 / 2; grid-row: 1 / 3; }
+        .space-grid .space-croissant { grid-column: 2 / 3; grid-row: 1 / 2; }
+        .space-grid .space-espresso { grid-column: 2 / 3; grid-row: 2 / 3; }
+        .space-grid .space-carrotcake { grid-column: 1 / 3; grid-row: 3 / 4; }
         @media (max-width: 767px) {
-          .space-masonry {
-            columns: 1;
+          .space-grid {
+            grid-template-columns: 1fr;
+            grid-template-rows: 60vh 50vh 45vh 55vh;
+            gap: 10px;
           }
+          .space-grid .space-ambiente,
+          .space-grid .space-croissant,
+          .space-grid .space-espresso,
+          .space-grid .space-carrotcake {
+            grid-column: 1 / 2;
+          }
+          .space-grid .space-ambiente { grid-row: 1 / 2; }
+          .space-grid .space-croissant { grid-row: 2 / 3; }
+          .space-grid .space-espresso { grid-row: 3 / 4; }
+          .space-grid .space-carrotcake { grid-row: 4 / 5; }
         }
       `}</style>
-      <div className="space-masonry">
+      <div className="space-grid">
         <GalleryPhoto
           src="/images/gallery/ambiente.jpg"
-          width={5456}
-          height={3056}
-          sizes="100vw"
+          sizes="(max-width: 767px) 100vw, 58vw"
           index={0}
-          className="space-hero"
+          sectionInView={sectionInView}
+          className="space-ambiente"
         >
           {/* Legenda sobre gradiente de legibilidade, canto inferior
               esquerdo — mesma linguagem do caption do About. */}
@@ -224,26 +233,23 @@ export function Gallery() {
 
         <GalleryPhoto
           src="/images/gallery/croissant.png"
-          width={1200}
-          height={672}
-          sizes="(max-width: 767px) 100vw, 50vw"
+          sizes="(max-width: 767px) 100vw, 42vw"
           index={1}
+          sectionInView={sectionInView}
           className="space-croissant"
         />
         <GalleryPhoto
           src="/images/gallery/espresso.png"
-          width={1200}
-          height={672}
-          sizes="(max-width: 767px) 100vw, 50vw"
+          sizes="(max-width: 767px) 100vw, 42vw"
           index={2}
+          sectionInView={sectionInView}
           className="space-espresso"
         />
         <GalleryPhoto
           src="/images/gallery/carrotcake.png"
-          width={1200}
-          height={672}
-          sizes="(max-width: 767px) 100vw, 50vw"
+          sizes="100vw"
           index={3}
+          sectionInView={sectionInView}
           className="space-carrotcake"
         />
       </div>
