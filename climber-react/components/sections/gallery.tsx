@@ -239,25 +239,34 @@ export function Gallery() {
             </div>
           </div>
 
+          {/* Coluna de detalhes: tamanho/posição recalibrados pra ter
+              presença de verdade (32vw x 38vh cada, não miniaturas) e
+              formar um bloco coeso encostado na herói — topo do detalhe 1
+              quase alinhado ao topo da herói (8vh, não 20vh), gap curto
+              (6vh) até o detalhe 2. Juntos, a coluna ocupa ~90vh (8+38+6+
+              38), quase a mesma altura da herói (88vh) — equilíbrio
+              esquerda/direita real, não dois selos soltos no vazio. */}
           <div className="relative flex flex-1 flex-col">
-            <div style={{ marginTop: "20vh", width: "100%", maxWidth: "24vw" }}>
-              <GalleryPhoto photo={DETAIL_PHOTOS[0]} aspectRatio="3 / 2" />
+            <div style={{ marginTop: "8vh", width: "32vw", height: "38vh" }}>
+              <GalleryPhoto photo={DETAIL_PHOTOS[0]} aspectRatio="auto" className="h-full" />
             </div>
-            <div style={{ marginTop: "12vh", width: "100%", maxWidth: "24vw" }}>
-              <GalleryPhoto photo={DETAIL_PHOTOS[1]} aspectRatio="3 / 2" />
-              <p
-                className="uppercase"
-                style={{
-                  marginTop: "2vh",
-                  fontSize: "0.7rem",
-                  letterSpacing: "0.3em",
-                  color: INK,
-                  opacity: 0.45,
-                }}
-              >
-                Est. 2019 — Dublin
-              </p>
+            <div style={{ marginTop: "6vh", width: "32vw", height: "38vh" }}>
+              <GalleryPhoto photo={DETAIL_PHOTOS[1]} aspectRatio="auto" className="h-full" />
             </div>
+            <p
+              className="uppercase"
+              style={{
+                marginTop: "3vh",
+                width: "32vw",
+                textAlign: "left",
+                fontSize: "0.7rem",
+                letterSpacing: "0.3em",
+                color: INK,
+                opacity: 0.45,
+              }}
+            >
+              Est. 2019 — Dublin
+            </p>
           </div>
         </div>
       </div>
