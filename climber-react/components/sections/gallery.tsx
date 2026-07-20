@@ -22,12 +22,16 @@ const REVEAL_STAGGER = 0.25;
 
 function GalleryPhoto({
   src,
+  width,
+  height,
   sizes,
   index,
   className,
   children,
 }: {
   src: string;
+  width: number;
+  height: number;
   sizes: string;
   index: number;
   className: string;
@@ -40,28 +44,41 @@ function GalleryPhoto({
   const inView = useInView(ref, { amount: 0.2, once: true });
 
   return (
-    <div ref={ref} className={`relative overflow-hidden ${className}`}>
+    <div ref={ref} className={`relative block w-full overflow-hidden ${className}`}>
       {/* Reveal: fade + sobe 50px + de-zoom leve (0.94->1), 1.2s, ease
           [0.16,1,0.3,1] — lento e visível, não um pop instantâneo. */}
       <motion.div
-        className="absolute inset-0"
         initial={{ opacity: 0, y: 50, scale: 0.94 }}
         animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
         transition={{ duration: REVEAL_DURATION, ease: EASE_LAYER, delay: index * REVEAL_STAGGER }}
       >
         {/* Hover: zoom (1 -> 1.06) + leve clareamento (brightness 1 ->
-            1.08), 0.6s ease-out — camada própria pra não conflitar com o
-            scale do reveal acima. Só reage a ESTA foto (whileHover é
-            escopado ao próprio elemento, não propaga pras vizinhas). No
-            mobile isso simplesmente nunca dispara (sem ponteiro de
-            hover) — não precisa de nenhum tratamento especial. */}
+            1.08), 0.6s ease-out. O pai (div acima, overflow-hidden) tem o
+            tamanho EXATO da imagem renderizada (masonry: sem crop, sem
+            altura forçada) — então o zoom do hover fica contido dentro
+            da própria moldura, não vaza nem empurra o layout ao redor.
+            Só reage a ESTA foto (whileHover escopado ao próprio
+            elemento). No mobile isso simplesmente nunca dispara (sem
+            ponteiro de hover) — não precisa de tratamento especial. */}
         <motion.div
-          className="absolute inset-0"
           initial={{ scale: 1, filter: "brightness(1)" }}
           whileHover={{ scale: 1.06, filter: "brightness(1.08)" }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <Image src={src} alt="" fill sizes={sizes} className="object-cover object-center" />
+          {/* SEM `fill` + object-fit:cover (isso corta) — width/height
+              reais da imagem-fonte + CSS width:100%/height:auto: a
+              moldura assume a forma exata da foto, escalada
+              proporcionalmente pra largura da coluna, mostrando 100% do
+              conteúdo sempre. Funciona pra QUALQUER proporção de foto de
+              cliente, não só paisagem 16:9 como estas 4. */}
+          <Image
+            src={src}
+            width={width}
+            height={height}
+            alt=""
+            sizes={sizes}
+            style={{ width: "100%", height: "auto", display: "block" }}
+          />
         </motion.div>
       </motion.div>
       {children}
@@ -127,66 +144,59 @@ export function Gallery() {
         </div>
       </div>
 
-      {/* Mosaico full-bleed: FORA do container com max-width/padding
-          acima, direto como filho da section (que não tem padding
-          horizontal nenhum) — a coluna da ambiente encosta em x=0 e a
-          coluna direita encosta em x=100vw.
+      {/* Mosaico full-bleed masonry: FORA do container com max-width/
+          padding acima, direto como filho da section (que não tem
+          padding horizontal nenhum) — encosta em x=0 e x=100vw.
 
-          Desktop: grid de 2 colunas (58/42) x 3 linhas. Alturas das
-          linhas pensadas pra caber o ASSUNTO inteiro de qualquer foto de
-          cliente (não só esta), não pra maximizar densidade — croissant
-          34vh (já mostra a foto inteira, com margem folgada ao redor no
-          original, não precisou mexer), espresso 30vh (era 21vh —
-          apertava a xícara) e a faixa da carrotcake 380px (era 220px —
-          cortava o bolo no meio, agora alta o bastante pra mostrar a
-          fatia inteira). Ambiente atravessa as duas primeiras linhas
-          (grid-row 1/3), então a altura dela é CONSEQUÊNCIA do grid
-          (croissant+gap+espresso) — sobe automaticamente pra 68vh+12px
-          com o espresso mais alto, continua mostrando a sala inteira sem
-          precisar de nenhum ajuste próprio. Zero espaço morto garantido
-          pelo grid, não calculado na mão. object-center (ver
-          GalleryPhoto) em todas — o crop do cover sempre parte do meio,
-          onde normalmente está o assunto.
+          Masonry de verdade (CSS multi-column, `columns`, não grid de
+          alturas fixas): cada foto NUNCA é cortada — a moldura (a div
+          com overflow-hidden em GalleryPhoto) assume a altura exata que
+          a própria imagem resulta ao ser escalada pra largura da coluna
+          (width:100%/height:auto), não uma altura imposta de fora. Isso
+          é o que garante "funciona com qualquer foto de cliente,
+          qualquer proporção" — não depende de nenhum número mágico de
+          altura calibrado pra ESTAS 4 fotos específicas.
 
-          Mobile (<768px): mesma lista em coluna única, alturas variadas
-          mas TODAS >= 45vh (era 40vh no espresso — baixo demais pro
-          crop caber a xícara inteira). <style> com media query porque
-          inline style não suporta @media. */}
+          ambiente usa column-span:all (quebra pra fora do fluxo de 2
+          colunas, vira um item full-width sozinho) — é o jeito de dar
+          peso visual maior a ela SEM cortar: continua na proporção
+          natural dela, só que ocupando a largura toda em vez de meia
+          coluna. As outras 3 (croissant/espresso/carrotcake) fluem no
+          masonry de 2 colunas abaixo, cada uma na sua altura natural.
+
+          gap: column-gap resolve o espaço HORIZONTAL entre colunas;
+          margin-bottom em cada item resolve o espaço VERTICAL entre
+          itens empilhados na mesma coluna (columns não tem row-gap).
+
+          Mobile (<768px): columns:1 — todo o masonry vira uma pilha
+          única na ordem natural do DOM (ambiente primeiro), cada foto
+          ainda na proporção real dela (nada de altura forçada). */}
       <style>{`
-        .space-mosaic {
-          display: grid;
-          grid-template-columns: 58fr 42fr;
-          grid-template-rows: 34vh 30vh 380px;
-          gap: 12px;
+        .space-masonry {
+          columns: 2;
+          column-gap: 12px;
         }
-        .space-mosaic .space-ambiente { grid-column: 1 / 2; grid-row: 1 / 3; }
-        .space-mosaic .space-croissant { grid-column: 2 / 3; grid-row: 1 / 2; }
-        .space-mosaic .space-espresso { grid-column: 2 / 3; grid-row: 2 / 3; }
-        .space-mosaic .space-carrotcake { grid-column: 1 / 3; grid-row: 3 / 4; }
+        .space-masonry > div {
+          break-inside: avoid;
+          margin-bottom: 12px;
+        }
+        .space-hero {
+          column-span: all;
+        }
         @media (max-width: 767px) {
-          .space-mosaic {
-            grid-template-columns: 1fr;
-            grid-template-rows: 60vh 50vh 45vh 55vh;
-            gap: 10px;
+          .space-masonry {
+            columns: 1;
           }
-          .space-mosaic .space-ambiente,
-          .space-mosaic .space-croissant,
-          .space-mosaic .space-espresso,
-          .space-mosaic .space-carrotcake {
-            grid-column: 1 / 2;
-          }
-          .space-mosaic .space-ambiente { grid-row: 1 / 2; }
-          .space-mosaic .space-croissant { grid-row: 2 / 3; }
-          .space-mosaic .space-espresso { grid-row: 3 / 4; }
-          .space-mosaic .space-carrotcake { grid-row: 4 / 5; }
         }
       `}</style>
-      <div className="space-mosaic">
+      <div className="space-masonry">
         <GalleryPhoto
           src="/images/gallery/ambiente.jpg"
-          sizes="(max-width: 767px) 100vw, 58vw"
+          width={5456}
+          height={3056}
+          sizes="100vw"
           index={0}
-          className="space-ambiente"
+          className="space-hero"
         >
           {/* Legenda sobre gradiente de legibilidade, canto inferior
               esquerdo — mesma linguagem do caption do About. */}
@@ -214,19 +224,25 @@ export function Gallery() {
 
         <GalleryPhoto
           src="/images/gallery/croissant.png"
-          sizes="(max-width: 767px) 100vw, 42vw"
+          width={1200}
+          height={672}
+          sizes="(max-width: 767px) 100vw, 50vw"
           index={1}
           className="space-croissant"
         />
         <GalleryPhoto
           src="/images/gallery/espresso.png"
-          sizes="(max-width: 767px) 100vw, 42vw"
+          width={1200}
+          height={672}
+          sizes="(max-width: 767px) 100vw, 50vw"
           index={2}
           className="space-espresso"
         />
         <GalleryPhoto
           src="/images/gallery/carrotcake.png"
-          sizes="100vw"
+          width={1200}
+          height={672}
+          sizes="(max-width: 767px) 100vw, 50vw"
           index={3}
           className="space-carrotcake"
         />
