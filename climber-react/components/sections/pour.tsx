@@ -356,11 +356,17 @@ export function Pour() {
           (que cacheia o limite de scroll) entrar em conflito com a
           posição real, medido como o scroll "grudando" num valor ou
           pulando pra trás de forma imprevisível logo depois do encaixe. */}
+        {/* Fundo #1C1614 (mesma cor do Menu, não preto puro): a caixa da
+            imagem (aspect-ratio real) quase sempre sobra menor que 100vh,
+            deixando letterbox em cima/embaixo — com bg-black essa faixa
+            emendava com o Menu criando uma linha visível (preto puro vs.
+            #1C1614 do Menu não são a mesma cor). Trocando pra #1C1614 aqui,
+            a base dessa faixa funde sem costura na próxima seção. */}
         <section
           id="pour-static"
           ref={pourStaticRef}
-          className="relative flex w-full items-center justify-center bg-black"
-          style={{ height: "100vh" }}
+          className="relative flex w-full items-center justify-center"
+          style={{ height: "100vh", backgroundColor: "#1C1614" }}
         >
           <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
             <Image
