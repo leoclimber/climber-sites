@@ -9,13 +9,16 @@ import { motion, useInView, useTransform, useScroll } from "framer-motion";
 const BG = "#EDE7DC";
 const INK = "#151008";
 const RULE_COLOR = "rgba(60,40,30,0.15)";
-// Cor de fundo da moldura (object-fit:contain deixa sobra dentro da
-// caixa fixa quando a proporção da foto não bate exato com a proporção
-// da moldura — essa cor preenche essa sobra, virando enquadramento em
-// vez de bege acidental). Marrom escuro quente: as 4 fotos de comida têm
-// fundo escuro/preto, então a sobra funde com a própria foto em vez de
-// destacar como borda.
-const FRAME_BG = "#1F1A17";
+
+// Proporção REAL de cada foto-fonte (medida direto do arquivo, não
+// estimada — ver public/images/gallery/): ambiente 5456x3056, as outras
+// 3 são todas 1200x672. Usadas como aspect-ratio da própria moldura (ver
+// GalleryPhoto) — como a moldura tem a MESMA proporção da foto,
+// object-fit:cover não tem nada pra cortar (a imagem já cai exata) e não
+// sobra faixa nenhuma (a moldura não é maior que a imagem em nenhum
+// eixo). Zero corte, zero faixa, ao mesmo tempo.
+const AMBIENTE_RATIO = "5456 / 3056";
+const ITEM_RATIO = "1200 / 672";
 
 const EASE_POWER3_OUT: [number, number, number, number] = [0.215, 0.61, 0.355, 1];
 
@@ -25,11 +28,12 @@ const EASE_POWER3_OUT: [number, number, number, number] = [0.215, 0.61, 0.355, 1
 // pelo scroll de cada uma isoladamente.
 const REVEAL_EASE: [number, number, number, number] = [0.76, 0, 0.24, 1];
 const REVEAL_DURATION = 1.2;
-const REVEAL_SCALE_FROM = 1.15;
+const REVEAL_SCALE_FROM = 1.12;
 const REVEAL_STAGGER = 0.09;
 
 function GalleryPhoto({
   src,
+  aspectRatio,
   sizes,
   index,
   sectionInView,
@@ -37,6 +41,7 @@ function GalleryPhoto({
   children,
 }: {
   src: string;
+  aspectRatio: string;
   sizes: string;
   index: number;
   sectionInView: boolean;
@@ -46,15 +51,15 @@ function GalleryPhoto({
   const delay = index * REVEAL_STAGGER;
 
   return (
-    // Container com overflow:hidden e ALTURA FIXA (vem do grid, ver
-    // <style> abaixo) — essa é a correção do bug de scroll travando no
-    // hover: o container NUNCA muda de tamanho, só o conteúdo dentro
-    // dele anima. Antes (versão masonry), o container em si era
-    // dimensionado pelo conteúdo (sem `fill`), o que deixava a hierarquia
-    // de camadas instável durante o hover em imagens grandes — voltando
-    // pro padrão `fill` + moldura de tamanho fixo, o hover é puramente
-    // cosmético (GPU, transform/filter) e nunca mexe em layout.
-    <div className={`relative overflow-hidden ${className}`} style={{ backgroundColor: FRAME_BG }}>
+    // Container com overflow:hidden e aspect-ratio IGUAL ao da foto — a
+    // largura vem do grid/flex (ver <style> abaixo), a altura é
+    // CONSEQUÊNCIA dessa largura via aspect-ratio (nunca uma vh fixa
+    // arbitrária). Isso é o que garante zero corte E zero faixa ao mesmo
+    // tempo: a moldura tem exatamente a forma da foto. O container em si
+    // é a correção do bug de scroll travando no hover: ele NUNCA muda de
+    // tamanho no hover, só o conteúdo dentro dele anima (puramente
+    // cosmético, GPU, nunca mexe em layout).
+    <div className={`relative w-full overflow-hidden ${className}`} style={{ aspectRatio }}>
       {/* Cortina: abre de baixo pra cima. */}
       <motion.div
         className="absolute inset-0"
@@ -62,7 +67,7 @@ function GalleryPhoto({
         animate={{ clipPath: sectionInView ? "inset(0% 0 0 0)" : "inset(100% 0 0 0)" }}
         transition={{ duration: REVEAL_DURATION, ease: REVEAL_EASE, delay }}
       >
-        {/* De-zoom do reveal (scale 1.15 -> 1), dispara junto com a
+        {/* De-zoom do reveal (scale 1.12 -> 1), dispara junto com a
             cortina, mesmo delay. */}
         <motion.div
           className="absolute inset-0"
@@ -82,7 +87,7 @@ function GalleryPhoto({
             whileHover={{ scale: 1.05, filter: "brightness(1.06)" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <Image src={src} alt="" fill sizes={sizes} className="object-contain object-center" />
+            <Image src={src} alt="" fill sizes={sizes} className="object-cover object-center" />
           </motion.div>
         </motion.div>
       </motion.div>
@@ -160,60 +165,55 @@ export function Gallery() {
         </div>
       </div>
 
-      {/* Grid editorial full-bleed: FORA do container com max-width/
-          padding acima, direto como filho da section (que não tem
-          padding horizontal nenhum) — encosta em x=0 e x=100vw.
+      {/* Composição compacta full-bleed: FORA do container com max-width/
+          padding acima, direto como filho da section — encosta em x=0 e
+          x=100vw.
 
-          2 colunas (58/42) x 3 linhas de altura FIXA — croissant 34vh e
-          espresso 30vh, ambiente atravessa as duas primeiras linhas
-          (grid-row 1/3, altura = croissant+gap+espresso automaticamente,
-          garantido pelo grid) e a faixa da carrotcake (380px) atravessa
-          a largura toda na 3ª linha. As molduras têm tamanho FIXO (o
-          grid decide, não a foto) — object-fit:contain dentro de cada
-          uma (ver GalleryPhoto) garante que a foto INTEIRA sempre cabe,
-          nunca corta, seja qual for a proporção; a sobra vira moldura
-          (FRAME_BG), não um corte. Composição inteira ~100vh: as 4 fotos
-          convivem juntas na tela, não uma por vez.
+          Nenhuma altura fixa em vh: a largura das colunas (76fr/24fr) é
+          o ÚNICO valor imposto de fora, e a altura de cada foto é
+          CONSEQUÊNCIA da largura via aspect-ratio (ver GalleryPhoto) —
+          esse 76/24 foi calculado pra fazer a altura da ambiente bater
+          com croissant+espresso+carrotcake empilhados (3 itens da MESMA
+          proporção ~1.786:1, então empilhados com o mesmo width eles já
+          saem com a mesma height — a coluna direita fecha sozinha, sem
+          precisar calcular nada por item). Resultado: ambiente ~76% de
+          largura (a estrela, bem maior) e a coluna direita ~24%, e a
+          composição inteira sai compacta (a altura toda vem da LARGURA
+          da tela, não de vh's somados) — bem diferente do masonry alto
+          de tentativas anteriores.
 
-          Mobile (<768px): mesma lista em coluna única, alturas variadas
-          mas generosas (60/50/45/55vh). <style> com media query porque
-          inline style não suporta @media. */}
+          Mobile (<768px): 1 coluna — a coluna direita (que já é um
+          flex-column por si só) simplesmente também vira largura total,
+          então as 4 fotos empilham juntas na ordem do DOM (ambiente,
+          croissant, espresso, carrotcake), cada uma na proporção real
+          dela. <style> com media query porque inline style não suporta
+          @media. */}
       <style>{`
         .space-grid {
           display: grid;
-          grid-template-columns: 58fr 42fr;
-          grid-template-rows: 34vh 30vh 380px;
+          grid-template-columns: 75.6fr 24.4fr;
+          gap: 12px;
+          align-items: start;
+        }
+        .space-right-col {
+          display: flex;
+          flex-direction: column;
           gap: 12px;
         }
-        .space-grid .space-ambiente { grid-column: 1 / 2; grid-row: 1 / 3; }
-        .space-grid .space-croissant { grid-column: 2 / 3; grid-row: 1 / 2; }
-        .space-grid .space-espresso { grid-column: 2 / 3; grid-row: 2 / 3; }
-        .space-grid .space-carrotcake { grid-column: 1 / 3; grid-row: 3 / 4; }
         @media (max-width: 767px) {
           .space-grid {
             grid-template-columns: 1fr;
-            grid-template-rows: 60vh 50vh 45vh 55vh;
-            gap: 10px;
           }
-          .space-grid .space-ambiente,
-          .space-grid .space-croissant,
-          .space-grid .space-espresso,
-          .space-grid .space-carrotcake {
-            grid-column: 1 / 2;
-          }
-          .space-grid .space-ambiente { grid-row: 1 / 2; }
-          .space-grid .space-croissant { grid-row: 2 / 3; }
-          .space-grid .space-espresso { grid-row: 3 / 4; }
-          .space-grid .space-carrotcake { grid-row: 4 / 5; }
         }
       `}</style>
       <div className="space-grid">
         <GalleryPhoto
           src="/images/gallery/ambiente.jpg"
-          sizes="(max-width: 767px) 100vw, 58vw"
+          aspectRatio={AMBIENTE_RATIO}
+          sizes="(max-width: 767px) 100vw, 76vw"
           index={0}
           sectionInView={sectionInView}
-          className="space-ambiente"
+          className=""
         >
           {/* Legenda sobre gradiente de legibilidade, canto inferior
               esquerdo — mesma linguagem do caption do About. */}
@@ -239,27 +239,32 @@ export function Gallery() {
           </div>
         </GalleryPhoto>
 
-        <GalleryPhoto
-          src="/images/gallery/croissant.png"
-          sizes="(max-width: 767px) 100vw, 42vw"
-          index={1}
-          sectionInView={sectionInView}
-          className="space-croissant"
-        />
-        <GalleryPhoto
-          src="/images/gallery/espresso.png"
-          sizes="(max-width: 767px) 100vw, 42vw"
-          index={2}
-          sectionInView={sectionInView}
-          className="space-espresso"
-        />
-        <GalleryPhoto
-          src="/images/gallery/carrotcake.png"
-          sizes="100vw"
-          index={3}
-          sectionInView={sectionInView}
-          className="space-carrotcake"
-        />
+        <div className="space-right-col">
+          <GalleryPhoto
+            src="/images/gallery/croissant.png"
+            aspectRatio={ITEM_RATIO}
+            sizes="(max-width: 767px) 100vw, 24vw"
+            index={1}
+            sectionInView={sectionInView}
+            className=""
+          />
+          <GalleryPhoto
+            src="/images/gallery/espresso.png"
+            aspectRatio={ITEM_RATIO}
+            sizes="(max-width: 767px) 100vw, 24vw"
+            index={2}
+            sectionInView={sectionInView}
+            className=""
+          />
+          <GalleryPhoto
+            src="/images/gallery/carrotcake.png"
+            aspectRatio={ITEM_RATIO}
+            sizes="(max-width: 767px) 100vw, 24vw"
+            index={3}
+            sectionInView={sectionInView}
+            className=""
+          />
+        </div>
       </div>
     </section>
   );
