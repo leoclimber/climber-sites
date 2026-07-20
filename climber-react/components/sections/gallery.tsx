@@ -9,6 +9,13 @@ import { motion, useInView, useTransform, useScroll } from "framer-motion";
 const BG = "#EDE7DC";
 const INK = "#151008";
 const RULE_COLOR = "rgba(60,40,30,0.15)";
+// Cor de fundo da moldura (object-fit:contain deixa sobra dentro da
+// caixa fixa quando a proporção da foto não bate exato com a proporção
+// da moldura — essa cor preenche essa sobra, virando enquadramento em
+// vez de bege acidental). Marrom escuro quente: as 4 fotos de comida têm
+// fundo escuro/preto, então a sobra funde com a própria foto em vez de
+// destacar como borda.
+const FRAME_BG = "#1F1A17";
 
 const EASE_POWER3_OUT: [number, number, number, number] = [0.215, 0.61, 0.355, 1];
 
@@ -47,7 +54,7 @@ function GalleryPhoto({
     // de camadas instável durante o hover em imagens grandes — voltando
     // pro padrão `fill` + moldura de tamanho fixo, o hover é puramente
     // cosmético (GPU, transform/filter) e nunca mexe em layout.
-    <div className={`relative overflow-hidden ${className}`}>
+    <div className={`relative overflow-hidden ${className}`} style={{ backgroundColor: FRAME_BG }}>
       {/* Cortina: abre de baixo pra cima. */}
       <motion.div
         className="absolute inset-0"
@@ -75,7 +82,7 @@ function GalleryPhoto({
             whileHover={{ scale: 1.05, filter: "brightness(1.06)" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <Image src={src} alt="" fill sizes={sizes} className="object-cover object-center" />
+            <Image src={src} alt="" fill sizes={sizes} className="object-contain object-center" />
           </motion.div>
         </motion.div>
       </motion.div>
@@ -157,14 +164,15 @@ export function Gallery() {
           padding acima, direto como filho da section (que não tem
           padding horizontal nenhum) — encosta em x=0 e x=100vw.
 
-          2 colunas (58/42) x 3 linhas de altura FIXA mas generosa —
-          croissant 34vh e espresso 30vh (altas o bastante pra mostrar a
-          xícara/croissant inteiros com object-fit:cover, não é um
-          recorte apertado), ambiente atravessa as duas primeiras linhas
+          2 colunas (58/42) x 3 linhas de altura FIXA — croissant 34vh e
+          espresso 30vh, ambiente atravessa as duas primeiras linhas
           (grid-row 1/3, altura = croissant+gap+espresso automaticamente,
           garantido pelo grid) e a faixa da carrotcake (380px) atravessa
-          a largura toda na 3ª linha — alta o bastante pra mostrar a
-          fatia de bolo inteira. Composição inteira ~100vh: as 4 fotos
+          a largura toda na 3ª linha. As molduras têm tamanho FIXO (o
+          grid decide, não a foto) — object-fit:contain dentro de cada
+          uma (ver GalleryPhoto) garante que a foto INTEIRA sempre cabe,
+          nunca corta, seja qual for a proporção; a sobra vira moldura
+          (FRAME_BG), não um corte. Composição inteira ~100vh: as 4 fotos
           convivem juntas na tela, não uma por vez.
 
           Mobile (<768px): mesma lista em coluna única, alturas variadas
