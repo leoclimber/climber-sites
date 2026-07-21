@@ -64,87 +64,100 @@ function MaskBlock({
 
 function Ornament() {
   return (
-    <div className="flex items-center justify-center gap-4">
-      <span style={{ width: 60, height: 1, backgroundColor: ORNAMENT_COLOR }} />
-      <span style={{ color: ORNAMENT_COLOR, fontSize: "1rem" }}>✦</span>
-      <span style={{ width: 60, height: 1, backgroundColor: ORNAMENT_COLOR }} />
+    <div className="flex items-center justify-center gap-5">
+      <span style={{ width: 78, height: 1, backgroundColor: ORNAMENT_COLOR }} />
+      <span style={{ color: ORNAMENT_COLOR, fontSize: "1.3rem" }}>✦</span>
+      <span style={{ width: 78, height: 1, backgroundColor: ORNAMENT_COLOR }} />
     </div>
   );
 }
+
+// Bloco editorial (label/ornamento/frase/assinatura) em fundo creme SÓLIDO
+// — sem gradiente por trás dele, então a legibilidade nunca é questão. A
+// transição creme->escuro vira uma faixa CURTA e separada logo abaixo (ver
+// GRADIENT_STRIP_HEIGHT), decidida em vez de esticada por metade da tela.
+const GRADIENT_STRIP_HEIGHT = "9vh";
 
 function PhraseSeam() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.4, once: true });
 
   return (
-    <div
-      className="relative w-full overflow-hidden"
-      style={{
-        background: `linear-gradient(to bottom, ${SEAM_FROM} 0%, ${SEAM_FROM} 68%, ${BG} 100%)`,
-        paddingTop: "10vh",
-        paddingBottom: "10vh",
-      }}
-    >
-      <div ref={ref} className="mx-auto flex w-full flex-col items-center px-8 sm:px-16">
-        <MaskBlock delay={0} inView={inView}>
-          <span
-            className="block text-center uppercase"
-            style={{ fontFamily: "Georgia, serif", fontSize: "0.7rem", letterSpacing: "0.4em", color: MUTED }}
-          >
-            ( Our Philosophy )
-          </span>
-        </MaskBlock>
-
-        <div style={{ marginTop: "3vh", marginBottom: "3vh" }}>
-          <MaskBlock delay={0.1} inView={inView}>
-            <Ornament />
-          </MaskBlock>
-        </div>
-
-        <h2
-          className="text-center"
-          style={{
-            fontFamily: "var(--font-instrument-serif)",
-            fontStyle: "italic",
-            fontSize: "clamp(3rem, 6vw, 6rem)",
-            lineHeight: 1.1,
-            letterSpacing: "-0.01em",
-            maxWidth: "16ch",
-            color: PHRASE_COLOR,
-          }}
-        >
-          {PHRASE_LINES.map((line, i) => (
-            <span key={line} className="block overflow-hidden">
-              <motion.span
-                className="block"
-                initial={{ y: "100%" }}
-                animate={{ y: inView ? "0%" : "100%" }}
-                transition={{ duration: 0.8, ease: EASE_POWER3_OUT, delay: 0.2 + i * 0.1 }}
-              >
-                {line}
-              </motion.span>
-            </span>
-          ))}
-        </h2>
-
-        <div style={{ marginTop: "4vh" }}>
-          <MaskBlock delay={0.4} inView={inView}>
-            <div style={{ width: 100, height: 1, backgroundColor: ORNAMENT_COLOR, margin: "0 auto" }} />
-          </MaskBlock>
-        </div>
-
-        <div style={{ marginTop: "2vh" }}>
-          <MaskBlock delay={0.45} inView={inView}>
+    <>
+      <div className="relative w-full" style={{ backgroundColor: SEAM_FROM, paddingTop: "5vh", paddingBottom: "5vh" }}>
+        <div ref={ref} className="mx-auto flex w-full flex-col items-center px-8 sm:px-16">
+          <MaskBlock delay={0} inView={inView}>
             <span
               className="block text-center uppercase"
-              style={{ fontFamily: "var(--font-archivo)", fontSize: "0.7rem", letterSpacing: "0.3em", color: MUTED }}
+              style={{ fontFamily: "Georgia, serif", fontSize: "0.95rem", letterSpacing: "0.4em", color: MUTED }}
             >
-              Est. 2019 · Dublin
+              ( Our Philosophy )
             </span>
           </MaskBlock>
+
+          <div style={{ marginTop: "3vh", marginBottom: "3vh" }}>
+            <MaskBlock delay={0.1} inView={inView}>
+              <Ornament />
+            </MaskBlock>
+          </div>
+
+          <h2
+            className="text-center"
+            style={{
+              fontFamily: "var(--font-instrument-serif)",
+              fontStyle: "italic",
+              // Cap no máximo (6rem) igual ao título do SOBRE NÓS — não
+              // ultrapassa as outras seções, só ganha mais presença no
+              // meio-campo (min/vw maiores) do que a versão anterior.
+              fontSize: "clamp(3.3rem, 6.3vw, 6rem)",
+              lineHeight: 1.1,
+              letterSpacing: "-0.01em",
+              maxWidth: "16ch",
+              color: PHRASE_COLOR,
+            }}
+          >
+            {PHRASE_LINES.map((line, i) => (
+              <span key={line} className="block overflow-hidden">
+                <motion.span
+                  className="block"
+                  initial={{ y: "100%" }}
+                  animate={{ y: inView ? "0%" : "100%" }}
+                  transition={{ duration: 0.8, ease: EASE_POWER3_OUT, delay: 0.2 + i * 0.1 }}
+                >
+                  {line}
+                </motion.span>
+              </span>
+            ))}
+          </h2>
+
+          <div style={{ marginTop: "4vh" }}>
+            <MaskBlock delay={0.4} inView={inView}>
+              <div style={{ width: 130, height: 1, backgroundColor: ORNAMENT_COLOR, margin: "0 auto" }} />
+            </MaskBlock>
+          </div>
+
+          <div style={{ marginTop: "2vh" }}>
+            <MaskBlock delay={0.45} inView={inView}>
+              <span
+                className="block text-center uppercase"
+                style={{ fontFamily: "var(--font-archivo)", fontSize: "0.9rem", letterSpacing: "0.3em", color: MUTED }}
+              >
+                Est. 2019 · Dublin
+              </span>
+            </MaskBlock>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Faixa curta e decidida — não um fade esticado por metade da
+          tela. Fica FORA do bloco editorial (que é creme sólido), então
+          não há texto nenhum sobre ela pra se preocupar com legibilidade. */}
+      <div
+        aria-hidden
+        className="w-full"
+        style={{ height: GRADIENT_STRIP_HEIGHT, background: `linear-gradient(to bottom, ${SEAM_FROM}, ${BG})` }}
+      />
+    </>
   );
 }
 
@@ -156,7 +169,7 @@ export function Reviews() {
     <section id="reviews" ref={sectionRef} className="w-full" style={{ backgroundColor: BG }}>
       <PhraseSeam />
 
-      <div className="mx-auto w-full max-w-[1400px] px-8 sm:px-16" style={{ paddingTop: "6vh", paddingBottom: "9vh" }}>
+      <div className="mx-auto w-full max-w-[1400px] px-8 sm:px-16" style={{ paddingTop: "6vh", paddingBottom: "4.5vh" }}>
         <div style={{ marginBottom: "8vh" }} className="overflow-hidden">
           <motion.div
             initial={{ y: "100%" }}

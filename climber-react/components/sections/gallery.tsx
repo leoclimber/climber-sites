@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, useInView, useTransform, useScroll } from "framer-motion";
 
 // Fundo claro (creme) — mesmo tom do About, respiro entre o escuro do
@@ -33,19 +33,23 @@ const REVEAL_STAGGER = 0.09;
 function GalleryPhoto({
   src,
   aspectRatio,
+  heightOverridePx,
   sizes,
   index,
   sectionInView,
   className,
   children,
+  frameRef,
 }: {
   src: string;
   aspectRatio: string;
+  heightOverridePx?: number;
   sizes: string;
   index: number;
   sectionInView: boolean;
   className: string;
   children?: React.ReactNode;
+  frameRef?: React.Ref<HTMLDivElement>;
 }) {
   const delay = index * REVEAL_STAGGER;
 
@@ -57,8 +61,23 @@ function GalleryPhoto({
     // moldura tem exatamente a forma da foto. O container em si nunca
     // muda de tamanho no hover, só o conteúdo dentro dele anima
     // (puramente cosmético, GPU, nunca mexe em layout — é a correção do
-    // bug de scroll travando).
-    <div className={`relative w-full overflow-hidden ${className}`} style={{ aspectRatio }}>
+    // bug de scroll travando). frameRef (opcional): só as últimas fotos de
+    // CADA coluna (carrotcake / espresso+avocado) recebem um ref — usado
+    // pela MEDIÇÃO de base reta em useSyncMosaicBase abaixo. heightOverridePx
+    // (opcional): quando o hook decide que ESTE frame precisa crescer pra
+    // fechar a base, a altura vem daqui (React-controlled, dentro do style
+    // declarativo) em vez de aspectRatio — setar isso via DOM imperativo
+    // (element.style.height) NÃO funciona: o próximo re-render do React
+    // (ex.: sectionInView virando true) reconcilia o atributo style pra
+    // bater com o objeto JSX e APAGA qualquer propriedade que não esteja
+    // nele, revertendo a correção silenciosamente (bug real, já caído
+    // nele uma vez — por isso a altura corrigida tem que nascer de state
+    // React, não de mutação direta do DOM).
+    <div
+      ref={frameRef}
+      className={`relative w-full overflow-hidden ${className}`}
+      style={heightOverridePx != null ? { height: heightOverridePx } : { aspectRatio }}
+    >
       {/* Cortina: abre de baixo pra cima. */}
       <motion.div
         className="absolute inset-0"
@@ -96,6 +115,93 @@ function GalleryPhoto({
 
 const TITLE_LINES = ["WHERE IT ALL", "HAPPENS"];
 
+type MosaicCorrection = { target: "left" | "right" | null; heightPx: number };
+const NO_CORRECTION: MosaicCorrection = { target: null, heightPx: 0 };
+
+// Base reta do mosaico via MEDIÇÃO real no browser, não álgebra de
+// aspect-ratio (tentativas anteriores calculavam a proporção 43:57 —
+// depois 42.8:57.2 — que deveria igualar as duas colunas, mas qualquer
+// resíduo de arredondamento, só exato numa largura de viewport
+// específica, deixava alguns px de degrau). Aqui a gente MEDE as duas
+// colunas depois do layout e calcula quanto a mais curta precisa crescer
+// pra fechar na mesma altura da mais alta — só a ÚLTIMA foto dessa
+// coluna (nunca ambiente/croissant, topo, tamanho intencional).
+//
+// A correção PRECISA virar state React (não mutação direta de
+// element.style.height): a primeira versão fazia isso via DOM
+// imperativo, e funcionava até o próximo re-render (ex.: sectionInView
+// virando true) — aí o React reconcilia o atributo style de volta pro
+// objeto JSX declarado (só aspectRatio) e APAGA a correção em silêncio.
+// Por isso o fluxo é: fase "measuring" (sem correção nenhuma, todas as
+// fotos na altura natural) -> useLayoutEffect mede as colunas NESSE
+// estado natural -> guarda o resultado em state -> re-render aplica a
+// correção via style declarativo (heightOverridePx em GalleryPhoto), que
+// sobrevive a qualquer re-render futuro por já fazer parte do que o
+// React declara. Resize reseta pra "measuring" de novo (a coluna mais
+// curta pode trocar de lado numa largura diferente) antes de remedir.
+function useSyncMosaicBase(
+  carrotRef: React.RefObject<HTMLDivElement | null>,
+  espressoRef: React.RefObject<HTMLDivElement | null>,
+) {
+  const [correction, setCorrection] = useState<MosaicCorrection>(NO_CORRECTION);
+  const [measuring, setMeasuring] = useState(true);
+
+  useLayoutEffect(() => {
+    if (!measuring) return;
+    const carrot = carrotRef.current;
+    const espresso = espressoRef.current;
+    if (!carrot || !espresso) return;
+
+    // Abaixo de 768px o grid vira 1 coluna (ver <style> abaixo) — as
+    // "colunas" empilham, não há base lado a lado pra alinhar.
+    if (window.innerWidth < 768) {
+      setMeasuring(false);
+      return;
+    }
+
+    // IMPORTANTE: comparar o BOTTOM real das últimas FOTOS (carrot vs
+    // espresso), não a altura do .space-col container. .space-grid tem
+    // align-items:stretch, então leftCol/rightCol SEMPRE saem com a MESMA
+    // altura por definição (o grid estica os dois pra bater com a maior
+    // "row") — medir os containers dá diff≈0 mesmo com a base visualmente
+    // torta, porque a folga do stretch vira espaço vazio invisível DEPOIS
+    // da última foto (flex column empacota os filhos no topo por padrão),
+    // não visível ali. O sinal que importa é onde a FOTO em si termina.
+    const diff = carrot.getBoundingClientRect().bottom - espresso.getBoundingClientRect().bottom;
+
+    if (Math.abs(diff) < 0.5) {
+      setMeasuring(false);
+      return;
+    }
+
+    if (diff > 0) {
+      // carrotcake termina mais embaixo (esquerda mais alta): cresce
+      // espresso (e avocado, mesma altura, via className).
+      setCorrection({ target: "right", heightPx: espresso.getBoundingClientRect().height + diff });
+    } else {
+      // espresso/avocado terminam mais embaixo (direita mais alta):
+      // cresce carrotcake.
+      setCorrection({ target: "left", heightPx: carrot.getBoundingClientRect().height - diff });
+    }
+    setMeasuring(false);
+  }, [measuring, carrotRef, espressoRef]);
+
+  useEffect(() => {
+    function onResize() {
+      // Volta todo mundo pra altura natural primeiro — a coluna mais
+      // curta pode ser outra na nova largura, então remedir em cima de
+      // uma correção antiga (já embutida no layout atual) daria conta
+      // errada.
+      setCorrection(NO_CORRECTION);
+      setMeasuring(true);
+    }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return correction;
+}
+
 export function Gallery() {
   const sectionRef = useRef<HTMLElement>(null);
   // Gatilho ÚNICO pra seção inteira — cada foto entra em cascata a partir
@@ -113,6 +219,12 @@ export function Gallery() {
     offset: ["start end", "end start"],
   });
   const titleY = useTransform(sectionProgress, [0, 1], ["0%", "-6%"]);
+
+  const carrotRef = useRef<HTMLDivElement>(null);
+  const espressoRef = useRef<HTMLDivElement>(null);
+  const mosaicCorrection = useSyncMosaicBase(carrotRef, espressoRef);
+  const carrotHeightPx = mosaicCorrection.target === "left" ? mosaicCorrection.heightPx : undefined;
+  const pairHeightPx = mosaicCorrection.target === "right" ? mosaicCorrection.heightPx : undefined;
 
   return (
     <section
@@ -182,8 +294,10 @@ export function Gallery() {
           ficam bem menores). Resultado: 3 tamanhos visivelmente
           diferentes (croissant grande; ambiente/carrotcake médios;
           espresso/avocado pequenos, em par) — mosaico de verdade, não
-          grade. As duas colunas fecham na MESMA altura total (43/57 foi
-          calculado pra isso), sem espaço morto.
+          grade. As duas colunas fecham na MESMA altura total: 43/57 é só
+          o ponto de partida (deixa as colunas já bem próximas); o
+          fechamento EXATO da base vem de useSyncMosaicBase acima (medido
+          em px, não algebra — ver comentário lá).
 
           Mobile (<768px): 1 coluna — as duas sub-colunas (esquerda e
           direita) e o par espresso/avocado (que também é seu próprio
@@ -193,19 +307,8 @@ export function Gallery() {
       <style>{`
         .space-grid {
           display: grid;
-          /* 42.8fr 57.2fr (não 43:57) — proporção derivada por álgebra, não
-             chute: com L=largura esquerda, R=largura direita, RATIO=1200/672
-             e os gaps fixos de 12px (entre colunas E dentro do par
-             espresso/avocado), a altura da esquerda é 2*(L/RATIO)+12 e a da
-             direita é R/RATIO+12+((R-12)/2)/RATIO. Igualando as duas e
-             resolvendo pra R em função de L (R = (4L+12)/3) dá uma razão
-             L:R ~ 42.8:57.2 (não 43:57 — a diferença de ~0.2pp é exatamente
-             o que sobrava como degrau de ~8px na base). align-items:stretch
-             abaixo é só rede de segurança pro meio-pixel de arredondamento
-             que ainda sobrar, não a correção principal. */
-          grid-template-columns: 42.8fr 57.2fr;
+          grid-template-columns: 43fr 57fr;
           gap: 12px;
-          align-items: stretch;
         }
         .space-col {
           display: flex;
@@ -263,10 +366,12 @@ export function Gallery() {
           <GalleryPhoto
             src="/images/gallery/carrotcake.png"
             aspectRatio={ITEM_RATIO}
+            heightOverridePx={carrotHeightPx}
             sizes="(max-width: 767px) 100vw, 43vw"
             index={3}
             sectionInView={sectionInView}
             className=""
+            frameRef={carrotRef}
           />
         </div>
 
@@ -284,14 +389,17 @@ export function Gallery() {
             <GalleryPhoto
               src="/images/gallery/espresso.png"
               aspectRatio={ITEM_RATIO}
+              heightOverridePx={pairHeightPx}
               sizes="(max-width: 767px) 100vw, 27vw"
               index={2}
               sectionInView={sectionInView}
               className=""
+              frameRef={espressoRef}
             />
             <GalleryPhoto
               src="/images/gallery/avocadotoast.png"
               aspectRatio={ITEM_RATIO}
+              heightOverridePx={pairHeightPx}
               sizes="(max-width: 767px) 100vw, 27vw"
               index={4}
               sectionInView={sectionInView}
