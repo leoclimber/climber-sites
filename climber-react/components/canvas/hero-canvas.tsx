@@ -46,6 +46,19 @@ export function HeroCanvas({ progress }: { progress: MotionValue<number> }) {
   // canvas não está visível.
   const [isVisible, setIsVisible] = useState(true);
 
+  // Mobile (pointer:coarse): pula o EffectComposer/Bloom inteiro, não só
+  // reduz qualidade. Postprocessing (múltiplos render targets + passes de
+  // blur) é o pedaço mais pesado E o mais frágil da cena em GPUs móveis
+  // fracas — é onde falhas silenciosas/travamentos de driver mais
+  // aparecem em relatos reais de R3F em iOS/Android. dpr também cai (o
+  // dpr real de um iPhone, 3, custaria 3x mais pixel shading que 1x sem
+  // ganho visual perceptível nessa cena). Mesma detecção de
+  // components/smooth-scroll.tsx.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    setIsMobile(window.matchMedia("(pointer: coarse)").matches);
+  }, []);
+
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
@@ -60,8 +73,8 @@ export function HeroCanvas({ progress }: { progress: MotionValue<number> }) {
   return (
     <div ref={wrapperRef} className="absolute inset-0">
       <Canvas
-        dpr={[1, 1.75]}
-        gl={{ antialias: true, powerPreference: "high-performance" }}
+        dpr={isMobile ? 1 : [1, 1.75]}
+        gl={{ antialias: !isMobile, powerPreference: "high-performance" }}
         camera={{ fov: 60, near: 0.1, far: 200 }}
         frameloop={isVisible ? "always" : "never"}
       >
@@ -71,15 +84,17 @@ export function HeroCanvas({ progress }: { progress: MotionValue<number> }) {
           <CoffeeField progress={progress} />
         </Suspense>
         <HyperspaceStreaks progress={progress} />
-        <EffectComposer multisampling={0}>
-          <Bloom
-            luminanceThreshold={0.42}
-            luminanceSmoothing={0.3}
-            intensity={0.4}
-            radius={0.5}
-            mipmapBlur
-          />
-        </EffectComposer>
+        {!isMobile && (
+          <EffectComposer multisampling={0}>
+            <Bloom
+              luminanceThreshold={0.42}
+              luminanceSmoothing={0.3}
+              intensity={0.4}
+              radius={0.5}
+              mipmapBlur
+            />
+          </EffectComposer>
+        )}
       </Canvas>
     </div>
   );

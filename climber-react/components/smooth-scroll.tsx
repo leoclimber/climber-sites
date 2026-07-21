@@ -130,11 +130,29 @@ export function SmoothScroll() {
     // scroll, então nada disso roda com prefers-reduced-motion. No modo
     // reduzido o Hero nem renderiza o overlay de Sobre Nós (ver hero.tsx),
     // então o conceito de "gate em aboutSettled" nem se aplica.
+    //
+    // TOUCH (pointer: coarse) também sai cedo, e por um motivo diferente:
+    // por padrão (sem `syncTouch: true`, que não usamos) o Lenis NÃO
+    // intercepta touch nenhum — ele deixa o scroll nativo do celular
+    // acontecer direto e só observa a posição resultante (ver onNativeScroll
+    // na lib). O `lenis.stop()` do gate abaixo, porém, faz TODO evento de
+    // touch (não só o gesto que cruzou o anchor) levar preventDefault
+    // enquanto isStopped for true — inclusive o scroll nativo. O
+    // destravamento (trackTouchGesture em touchstart) foi desenhado e só
+    // testado via wheel de mouse em Playwright desktop; touch real (dedo
+    // fica apoiado atravessando um touchmove que cruza o anchor MEIO do
+    // gesto, sem touchstart novo até o dedo levantar) tem uma janela onde a
+    // rolagem trava de vez e não há teste automatizado cobrindo isso.
+    // Em vez de tentar provar essa máquina de estado correta pra touch real
+    // (que exigiria dispositivo físico, não só emulação), a saída segura é
+    // não ativar o gate nele — mobile fica só com o Lenis base (scroll
+    // nativo, já suave o bastante no dedo) sem nenhum stop()/start() custom.
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
+    const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
 
-    if (prefersReducedMotion) {
+    if (prefersReducedMotion || isTouchDevice) {
       return () => {
         cancelAnimationFrame(rafId);
         lenis.destroy();
