@@ -10,6 +10,7 @@ import {
   useScroll,
   useSpring,
   useTransform,
+  type MotionValue,
 } from "framer-motion";
 
 // Medido via scan de pixels em banco/cafe/galeria.jpg (múltiplas linhas
@@ -111,6 +112,66 @@ function usePlayWhileVisible<T extends HTMLElement>() {
   }, []);
 
   return { sectionRef, videoRef };
+}
+
+// Vídeo pinado (o que anima fullscreen->moldura): ao contrário do vídeo de
+// #pour-static (montado uma vez só, pra sempre), este RE-MONTA toda vez
+// que `settled` volta a false (ver comentário no gate lá em Pour()) — o
+// pai desmonta/remonta o bloco inteiro via `{!settled && (...)}`, o que
+// destrói o <video> antigo e cria um NOVO do zero a cada reversão de
+// direção perto do encaixe. Um <video> recém-criado sofre o MESMO
+// throttling de decode que o autoplay passivo already sofria em
+// #pour-static (mesma causa, ver comentário de usePlayWhileVisible acima)
+// — só que aqui "invisível" é o instante entre o elemento antigo morrer e
+// o novo decodificar sozinho, lido como o vídeo "congelando" ao rolar de
+// volta pra cima. Mesma correção: usePlayWhileVisible, chamado a partir
+// de um componente PRÓPRIO (não dá pra chamar o hook condicionalmente
+// dentro do `{!settled && ...}` do pai — violaria Rules of Hooks). Como
+// ESTE componente inteiro monta/desmonta em uníssono com o <video>, seu
+// useEffect roda do zero a cada remount, observando sempre o elemento
+// ATUAL — nunca uma referência presa a um <video> já destruído.
+function PinnedVideo({
+  xPercent,
+  yPercent,
+  scaleX,
+  scaleY,
+}: {
+  xPercent: MotionValue<string>;
+  yPercent: MotionValue<string>;
+  scaleX: MotionValue<number>;
+  scaleY: MotionValue<number>;
+}) {
+  const { sectionRef, videoRef } = usePlayWhileVisible<HTMLDivElement>();
+
+  return (
+    <motion.div
+      ref={sectionRef}
+      className="absolute inset-0 overflow-hidden bg-black"
+      style={{
+        x: xPercent,
+        y: yPercent,
+        scaleX,
+        scaleY,
+        z: 0,
+        opacity: 1,
+        transformOrigin: "0% 0%",
+        willChange: "transform",
+      }}
+    >
+      <video
+        ref={videoRef}
+        className="h-full w-full object-cover"
+        style={{ opacity: 1, mixBlendMode: "normal" }}
+        autoPlay
+        muted
+        loop
+        playsInline
+      >
+        <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
+        <source src="/video/pour/pour-loop.mp4" />
+      </video>
+    </motion.div>
+  );
 }
 
 export function Pour() {
@@ -331,32 +392,16 @@ export function Pour() {
                 {/* Vídeo: filho do mesmo container-pai, posição/tamanho
                     estáticos em CSS (top:0,left:0,100%x100% — nunca
                     anima). Só transform (translate+scale) anima,
-                    GPU-composited. */}
-                <motion.div
-                  className="absolute inset-0 overflow-hidden bg-black"
-                  style={{
-                    x: xPercent,
-                    y: yPercent,
-                    scaleX,
-                    scaleY,
-                    z: 0,
-                    opacity: 1,
-                    transformOrigin: "0% 0%",
-                    willChange: "transform",
-                  }}
-                >
-                  <video
-                    className="h-full w-full object-cover"
-                    style={{ opacity: 1, mixBlendMode: "normal" }}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                  >
-                    <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
-                    <source src="/video/pour/pour-loop.mp4" />
-                  </video>
-                </motion.div>
+                    GPU-composited. Componente próprio (PinnedVideo, ver
+                    acima) só pelo play-management — nenhuma mudança na
+                    lógica de scale/scrub em si, os mesmos xPercent/
+                    yPercent/scaleX/scaleY calculados acima. */}
+                <PinnedVideo
+                  xPercent={xPercent}
+                  yPercent={yPercent}
+                  scaleX={scaleX}
+                  scaleY={scaleY}
+                />
               </div>
             </div>
           </>
