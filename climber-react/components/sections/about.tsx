@@ -57,12 +57,46 @@ export function AboutReveal({ progress }: { progress: MotionValue<number> }) {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+      {/* Mobile (<768px) só: título+foto do desktop são posicionamento
+          absoluto lado-a-lado com valores em vw/ch calibrados pra essa
+          composição — em telas estreitas o título (width:15ch num
+          clamp que já bate no mínimo de 3.2rem ali) fica bem mais largo
+          que a coluna de 55vw, estourando por cima da foto/viewport. Em
+          vez de tocar os valores desktop (proibido — TRAVA), sobrescreve
+          só dentro do media query, via !important, os 3 blocos que
+          precisam mudar de geometria: coluna de texto vira full-width no
+          topo, título ganha wrap natural numa fonte menor, foto desce pra
+          embaixo do texto em vez de ficar do lado — os dois juntos ainda
+          cabem dentro dos ~100dvh do pin do Hero (56vh texto + 2vh
+          respiro + 38vh foto = 96vh). Nenhuma regra aqui tem efeito em
+          >=768px: cada seletor só existe dentro do media query. */}
+      <style>{`
+        @media (max-width: 767px) {
+          .about-text-col {
+            width: 100% !important;
+            height: 56vh !important;
+            padding-top: 5vh !important;
+          }
+          .about-title {
+            width: 100% !important;
+            max-width: 100% !important;
+            font-size: clamp(2rem, 8.5vw, 2.6rem) !important;
+          }
+          .about-photo-wrap {
+            left: 0 !important;
+            top: 58vh !important;
+            width: 100% !important;
+            height: 38vh !important;
+            aspect-ratio: auto !important;
+          }
+        }
+      `}</style>
       <motion.div className="absolute inset-0 bg-[#EDE7DC]" style={{ clipPath }}>
         {/* Coluna esquerda: 55% da largura, altura até a base da foto
             (98vh = top:6vh + height:92vh dela) pra permitir ancorar o
             bloco EST. 2019 no fundo via margin-top:auto no flex. */}
         <div
-          className="absolute left-0 top-0 z-20 flex flex-col items-start px-8 sm:px-16"
+          className="about-text-col absolute left-0 top-0 z-20 flex flex-col items-start px-8 sm:px-16"
           style={{ width: "55vw", height: "98vh", paddingTop: "14vh" }}
         >
           <motion.span
@@ -85,7 +119,7 @@ export function AboutReveal({ progress }: { progress: MotionValue<number> }) {
           />
 
           <h2
-            className="mt-6 uppercase text-[#151008]"
+            className="about-title mt-6 uppercase text-[#151008]"
             style={{
               fontFamily: "var(--font-archivo)",
               fontSize: "clamp(3.2rem, 5.5vw, 6rem)",
@@ -168,7 +202,7 @@ export function AboutReveal({ progress }: { progress: MotionValue<number> }) {
             posicionada relativa ao próprio motion.div de fundo (100vw),
             não à coluna com padding, pra garantir zero absoluto de verdade. */}
         <div
-          className="absolute right-0 overflow-hidden"
+          className="about-photo-wrap absolute right-0 overflow-hidden"
           style={{
             top: "6vh", // padding-top:14vh do texto, menos 8vh — invade a faixa superior
             width: "42vw",

@@ -148,7 +148,7 @@ export function Hero() {
     // só mais swipes repetidos pra atravessar a mesma imersão.
     <section id="hero" ref={containerRef} className="relative z-20 h-[150vh] w-full lg:h-[210vh]">
       <div
-        className="sticky top-0 h-screen w-full overflow-hidden"
+        className="hero-sticky sticky top-0 h-screen w-full overflow-hidden"
         style={{ background: "#150c07" }}
       >
         <div className="absolute inset-0">

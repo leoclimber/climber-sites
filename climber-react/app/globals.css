@@ -24,3 +24,35 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Mobile (<768px) só: o overscroll elástico do Safari/iOS (rolar pra cima
+   no topo, ou pra baixo na base, além do limite da página) revela o
+   background do <body> por baixo do conteúdo por uma fração de segundo —
+   comportamento nativo de touch, não existe no scroll de desktop. O body
+   padrão do Next (branco, ou quase-preto via prefers-color-scheme acima)
+   não bate com a paleta do site (Hero/rodapé quase-pretos, #150c07 /
+   #141010) — lê como "a cor troca" bem no instante em que a pessoa rola
+   até o fim de qualquer direção. Alinhando o body com o tom do Hero (a
+   seção do topo, e visualmente quase idêntico ao tom do rodapé no fim),
+   o rebote passa a mostrar a MESMA cor que já está ali, sem piscar. */
+@media (max-width: 768px) {
+  body {
+    background: #150c07;
+  }
+
+  /* Mesma família de bug, outra causa: h-screen (100vh) no pin sticky do
+     Hero é calculado com a altura do viewport NO MOMENTO do load — no
+     Safari/Chrome mobile essa altura muda ao vivo conforme a barra de
+     endereço recolhe/expande durante o scroll (o "vh móvel" é medido com
+     a barra num estado, mas o valor de vh não é recalculado ao vivo pra
+     acompanhar). Resultado: por um instante o sticky (que cobre a tela
+     inteira, fundo #150c07) fica mais baixo que o viewport real, expondo
+     a section-pai (h-[150vh], sem background próprio) por baixo — mesma
+     leitura de "cor trocando" do fix acima. 100dvh é a unidade dinâmica
+     que resolve isso nativamente (Safari 15.4+, Chrome Android modernos),
+     escopada só pra mobile pra não mudar nada no cálculo de altura do pin
+     no desktop. */
+  .hero-sticky {
+    height: 100dvh;
+  }
+}
