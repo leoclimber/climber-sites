@@ -195,7 +195,13 @@ export function Gallery() {
           display: grid;
           grid-template-columns: 43fr 57fr;
           gap: 12px;
-          align-items: start;
+          /* stretch (não start): as duas colunas viram grid items da MESMA
+             row implícita, então o grid iguala as duas à altura da mais
+             alta automaticamente — a coluna mais curta ganha um respiro
+             vazio embaixo (nenhum flex-grow nos filhos, então a folga cai
+             no final, depois da última foto) em vez de cortar/esticar
+             nenhuma foto. Base do mosaico sempre reta. */
+          align-items: stretch;
         }
         .space-col {
           display: flex;
