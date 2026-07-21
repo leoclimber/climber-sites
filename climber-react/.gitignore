@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# assets pesados / referência (não commitar por acidente)
+referencias-sites/
+referencias/
+public/video/pour/pour-raw.mp4
+public/frames/
