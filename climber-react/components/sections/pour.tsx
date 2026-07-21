@@ -320,8 +320,7 @@ export function Pour() {
             height: 300vh !important;
           }
           .pour-static-frame {
-            height: auto !important;
-            padding-bottom: 8vh !important;
+            min-height: 100vh !important;
           }
         }
       `}</style>
