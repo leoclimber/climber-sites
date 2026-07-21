@@ -230,6 +230,42 @@ export function Pour() {
 
   return (
     <>
+      {/* Mobile (<768px) só: no desktop, #pour precisa dos 150vh inteiros
+          pra o scrub do vídeo rodar (ver useScroll acima) — mas a cena é
+          uma imagem HORIZONTAL (2560x1387) que, numa tela estreita, sobra
+          bem mais baixa que 100vh, deixando letterbox preto em cima/baixo
+          da faixa de conteúdo real durante TODO o pin (voids (1)), e o
+          scrub em si — 150vh de scroll só pra uma animação que no mobile
+          mal se nota — é o "oceano vazio" (2) antes do menu.
+          Sem tocar a altura BASE (150vh, usada pelo useScroll pra medir
+          scrollYProgress no desktop): !important aqui só entra no media
+          query, então a medição do desktop (getBoundingClientRect lê o
+          elemento renderizado, não o valor da prop) nunca muda >=768px.
+          No mobile, colapsa #pour pra 1px (mesma magnitude já usada pelo
+          filho sticky logo abaixo — nunca 0, framer-motion faria
+          progress = (scrollY-start)/(end-start) com denominador zero) —
+          o scrub acontece, só que em 1px de distância de scroll: settled
+          vira true no primeiro pixel rolado, então a versão animada
+          nunca fica visível de fato, e #pour-static (already correto,
+          só precisa perder seu próprio height:100vh fixo — ver abaixo)
+          assume quase instantaneamente. O backdrop de segurança
+          (bg-black 100vh, existe só pra tapar frestas durante o PIN no
+          desktop) fica desnecessário com o pin colapsado — escondido
+          direto pra eliminar até o flash de um frame. */}
+      <style>{`
+        @media (max-width: 768px) {
+          .pour-scrub-wrapper {
+            height: 1px !important;
+          }
+          .pour-safety-backdrop {
+            display: none !important;
+          }
+          .pour-static-frame {
+            height: auto !important;
+            padding-bottom: 8vh !important;
+          }
+        }
+      `}</style>
       {/* Sem ScrollTrigger pin real (Nothing também não usa) — pin feito do
           mesmo jeito que hero/about: wrapper alto + sticky. Wrapper com a
           altura EXATA do scrub (150vh + 1px, ver offset acima) — sem sobra.
@@ -247,7 +283,7 @@ export function Pour() {
       <section
         id="pour"
         ref={containerRef}
-      className="relative z-10 w-full bg-black"
+      className="pour-scrub-wrapper relative z-10 w-full bg-black"
       style={{ height: "calc(150vh + 1px)" }}
     >
       <div className="sticky top-0 w-full" style={{ height: "1px" }}>
@@ -266,7 +302,7 @@ export function Pour() {
                 qualquer folga de meio-pixel entre a imagem letterboxed e
                 a borda da viewport deixava passar uma fresta do Menu por
                 baixo (achado medindo). */}
-            <div className="absolute inset-x-0 top-0 bg-black" style={{ height: "100vh" }} />
+            <div className="pour-safety-backdrop absolute inset-x-0 top-0 bg-black" style={{ height: "100vh" }} />
             {/* Container-pai: aspect-ratio REAL da imagem, width:100%,
                 max-width:100vw, centralizado verticalmente. object-fit:
                 fill (não cover) — a imagem nunca é cortada, então a % da
@@ -365,7 +401,7 @@ export function Pour() {
         <section
           id="pour-static"
           ref={pourStaticRef}
-          className="relative flex w-full items-center justify-center"
+          className="pour-static-frame relative flex w-full items-center justify-center"
           style={{ height: "100vh", backgroundColor: "#1C1614" }}
         >
           <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
