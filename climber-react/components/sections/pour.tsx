@@ -234,31 +234,29 @@ export function Pour() {
           pra o scrub do vídeo rodar (ver useScroll acima) — mas a cena é
           uma imagem HORIZONTAL (2560x1387) que, numa tela estreita, sobra
           bem mais baixa que 100vh, deixando letterbox preto em cima/baixo
-          da faixa de conteúdo real durante TODO o pin (voids (1)), e o
-          scrub em si — 150vh de scroll só pra uma animação que no mobile
-          mal se nota — é o "oceano vazio" (2) antes do menu.
+          da faixa de conteúdo real durante o pin. Uma leva anterior
+          colapsava #pour pra 1px aqui — isso matava o vazio, mas também
+          matava o RANGE de scroll: scrollYProgress ia de 0 a 1 em ~1px,
+          então o vídeo "pulava" de fullscreen pra encaixado (e vice-versa
+          ao inverter) em vez de encolher suave, porque não sobrava
+          distância nenhuma pra a interpolação (useTransform em
+          easedProgress, ver acima) rodar por cima.
+          Correção: dar ao mobile um range PRÓPRIO (300vh — nem os 150vh
+          do desktop, nem o 1px que pulava) — grande o bastante pra a
+          mesma curva easeInOutQuint (ver função acima, intocada) ter
+          distância de sobra pra interpolar gradual em qualquer velocidade
+          de swipe, sem precisar do range gigante do desktop. O vazio
+          preto ao redor da moldura durante o pin volta a existir (mesmo
+          motivo de antes: cena horizontal em tela estreita) — esperado
+          pra esta leva, fica pra encher com texto depois.
           Sem tocar a altura BASE (150vh, usada pelo useScroll pra medir
           scrollYProgress no desktop): !important aqui só entra no media
           query, então a medição do desktop (getBoundingClientRect lê o
-          elemento renderizado, não o valor da prop) nunca muda >=768px.
-          No mobile, colapsa #pour pra 1px (mesma magnitude já usada pelo
-          filho sticky logo abaixo — nunca 0, framer-motion faria
-          progress = (scrollY-start)/(end-start) com denominador zero) —
-          o scrub acontece, só que em 1px de distância de scroll: settled
-          vira true no primeiro pixel rolado, então a versão animada
-          nunca fica visível de fato, e #pour-static (already correto,
-          só precisa perder seu próprio height:100vh fixo — ver abaixo)
-          assume quase instantaneamente. O backdrop de segurança
-          (bg-black 100vh, existe só pra tapar frestas durante o PIN no
-          desktop) fica desnecessário com o pin colapsado — escondido
-          direto pra eliminar até o flash de um frame. */}
+          elemento renderizado, não o valor da prop) nunca muda >=768px. */}
       <style>{`
         @media (max-width: 768px) {
           .pour-scrub-wrapper {
-            height: 1px !important;
-          }
-          .pour-safety-backdrop {
-            display: none !important;
+            height: 300vh !important;
           }
           .pour-static-frame {
             height: auto !important;
