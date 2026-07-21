@@ -169,7 +169,7 @@ export function Reviews() {
     <section id="reviews" ref={sectionRef} className="w-full" style={{ backgroundColor: BG }}>
       <PhraseSeam />
 
-      <div className="mx-auto w-full max-w-[1400px] px-8 sm:px-16" style={{ paddingTop: "6vh", paddingBottom: "4.5vh" }}>
+      <div className="mx-auto w-full max-w-[1400px] px-8 sm:px-16" style={{ paddingTop: "6vh", paddingBottom: "1.5vh" }}>
         <div style={{ marginBottom: "8vh" }} className="overflow-hidden">
           <motion.div
             initial={{ y: "100%" }}

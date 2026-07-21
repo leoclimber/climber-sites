@@ -29,7 +29,7 @@ export function Visit() {
 
   return (
     <section id="visit" ref={sectionRef} className="w-full" style={{ backgroundColor: BG }}>
-      <div className="mx-auto w-full max-w-[1400px] px-8 sm:px-16" style={{ paddingTop: "14vh", paddingBottom: "16vh" }}>
+      <div className="mx-auto w-full max-w-[1400px] px-8 sm:px-16" style={{ paddingTop: "5vh", paddingBottom: "16vh" }}>
         <div style={{ marginBottom: "8vh" }} className="overflow-hidden">
           <motion.div
             initial={{ y: "100%" }}
