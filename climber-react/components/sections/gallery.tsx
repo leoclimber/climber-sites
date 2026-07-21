@@ -193,14 +193,18 @@ export function Gallery() {
       <style>{`
         .space-grid {
           display: grid;
-          grid-template-columns: 43fr 57fr;
+          /* 42.8fr 57.2fr (não 43:57) — proporção derivada por álgebra, não
+             chute: com L=largura esquerda, R=largura direita, RATIO=1200/672
+             e os gaps fixos de 12px (entre colunas E dentro do par
+             espresso/avocado), a altura da esquerda é 2*(L/RATIO)+12 e a da
+             direita é R/RATIO+12+((R-12)/2)/RATIO. Igualando as duas e
+             resolvendo pra R em função de L (R = (4L+12)/3) dá uma razão
+             L:R ~ 42.8:57.2 (não 43:57 — a diferença de ~0.2pp é exatamente
+             o que sobrava como degrau de ~8px na base). align-items:stretch
+             abaixo é só rede de segurança pro meio-pixel de arredondamento
+             que ainda sobrar, não a correção principal. */
+          grid-template-columns: 42.8fr 57.2fr;
           gap: 12px;
-          /* stretch (não start): as duas colunas viram grid items da MESMA
-             row implícita, então o grid iguala as duas à altura da mais
-             alta automaticamente — a coluna mais curta ganha um respiro
-             vazio embaixo (nenhum flex-grow nos filhos, então a folga cai
-             no final, depois da última foto) em vez de cortar/esticar
-             nenhuma foto. Base do mosaico sempre reta. */
           align-items: stretch;
         }
         .space-col {
