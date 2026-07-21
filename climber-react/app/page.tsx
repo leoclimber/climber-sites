@@ -1,10 +1,10 @@
 import { Hero } from "@/components/sections/hero";
 import { Pour } from "@/components/sections/pour";
 import { Menu } from "@/components/sections/menu";
-import { Services } from "@/components/sections/services";
 import { Gallery } from "@/components/sections/gallery";
-import { Testimonials } from "@/components/sections/testimonials";
-import { Contact } from "@/components/sections/contact";
+import { Reviews } from "@/components/sections/reviews";
+import { Visit } from "@/components/sections/visit";
+import { Footer } from "@/components/sections/footer";
 
 export default function Home() {
   return (
@@ -15,10 +15,10 @@ export default function Home() {
       <Hero />
       <Pour />
       <Menu />
-      <Services />
       <Gallery />
-      <Testimonials />
-      <Contact />
+      <Reviews />
+      <Visit />
+      <Footer />
     </main>
   );
 }
