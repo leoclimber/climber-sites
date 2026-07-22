@@ -83,26 +83,28 @@ export function AboutReveal({ progress }: { progress: MotionValue<number> }) {
             font-size: clamp(2rem, 8.5vw, 2.6rem) !important;
           }
           .about-photo-wrap {
-            /* PARTE 2 (correção): a leva anterior forçava width:100% +
-               height:38vh + aspect-ratio:auto — como a foto de verdade é
-               3:4 (3456x4608px, medido no arquivo, não estimado), isso
-               espremia/cortava a proporção real pra caber numa caixa de
-               proporção diferente (~1.55:1). Aqui a caixa usa a
-               aspect-ratio REAL (3/4) com a largura calculada a partir
-               da altura disponível — não dá pra manter width:100% E a
-               proporção real ao mesmo tempo: a pin do Hero (fechado, não
-               mexer) tem ~664px de altura no mobile, a coluna de texto
-               (56vh) já ocupa ~372px, sobrando ~290px pra foto — a 390px
-               de largura (100%), 3:4 pediria ~520px de altura, quase o
-               dobro do que sobra. Preferi manter a foto INTEIRA, sem
-               corte e sem distorção (só menor/centralizada) a manter
-               100% de largura cortando ou esticando o conteúdo real. */
-            left: 50% !important;
+            /* PARTE 2 (correção, pedido explícito de largura total): a
+               leva anterior deixava a foto menor (~54vw, centralizada)
+               pra caber inteira dentro da pin do Hero (fechada, ~664px
+               no mobile) — mas isso lia como "foto pequena, muito vazio
+               em cima". Aqui: width:100% de verdade (sangra nas bordas),
+               height:auto pela aspect-ratio REAL (3/4, medida no
+               arquivo — nunca deformada) — SEM tentar caber inteira na
+               pin: a 390px de largura, 3:4 pede ~520px de altura, mais
+               do que os ~290px que sobram depois da coluna de texto
+               (56vh) dentro da pin de ~664px. O excesso é cortado pela
+               MESMA overflow-hidden que este componente (AboutReveal) já
+               tem no wrapper mais externo — corte de CONTAINER (mostra
+               o topo da foto, esconde o resto), não o corte de
+               object-fit/deformação que existia antes (que espremia a
+               imagem TODA pra caber, distorcendo). Medido depois de
+               aplicar: ver relatório. */
+            left: 0 !important;
             right: auto !important;
-            transform: translateX(-50%) !important;
-            top: 59vh !important;
-            width: auto !important;
-            height: 34vh !important;
+            transform: none !important;
+            top: 62vh !important;
+            width: 100% !important;
+            height: auto !important;
             aspect-ratio: 3 / 4 !important;
           }
         }
@@ -255,7 +257,7 @@ export function AboutReveal({ progress }: { progress: MotionValue<number> }) {
                 alt=""
                 fill
                 priority
-                sizes="42vw"
+                sizes="(max-width: 767px) 100vw, 42vw"
                 className="object-cover"
               />
             </motion.div>
