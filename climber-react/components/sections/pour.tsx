@@ -73,6 +73,122 @@ function easeInOutQuint(t: number) {
   return t < 0.5 ? 16 * t ** 5 : 1 - (-2 * t + 2) ** 5 / 2;
 }
 
+// Decisão de arquitetura (validada contra referencias-sites/nothing/, que
+// faz o mesmo): no mobile NÃO existe scrub — o vídeo aparece direto
+// encaixado na moldura, em loop. Checagem via matchMedia (JS), não CSS:
+// esconder por CSS não bastava (o bloco animado continuava montado,
+// causando as duplicações/piscadas das levas anteriores) — aqui o ramo
+// `if (isMobile)` em Pour() nem CHEGA a renderizar o JSX do pin/scrub/
+// settled, então PinnedVideo/scrollYProgress/etc. simplesmente não
+// existem no DOM mobile, não só ficam ocultos.
+// Default false (SSR/primeiro paint client, `window` indisponível ou
+// ainda não medido): resultado é o mesmo de sempre (desktop) até o
+// efeito rodar — sem isso, SSR não tem como saber a largura real do
+// dispositivo. `change` listener cobre resize/rotação ao vivo.
+function usePourIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isMobile;
+}
+
+// Versão mobile: seção normal de página (sem altura artificial, sem
+// scrub, sem sticky) — o vídeo já nasce encaixado na moldura (MESMAS
+// coordenadas FRAME do desktop) e roda em loop infinito, sem qualquer
+// controle por scroll. Componente PRÓPRIO (não uma variação condicional
+// dentro de Pour()) pelo mesmo motivo de PinnedVideo: usePlayWhileVisible
+// precisa de um ciclo de hooks independente, e por construção só existe
+// UMA instância disto no DOM (chamada uma vez só, em Pour(), quando
+// isMobile é true) — não há bloco "pinado" nenhum pra duplicar contra.
+function PourMobileStatic() {
+  const { sectionRef, videoRef } = usePlayWhileVisible<HTMLElement>();
+
+  return (
+    <section id="pour" ref={sectionRef} className="relative w-full" style={{ backgroundColor: "#1C1614" }}>
+      <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
+        <Image
+          src="/images/pour/galeria.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          style={{ objectFit: "fill" }}
+        />
+        <div
+          className="absolute overflow-hidden"
+          style={{
+            top: `${FRAME.top}%`,
+            left: `${FRAME.left}%`,
+            width: `${FRAME.width}%`,
+            height: `${FRAME.height}%`,
+            backgroundColor: "#1C1614",
+          }}
+        >
+          <video
+            ref={videoRef}
+            className="h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+          >
+            <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
+            <source src="/video/pour/pour-loop.mp4" />
+          </video>
+        </div>
+      </div>
+
+      {/* Bloco de texto único (sem duplicar, sem depender de scroll) —
+          composição/tipografia definitiva fica pra Parte 2; aqui só o
+          conteúdo existente, estático. */}
+      <div className="w-full text-center uppercase" style={{ marginTop: "6vh" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-archivo)",
+            fontSize: "0.7rem",
+            letterSpacing: "0.3em",
+            color: "#C89B6A",
+          }}
+        >
+          ( THE ROOM )
+        </span>
+      </div>
+      <div
+        className="flex w-full flex-col items-center text-center"
+        style={{ marginTop: "6vh", paddingBottom: "8vh" }}
+      >
+        <p
+          style={{
+            fontFamily: "var(--font-instrument-serif)",
+            fontStyle: "italic",
+            fontSize: "clamp(1.3rem, 5vw, 1.8rem)",
+            color: "#EDE7DC",
+          }}
+        >
+          Where every cup begins.
+        </p>
+        <div style={{ width: 60, height: 1, backgroundColor: "#C89B6A", marginTop: "3vh" }} />
+        <span
+          className="uppercase"
+          style={{
+            fontFamily: "var(--font-archivo)",
+            fontSize: "0.65rem",
+            letterSpacing: "0.25em",
+            color: "#8a7d6a",
+            marginTop: "2vh",
+          }}
+        >
+          EST. 2019 · DUBLIN
+        </span>
+      </div>
+    </section>
+  );
+}
+
 // #pour-static (ver return abaixo) fica montada desde o load, bem abaixo
 // da dobra, por vários segundos até o scroll alcançar ela — vídeos
 // <video autoplay> fora da viewport nessa situação ficam sujeitos ao
@@ -263,6 +379,7 @@ function PourCaption({ opacity }: { opacity: MotionValue<number> }) {
 export function Pour() {
   const containerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
+  const isMobile = usePourIsMobile();
   const start = useCoverStartInContainer();
   const { sectionRef: pourStaticRef, videoRef: pourStaticVideoRef } =
     usePlayWhileVisible<HTMLElement>();
@@ -391,6 +508,18 @@ export function Pour() {
         </div>
       </section>
     );
+  }
+
+  // Mobile: nem chega a montar o JSX de scrub/pin/settled abaixo — troca
+  // por um componente à parte, sem scrub, sem altura artificial (ver
+  // PourMobileStatic acima). O resto desta função (useScroll, spring,
+  // pin, settled, PinnedVideo) continua rodando em background (Rules of
+  // Hooks — mesmo padrão já usado pelo branch de prefersReducedMotion
+  // logo acima), mas seus valores nunca chegam a ser lidos por nenhum
+  // JSX renderizado no mobile: nada do que eles calculam control a
+  // tela do usuário.
+  if (isMobile) {
+    return <PourMobileStatic />;
   }
 
   return (
