@@ -81,12 +81,25 @@ function easeInOutQuint(t: number) {
 // `if (isMobile)` em Pour() nem CHEGA a renderizar o JSX do pin/scrub/
 // settled, então PinnedVideo/scrollYProgress/etc. simplesmente não
 // existem no DOM mobile, não só ficam ocultos.
-// Default false (SSR/primeiro paint client, `window` indisponível ou
-// ainda não medido): resultado é o mesmo de sempre (desktop) até o
-// efeito rodar — sem isso, SSR não tem como saber a largura real do
-// dispositivo. `change` listener cobre resize/rotação ao vivo.
+// Estado de 3 valores (null/true/false), NÃO 2 (bool com default false):
+// a leva anterior usava default `false` — em qualquer viewport, o
+// PRIMEIRO paint do cliente renderizava a árvore de DESKTOP (scrub/pin)
+// até o useEffect rodar e corrigir pra mobile um instante depois. Num
+// aparelho mobile de verdade isso significava montar, por um frame ou
+// dois, o vídeo em estado "cobre 100vw/100vh" (fullscreen, useCoverStart-
+// InContainer) por cima da cena — e como a MESMA regra CSS mobile
+// (`.pour-mobile-label`/`-caption`) ainda se aplica a essa árvore
+// (nunca foi removida, ver `Pour()`), o label/frase ANTIGOS (posição
+// diferente da versão estática nova) apareciam JUNTO, produzindo
+// exatamente os sintomas reportados: label na posição errada, uma
+// faixa da própria foto (que tem tons claros/creme) aparecendo maior
+// que devia por estar em modo "fullscreen cover", e um SEGUNDO vídeo
+// (o da árvore antiga, ainda montada) coexistindo com o da versão nova.
+// Com null como estado inicial, Pour() não renderiza NADA (nem
+// desktop nem mobile) até o efeito abaixo rodar e resolver de vez qual
+// árvore montar — nunca existe uma janela onde a árvore ERRADA aparece.
 function usePourIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
     setIsMobile(mq.matches);
@@ -110,42 +123,8 @@ function PourMobileStatic() {
 
   return (
     <section id="pour" ref={sectionRef} className="relative w-full" style={{ backgroundColor: "#1C1614" }}>
-      <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
-        <Image
-          src="/images/pour/galeria.jpg"
-          alt=""
-          fill
-          sizes="100vw"
-          style={{ objectFit: "fill" }}
-        />
-        <div
-          className="absolute overflow-hidden"
-          style={{
-            top: `${FRAME.top}%`,
-            left: `${FRAME.left}%`,
-            width: `${FRAME.width}%`,
-            height: `${FRAME.height}%`,
-            backgroundColor: "#1C1614",
-          }}
-        >
-          <video
-            ref={videoRef}
-            className="h-full w-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-          >
-            <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
-            <source src="/video/pour/pour-loop.mp4" />
-          </video>
-        </div>
-      </div>
-
-      {/* Bloco de texto único (sem duplicar, sem depender de scroll) —
-          composição/tipografia definitiva fica pra Parte 2; aqui só o
-          conteúdo existente, estático. */}
-      <div className="w-full text-center uppercase" style={{ marginTop: "6vh" }}>
+      {/* 1. label */}
+      <div className="w-full text-center uppercase">
         <span
           style={{
             fontFamily: "var(--font-archivo)",
@@ -157,19 +136,75 @@ function PourMobileStatic() {
           ( THE ROOM )
         </span>
       </div>
-      <div
-        className="flex w-full flex-col items-center text-center"
-        style={{ marginTop: "6vh", paddingBottom: "8vh" }}
-      >
+
+      {/* 2. linha de contexto, logo abaixo do label — sem vídeo próprio,
+          só texto (o vídeo de verdade é o de dentro da moldura, item 4;
+          uma leva anterior tinha isto e um SEGUNDO vídeo aqui em cima,
+          por causa do flash da árvore de desktop no hidrate — ver
+          usePourIsMobile acima). */}
+      <div className="w-full text-center uppercase" style={{ marginTop: "1.5vh" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-archivo)",
+            fontSize: "0.6rem",
+            letterSpacing: "0.15em",
+            color: "#8a7d6a",
+          }}
+        >
+          06:14 — first pour of the day
+        </span>
+      </div>
+
+      {/* 3. respiro ~5vh até a cena */}
+      <div style={{ marginTop: "5vh" }}>
+        {/* 4. a cena da sala com o vídeo já encaixado na moldura — uma
+            única vez. */}
+        <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
+          <Image
+            src="/images/pour/galeria.jpg"
+            alt=""
+            fill
+            sizes="100vw"
+            style={{ objectFit: "fill" }}
+          />
+          <div
+            className="absolute overflow-hidden"
+            style={{
+              top: `${FRAME.top}%`,
+              left: `${FRAME.left}%`,
+              width: `${FRAME.width}%`,
+              height: `${FRAME.height}%`,
+              backgroundColor: "#1C1614",
+            }}
+          >
+            <video
+              ref={videoRef}
+              className="h-full w-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+            >
+              <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
+              <source src="/video/pour/pour-loop.mp4" />
+            </video>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. respiro ~5vh até a frase / 6-8. frase, linha, EST. */}
+      <div className="flex w-full flex-col items-center text-center" style={{ marginTop: "5vh" }}>
         <p
           style={{
             fontFamily: "var(--font-instrument-serif)",
             fontStyle: "italic",
-            fontSize: "clamp(1.3rem, 5vw, 1.8rem)",
+            fontSize: "clamp(2rem, 8vw, 2.8rem)",
+            lineHeight: 1.15,
             color: "#EDE7DC",
           }}
         >
-          Where every cup begins.
+          <span className="block">Where every</span>
+          <span className="block">cup begins.</span>
         </p>
         <div style={{ width: 60, height: 1, backgroundColor: "#C89B6A", marginTop: "3vh" }} />
         <span
@@ -185,6 +220,13 @@ function PourMobileStatic() {
           EST. 2019 · DUBLIN
         </span>
       </div>
+
+      {/* 9. respiro até o menu — o mínimo que este arquivo controla;
+          menu.tsx (fechado) soma seu próprio paddingTop:14vh + offset de
+          coluna antes de "(COFFEE)" pintar (medido ~11-14vh à parte,
+          fora do meu controle), então o vão TOTAL visto na tela fica
+          maior que só este valor. */}
+      <div style={{ height: "2vh" }} />
     </section>
   );
 }
@@ -397,8 +439,18 @@ export function Pour() {
   // em três tentativas diferentes). Com "end start", wrapperHeight=150vh
   // já entrega os dois: scrub de exatos 150vh E progresso 1 cai no mesmo
   // scrollY onde o Menu já está.
+  // target vira undefined enquanto isMobile !== false (durante o gate
+  // null inicial E no mobile de verdade): containerRef só é ANEXADO a
+  // um node real na árvore de desktop (`<section ref={containerRef}>`
+  // logo abaixo) — no mobile essa árvore nunca monta, então o ref
+  // nunca "hidrata", e o Framer lança "Target ref is defined but not
+  // hydrated" no console (motion.dev/troubleshooting/use-scroll-ref).
+  // Sem efeito funcional (o valor de scrollYProgress não é lido em
+  // nenhum lugar do JSX mobile), mas o erro é evitável — undefined faz
+  // o useScroll cair no fallback de rastrear o scroll da PÁGINA inteira
+  // em vez de esperar por um ref específico, sem exigir nenhum node.
   const { scrollYProgress } = useScroll({
-    target: containerRef,
+    target: isMobile === false ? containerRef : undefined,
     offset: ["start start", "end start"],
   });
 
@@ -508,6 +560,19 @@ export function Pour() {
         </div>
       </section>
     );
+  }
+
+  // isMobile ainda não determinado (useEffect de usePourIsMobile ainda
+  // não rodou) — não renderiza NENHUMA das duas árvores. É isto que
+  // fecha o bug do flash reportado: sem este gate, o primeiro paint do
+  // cliente caía direto na árvore de desktop (scrub/pin) logo abaixo,
+  // que só some um instante depois quando o efeito resolve pra mobile —
+  // tempo suficiente pra aparecer um segundo vídeo, o label na posição
+  // antiga e um pedaço maior da própria foto (tons claros) no estado
+  // "fullscreen cover" do desktop. Null aqui custa um instante sem a
+  // seção (até o efeito rodar), não um flash de conteúdo errado.
+  if (isMobile === null) {
+    return null;
   }
 
   // Mobile: nem chega a montar o JSX de scrub/pin/settled abaixo — troca
