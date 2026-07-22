@@ -152,8 +152,157 @@ export function SmoothScroll() {
     ).matches;
     const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
 
-    if (prefersReducedMotion || isTouchDevice) {
+    if (prefersReducedMotion) {
       return () => {
+        cancelAnimationFrame(rafId);
+        lenis.destroy();
+      };
+    }
+
+    // PARTE 4 (4ª tentativa — 3 anteriores falharam, causa raiz de cada
+    // uma documentada abaixo) — pausa suave no Sobre Nós, só touch/mobile.
+    //
+    // DIAGNÓSTICO (medido): a janela de reveal do Sobre Nós (about.tsx,
+    // WHITEOUT_START=0.8 até 1.0 do scrub do Hero) equivale a só ~66px de
+    // scroll no mobile (996px de wrapper − 664px de sticky = 332px de
+    // scrub total; os últimos 20% = ~66px). Um flick forte percorre
+    // ~600px+ — quase 10x o tamanho da própria janela — e nada no código
+    // tentava segurar isso no touch (o gate abaixo é wheel-only, por
+    // motivo documentado no comentário grande logo acima: o mecanismo
+    // stop()/preventDefault não é seguro pra touch real).
+    //
+    // TENTATIVA 1: soft-snap via scrollend nunca disparava — a causa era
+    // computeScrollAnchors() rodando ANTES de #pour existir no DOM (Pour
+    // só monta depois que usePourIsMobile resolve, nunca no primeiro
+    // render — fix de hidratação da Parte 1 de uma leva anterior),
+    // cacheando anchors=null pra sempre (só recalculado em resize).
+    // TENTATIVAS 2 e 3: com um retry simples (recalcula até dar
+    // não-null), o snap disparava, mas o pouso final ficava bem curto do
+    // esperado E a rolagem seguinte praticamente travava (medido: ~0px
+    // de movimento em swipes depois do snap) — trocar lenis.scrollTo por
+    // window.scrollTo nativo não mudou nada, então NÃO era conflito de
+    // tween. Causa raiz de verdade: o retry aceitava a PRIMEIRA medição
+    // não-nula, que podia acontecer ANTES do layout assentar de vez
+    // (Hero ainda montando a cena 3D pesada) — um aboutSettled ERRADO
+    // (bem menor que o real) fazia o snap corrigir cedo demais e de
+    // novo a cada scrollend, prendendo o scroll perto desse valor
+    // errado (confirmado via teste A/B: o código original, sem este
+    // bloco, rola normal na mesma sequência de swipes).
+    // CORREÇÃO desta tentativa: só aceita os anchors depois de 3
+    // medições CONSECUTIVAS idênticas (não só "não-nula") — garante que
+    // o layout já assentou antes de confiar no valor, sem mudar o que
+    // os anchors significam nem a lógica de snap em si.
+    if (isTouchDevice) {
+      // NÃO reaproveita computeScrollAnchors() aqui — achado depurando
+      // esta mesma tentativa: a fórmula dela usa `window.innerHeight`
+      // como "vh" pra `aboutSettled` (heroTop + hero.offsetHeight - vh),
+      // mas o range real em que o pin FICA GRUDADO é
+      // (wrapperHeight - alturaRENDERIZADA de .hero-sticky) — e nesse
+      // ambiente de teste (emulação mobile) window.innerHeight (814)
+      // diverge da altura CSS real de .hero-sticky (h-screen, 664px
+      // medido) — a MESMA categoria de discrepância de vh já vista
+      // várias vezes nesta sessão (Pour, globals.css). Resultado: o
+      // aboutSettled de computeScrollAnchors() (996-814=182) cai ANTES
+      // do pin de verdade soltar — o snap corrigia pra lá, e como 182
+      // ainda está bem no MEIO do range em que o pin está ativo, cada
+      // tentativa de continuar rolando disparava um novo scrollend que
+      // corrigia de novo, lendo como "travado" (era o comportamento do
+      // gate funcionando "certo" contra um alvo ERRADO, não um bug de
+      // sequestro). O gate hard-anchor abaixo (desktop, wheel) usa a
+      // MESMA função e por isso o MESMO risco existe lá em tese — mas
+      // não foi tocado (fora do escopo desta correção, e o teste A/B já
+      // confirmou que o comportamento desktop atual bate com o
+      // esperado nesta mesma máquina).
+      // Aqui: mede a altura RENDERIZADA de .hero-sticky direto
+      // (offsetHeight), não window.innerHeight — imune a essa
+      // discrepância, sempre bate com o range real em que o pin segura.
+      function computeTouchAboutAnchor() {
+        const hero = document.getElementById("hero");
+        const heroSticky = document.querySelector(".hero-sticky");
+        const pour = document.getElementById("pour");
+        if (!hero || !heroSticky || !pour) return null;
+        const heroTop = hero.getBoundingClientRect().top + window.scrollY;
+        const pourTop = pour.getBoundingClientRect().top + window.scrollY;
+        return {
+          aboutSettled: Math.round(heroTop + hero.offsetHeight - heroSticky.offsetHeight),
+          pourStart: Math.round(pourTop),
+        };
+      }
+
+      let anchors: ReturnType<typeof computeTouchAboutAnchor> = null;
+      let lastMeasurement: ReturnType<typeof computeTouchAboutAnchor> = null;
+      let stableCount = 0;
+      const STABLE_READS_REQUIRED = 3;
+
+      const stabilizeInterval: ReturnType<typeof setInterval> = setInterval(() => {
+        const measurement = computeTouchAboutAnchor();
+        const same =
+          measurement &&
+          lastMeasurement &&
+          measurement.aboutSettled === lastMeasurement.aboutSettled &&
+          measurement.pourStart === lastMeasurement.pourStart;
+        stableCount = same ? stableCount + 1 : measurement ? 1 : 0;
+        lastMeasurement = measurement;
+        if (stableCount >= STABLE_READS_REQUIRED) {
+          anchors = measurement;
+          clearInterval(stabilizeInterval);
+        }
+      }, 150);
+
+      function refreshAnchors() {
+        if (anchors) anchors = computeTouchAboutAnchor();
+      }
+      window.addEventListener("resize", refreshAnchors);
+
+      const SNAP_TOLERANCE_PX = 40;
+      let isSnappingTouch = false;
+      let snapSafetyTimeoutTouch: ReturnType<typeof setTimeout> | undefined;
+
+      // hasPausedOnce: SÓ intervém uma vez por visita, não uma trava
+      // permanente na zona [aboutSettled, pourStart). Achado nesta
+      // tentativa: sem isso, QUALQUER pouso normal dentro dessa faixa
+      // (não só um flick que atravessou vindo de ANTES do reveal, mas
+      // também alguém continuando a rolar normalmente DEPOIS de já ter
+      // visto o Sobre Nós) disparava a mesma correção de novo — cada
+      // scrollend seguinte via de volta pro aboutSettled, lendo como
+      // "travado" pra sempre (era a pausa funcionando certo contra o
+      // alvo certo, só que repetindo pra sempre em vez de só uma vez).
+      // Uma vez que o usuário viu o reveal (seja pousando perto dele
+      // sozinho, seja corrigido pra lá aqui), este bloco nunca mais
+      // intervém pelo resto da visita — a rolagem fica inteiramente
+      // livre daí em diante, exatamente como "seção empurra seção".
+      let hasPausedOnce = false;
+
+      // window.scrollTo NATIVO (não lenis.scrollTo): sem syncTouch:true,
+      // o Lenis só OBSERVA a posição nativa — nunca a controla — então
+      // uma correção via scrollTo nativo do browser (behavior:"smooth")
+      // não tem nenhum estado interno do Lenis pra conflitar.
+      function onScrollEndTouch() {
+        if (isSnappingTouch || !anchors || hasPausedOnce) return;
+        const { aboutSettled, pourStart } = anchors;
+        const y = window.scrollY;
+        if (y > aboutSettled + SNAP_TOLERANCE_PX && y < pourStart) {
+          isSnappingTouch = true;
+          hasPausedOnce = true;
+          window.scrollTo({ top: aboutSettled, behavior: "smooth" });
+          clearTimeout(snapSafetyTimeoutTouch);
+          snapSafetyTimeoutTouch = setTimeout(() => {
+            isSnappingTouch = false;
+          }, 1000);
+        } else if (y >= aboutSettled - SNAP_TOLERANCE_PX && y <= aboutSettled + SNAP_TOLERANCE_PX) {
+          // Pousou perto do aboutSettled por conta própria (sem precisar
+          // de correção) — também conta como "já viu", destrava daqui
+          // pra frente.
+          hasPausedOnce = true;
+        }
+      }
+      window.addEventListener("scrollend", onScrollEndTouch);
+
+      return () => {
+        window.removeEventListener("scrollend", onScrollEndTouch);
+        window.removeEventListener("resize", refreshAnchors);
+        clearInterval(stabilizeInterval);
+        clearTimeout(snapSafetyTimeoutTouch);
         cancelAnimationFrame(rafId);
         lenis.destroy();
       };
