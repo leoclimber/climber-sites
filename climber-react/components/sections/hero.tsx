@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
-import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
+import { motion, useScroll, useSpring, useTransform } from "framer-motion";
 import { AboutReveal } from "./about";
 
 const HeroCanvas = dynamic(
@@ -72,6 +72,33 @@ function HeroStaticFallback() {
   );
 }
 
+// PARTE 3 (correção — erro de hidratação persistente): framer-motion's
+// useReducedMotion() lê matchMedia de forma SÍNCRONA já no primeiro
+// render do CLIENTE (`initPrefersReducedMotion()` roda no corpo da
+// função, fora de useEffect) — o servidor não tem window, então assume
+// false, mas um dispositivo com "reduzir movimento" ativado já monta a
+// árvore de fallback no primeiro paint do cliente enquanto o HTML do
+// servidor tinha montado a árvore animada normal: mismatch de
+// hidratação de verdade, reproduzido forçando
+// prefers-reduced-motion:reduce via Playwright (mesma causa raiz já
+// corrigida em pour.tsx). Troca pelo MESMO padrão que canRender3D logo
+// abaixo já usa neste arquivo: default false nos dois lados (servidor E
+// primeiro render do client), corrigido de verdade só depois, no
+// useEffect — mesmo preço de "flash rápido" que o comentário de
+// canRender3D já documenta e aceita, aqui só estendido pra
+// prefersReducedMotion também.
+function usePrefersReducedMotionSafe() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return prefersReducedMotion;
+}
+
 function LiveClock() {
   const [time, setTime] = useState("");
 
@@ -93,7 +120,7 @@ function LiveClock() {
 
 export function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotionSafe();
 
   // Default true (tenta o Canvas) tanto no server quanto no primeiro
   // render do client — SEM isso daria mismatch de hidratação (server não
