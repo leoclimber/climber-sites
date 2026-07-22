@@ -180,19 +180,29 @@ function PinnedVideo({
 // SEMPRE `easedProgress` (a MESMA motion value que já controla o scale
 // do vídeo, nunca um valor novo) — como o texto já está com opacity ~1
 // bem ANTES de settled virar true (a mesma curva do vídeo encaixando),
-// não existe mais "pop": a troca pinado->#pour-static acontece com as
-// duas versões já visualmente idênticas (mesma opacity, mesma posição —
-// ambas usam o mesmo truque top:50vh + translate-y:-50%, ver Pour()).
+// não existe mais "pop" de opacity na troca.
+// Posicionamento: absolute, ANCORADO ÀS BORDAS do container-pai (a
+// caixa aspect-ratio da imagem/vídeo — ver `relative` no pai em Pour()),
+// não mais um wrapper flex-col compartilhando a centralização com a
+// caixa. bottom/top:calc(100% + 6vh) é SEMPRE 6vh de distância da
+// borda da caixa, ponto — não depende da altura total do conjunto nem
+// de como o pai é centralizado (achado medindo: a versão anterior, com
+// tudo dentro de um flex-col centralizado via translate-y:-50%,
+// redistribuía o espaço livre de um jeito que não dava pra prever/
+// controlar o respiro final). Com isso a caixa da imagem/vídeo em si
+// fica NO MESMO LUGAR de antes de existir label/caption (label/caption
+// são absolute, não contam pro tamanho do pai) — desktop (onde ambos
+// são display:none) não muda nem um pixel, e o pinado/settled batem
+// pixel a pixel no mesmo ponto de handoff, sem depender de math de
+// centralização coletiva.
 // display:none por padrão (inline, sempre aplicado) — só vira
 // block/flex dentro do media query mobile (.pour-mobile-label/-caption
-// em Pour()): no desktop nunca ocupa espaço nem existe visualmente, e
-// como não ocupa espaço, não desloca a centralização vertical da
-// moldura no desktop nem um pixel (mesma altura de antes).
+// em Pour()).
 function PourLabel({ opacity }: { opacity: MotionValue<number> }) {
   return (
     <div
-      className="pour-mobile-label w-full text-center uppercase"
-      style={{ display: "none", marginBottom: "6vh" }}
+      className="pour-mobile-label absolute inset-x-0 text-center uppercase"
+      style={{ display: "none", bottom: "calc(100% + 6vh)" }}
     >
       <motion.span
         className="block"
@@ -210,17 +220,14 @@ function PourLabel({ opacity }: { opacity: MotionValue<number> }) {
   );
 }
 
-// Sem paddingBottom extra de propósito: menu.tsx (arquivo fechado, não
-// editado) já tem paddingTop:14vh + offset próprio da coluna ANTES do
-// label "(COFFEE)" pintar — medido ~21vh de vão só do lado do Menu,
-// então qualquer espaço extra que eu somasse aqui só pioraria o vão
-// morto. Sem acesso pra editar menu.tsx, este é o mínimo que dá pra
-// controlar deste lado.
+// Mesma ancoragem absolute (top:calc(100% + 6vh), 6vh fixos abaixo da
+// borda de baixo da caixa) — previsível e mensurável, ao contrário do
+// vão morto que sobrava com o flex-col centralizado da leva anterior.
 function PourCaption({ opacity }: { opacity: MotionValue<number> }) {
   return (
     <div
-      className="pour-mobile-caption w-full flex-col items-center text-center"
-      style={{ display: "none", marginTop: "6vh" }}
+      className="pour-mobile-caption absolute inset-x-0 flex-col items-center text-center"
+      style={{ display: "none", top: "calc(100% + 6vh)" }}
     >
       <motion.p
         style={{
@@ -289,6 +296,24 @@ export function Pour() {
   const easedProgress = useTransform(laggedProgress, (p) =>
     easeInOutQuint(Math.max(0, Math.min(1, p)))
   );
+
+  // Trava de exclusão mútua ADICIONAL (mobile), por cima do mount/
+  // unmount via `settled` (que continua intocado, ver abaixo) — não
+  // troca QUANDO o swap acontece, só reforça que NUNCA aparecem os
+  // dois ao mesmo tempo. Motivo de existir: `settled` é estado React
+  // (muda só depois de um re-render completar), enquanto estas duas
+  // MotionValues são aplicadas direto no DOM pelo Framer a cada frame
+  // de scroll, sem esperar o ciclo do React — fecham a janela onde,
+  // numa rolada rápida, o React ainda não processou `settled=true` mas
+  // o scroll já passou do ponto de encaixe (visto: as duas cenas
+  // apareciam juntas por um instante, com "EST." duplicado, bem nessa
+  // janela). display:none (não opacity) por pedido — remove a caixa do
+  // render tree por completo, não só some visualmente, então não sobra
+  // NADA pra um layer de GPU compor por engano por cima do outro.
+  // Mesmo limiar (scrollYProgress>=1) do próprio `settled`, só que lido
+  // direto da motion value crua, não do estado.
+  const pinnedDisplay = useTransform(scrollYProgress, (p) => (p >= 1 ? "none" : "block"));
+  const staticDisplay = useTransform(scrollYProgress, (p) => (p >= 1 ? "block" : "none"));
 
   // "settled" == scrollYProgress CRU (não o spring) bateu 1 == vídeo já
   // encaixado na moldura E o sticky (filho de 1px, ver return abaixo)
@@ -492,53 +517,45 @@ export function Pour() {
                 de 1px não centraliza nada). Com o filho preso em top:0
                 (viewport-top) durante o pin, 50vh bate no centro
                 vertical da tela. */}
-            <div
+            {/* motion.div (não div comum): style.display recebe a
+                MotionValue pinnedDisplay (ver Pour() acima) — trava de
+                exclusão mútua adicional, frame-síncrona, por cima do
+                mount/unmount via `settled` que já existia (intocado). */}
+            <motion.div
               className="absolute left-1/2 w-full -translate-x-1/2 -translate-y-1/2"
-              style={{ top: "50vh" }}
+              style={{ top: "50vh", display: pinnedDisplay }}
             >
-              {/* NOVO wrapper flex-col: label/caption entram como irmãos
-                  do container-pai (moldura). Continuam dentro do
-                  `{!settled}}` do pai (desmontam junto com o resto no
-                  encaixe) — mas por opacity já estar em ~1 bem ANTES de
-                  settled virar true (ver comentário de PourLabel/
-                  PourCaption acima), a troca pra #pour-static (que
-                  renderiza a MESMA opacity=1, mesma posição) é
-                  imperceptível. No desktop label/caption são
-                  display:none (0 de altura), então este wrapper extra
-                  não desloca a moldura nem um pixel comparado à
-                  estrutura anterior (matemática: flex items-center de
-                  antes == top:50vh+translate:-50% de agora, pra uma
-                  caixa do mesmo tamanho). */}
-              <div className="flex w-full flex-col items-center">
+              <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
+                <Image
+                  src="/images/pour/galeria.jpg"
+                  alt=""
+                  fill
+                  sizes="100vw"
+                  style={{ objectFit: "fill" }}
+                />
+
+                {/* Vídeo: filho do mesmo container-pai, posição/tamanho
+                    estáticos em CSS (top:0,left:0,100%x100% — nunca
+                    anima). Só transform (translate+scale) anima,
+                    GPU-composited. Componente próprio (PinnedVideo, ver
+                    acima) só pelo play-management — nenhuma mudança na
+                    lógica de scale/scrub em si, os mesmos xPercent/
+                    yPercent/scaleX/scaleY calculados acima. */}
+                <PinnedVideo
+                  xPercent={xPercent}
+                  yPercent={yPercent}
+                  scaleX={scaleX}
+                  scaleY={scaleY}
+                />
+
+                {/* Label/caption: absolute ANCORADOS ÀS BORDAS desta
+                    mesma caixa (ver comentário em PourLabel/PourCaption
+                    acima) — não contam pro tamanho da caixa, não mexem
+                    no scale/scrub do vídeo. */}
                 <PourLabel opacity={easedProgress} />
-
-                <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
-                  <Image
-                    src="/images/pour/galeria.jpg"
-                    alt=""
-                    fill
-                    sizes="100vw"
-                    style={{ objectFit: "fill" }}
-                  />
-
-                  {/* Vídeo: filho do mesmo container-pai, posição/tamanho
-                      estáticos em CSS (top:0,left:0,100%x100% — nunca
-                      anima). Só transform (translate+scale) anima,
-                      GPU-composited. Componente próprio (PinnedVideo, ver
-                      acima) só pelo play-management — nenhuma mudança na
-                      lógica de scale/scrub em si, os mesmos xPercent/
-                      yPercent/scaleX/scaleY calculados acima. */}
-                  <PinnedVideo
-                    xPercent={xPercent}
-                    yPercent={yPercent}
-                    scaleX={scaleX}
-                    scaleY={scaleY}
-                  />
-                </div>
-
                 <PourCaption opacity={easedProgress} />
               </div>
-            </div>
+            </motion.div>
           </>
         )}
       </div>
@@ -603,47 +620,47 @@ export function Pour() {
               diferença que causava o desalinhamento lateral reportado na
               troca. Com os dois lados usando a mesma fórmula, a moldura
               cai no mesmo pixel nos dois estados, por construção. */}
-          <div
+          {/* motion.div: style.display recebe staticDisplay (ver Pour()
+              acima) — a mesma trava de exclusão mútua do lado pinado,
+              invertida (só aparece quando o pinado já sumiu). */}
+          <motion.div
             className="absolute left-1/2 w-full -translate-x-1/2 -translate-y-1/2"
-            style={{ top: "50vh" }}
+            style={{ top: "50vh", display: staticDisplay }}
           >
-            <div className="flex w-full flex-col items-center">
-              <PourLabel opacity={easedProgress} />
-
-              <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
-                <Image
-                  src="/images/pour/galeria.jpg"
-                  alt=""
-                  fill
-                  sizes="100vw"
-                  style={{ objectFit: "fill" }}
-                />
-                <div
-                  className="pour-video-mask absolute overflow-hidden bg-black"
-                  style={{
-                    top: `${FRAME.top}%`,
-                    left: `${FRAME.left}%`,
-                    width: `${FRAME.width}%`,
-                    height: `${FRAME.height}%`,
-                  }}
+            <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
+              <Image
+                src="/images/pour/galeria.jpg"
+                alt=""
+                fill
+                sizes="100vw"
+                style={{ objectFit: "fill" }}
+              />
+              <div
+                className="pour-video-mask absolute overflow-hidden bg-black"
+                style={{
+                  top: `${FRAME.top}%`,
+                  left: `${FRAME.left}%`,
+                  width: `${FRAME.width}%`,
+                  height: `${FRAME.height}%`,
+                }}
+              >
+                <video
+                  ref={pourStaticVideoRef}
+                  className="h-full w-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
                 >
-                  <video
-                    ref={pourStaticVideoRef}
-                    className="h-full w-full object-cover"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                  >
-                    <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
-                    <source src="/video/pour/pour-loop.mp4" />
-                  </video>
-                </div>
+                  <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
+                  <source src="/video/pour/pour-loop.mp4" />
+                </video>
               </div>
 
+              <PourLabel opacity={easedProgress} />
               <PourCaption opacity={easedProgress} />
             </div>
-          </div>
+          </motion.div>
         </section>
     </>
   );
