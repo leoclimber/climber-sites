@@ -135,6 +135,33 @@ function usePrefersReducedMotionSafe() {
   return value;
 }
 
+// PARTE 3: reveal do texto do Pour mobile — dispara UMA VEZ quando o
+// bloco entra na tela (IntersectionObserver), não em cada mudança de
+// scrollYProgress (que nem existe mais nesta árvore — ver isMobile em
+// Pour()). "once" = desconecta depois do primeiro isIntersecting:true,
+// pra não re-esconder o texto se o usuário rolar pra cima e pra baixo
+// de novo (reveal de entrada, não um scrub).
+function useRevealOnce<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return { ref, visible };
+}
+
 // Versão mobile: seção normal de página (sem altura artificial, sem
 // scrub, sem sticky) — o vídeo já nasce encaixado na moldura (MESMAS
 // coordenadas FRAME do desktop) e roda em loop infinito, sem qualquer
@@ -145,6 +172,20 @@ function usePrefersReducedMotionSafe() {
 // isMobile é true) — não há bloco "pinado" nenhum pra duplicar contra.
 function PourMobileStatic() {
   const { sectionRef, videoRef } = usePlayWhileVisible<HTMLElement>();
+  const { ref: revealRef, visible } = useRevealOnce<HTMLDivElement>();
+
+  // Reveal por stagger — só nos 5 elementos de TEXTO (label, linha de
+  // contexto, frase, linha, EST); a cena/vídeo (item 4) fica sempre
+  // opacity:1, sem reveal — um vídeo autoplay+loop escondido atrás de
+  // opacity:0 e revelado depois reintroduziria o mesmo tipo de problema
+  // de decode/estado que usePlayWhileVisible existe pra evitar.
+  function revealStyle(index: number) {
+    return {
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0px)" : "translateY(20px)",
+      transition: `opacity 0.6s ease-out ${index * 0.08}s, transform 0.6s ease-out ${index * 0.08}s`,
+    };
+  }
 
   return (
     <section id="pour" ref={sectionRef} className="relative w-full" style={{ backgroundColor: "#1C1614" }}>
@@ -153,46 +194,38 @@ function PourMobileStatic() {
           do clip-path circular ali). Sem isto, a emenda entre o fim do
           pin do Hero (creme) e o início desta section (#1C1614) era um
           corte seco de cor. ~12vh de linear-gradient indo de #EDE7DC até
-          #1C1614, ANTES do label — a Parte 3 cuida do respiro exato
-          entre o fim deste degradê e o label em si. */}
+          #1C1614, ANTES do respiro/label abaixo. */}
       <div style={{ height: "12vh", background: "linear-gradient(to bottom, #EDE7DC, #1C1614)" }} />
 
-      {/* 1. label */}
-      <div className="w-full text-center uppercase">
-        <span
-          style={{
-            fontFamily: "var(--font-archivo)",
-            fontSize: "0.7rem",
-            letterSpacing: "0.3em",
-            color: "#C89B6A",
-          }}
-        >
-          ( THE ROOM )
-        </span>
-      </div>
+      {/* Wrapper de reveal: um ref/IntersectionObserver só (não um por
+          elemento) — dispara quando ESTE bloco (do label até o EST.)
+          entra na tela, cada filho com seu próprio delay via
+          revealStyle(index) pro stagger de 0.08s. Nada aqui depende de
+          scrollYProgress — só a posição na tela (IntersectionObserver),
+          exatamente como pedido. */}
+      <div ref={revealRef}>
+        {/* PARTE 3: 8vh de respiro depois do degradê */}
+        <div style={{ height: "8vh" }} />
 
-      {/* 2. linha de contexto, logo abaixo do label — sem vídeo próprio,
-          só texto (o vídeo de verdade é o de dentro da moldura, item 4;
-          uma leva anterior tinha isto e um SEGUNDO vídeo aqui em cima,
-          por causa do flash da árvore de desktop no hidrate — ver
-          usePourIsMobile acima). */}
-      <div className="w-full text-center uppercase" style={{ marginTop: "1.5vh" }}>
-        <span
-          style={{
-            fontFamily: "var(--font-archivo)",
-            fontSize: "0.6rem",
-            letterSpacing: "0.15em",
-            color: "#8a7d6a",
-          }}
-        >
-          06:14 — first pour of the day
-        </span>
-      </div>
+        {/* 1. label */}
+        <div className="w-full px-6 text-center uppercase" style={revealStyle(0)}>
+          <span
+            style={{
+              fontFamily: "var(--font-archivo)",
+              fontSize: "0.7rem",
+              letterSpacing: "0.3em",
+              color: "#C89B6A",
+            }}
+          >
+            ( THE ROOM )
+          </span>
+        </div>
 
-      {/* 3. respiro ~5vh até a cena */}
-      <div style={{ marginTop: "5vh" }}>
+        {/* 6vh até a cena */}
+        <div style={{ height: "6vh" }} />
+
         {/* 4. a cena da sala com o vídeo já encaixado na moldura — uma
-            única vez. */}
+            única vez, sempre opacity:1 (ver comentário de revealStyle). */}
         <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
           <Image
             src="/images/pour/galeria.jpg"
@@ -224,43 +257,59 @@ function PourMobileStatic() {
             </video>
           </div>
         </div>
+
+        {/* 7vh até a frase */}
+        <div style={{ height: "7vh" }} />
+
+        {/* 6. frase em duas linhas */}
+        <div className="w-full px-6 text-center" style={revealStyle(1)}>
+          <p
+            style={{
+              fontFamily: "var(--font-instrument-serif)",
+              fontStyle: "italic",
+              fontSize: "clamp(2rem, 8vw, 2.8rem)",
+              lineHeight: 1.15,
+              color: "#EDE7DC",
+            }}
+          >
+            <span className="block">Where every</span>
+            <span className="block">cup begins.</span>
+          </p>
+        </div>
+
+        {/* 4vh até a linha */}
+        <div style={{ height: "4vh" }} />
+
+        {/* 7. linha */}
+        <div className="flex w-full justify-center" style={revealStyle(2)}>
+          <div style={{ width: 60, height: 1, backgroundColor: "#C89B6A" }} />
+        </div>
+
+        {/* 3vh até o EST. */}
+        <div style={{ height: "3vh" }} />
+
+        {/* 8. EST. 2019 · DUBLIN */}
+        <div className="w-full px-6 text-center" style={revealStyle(3)}>
+          <span
+            className="uppercase"
+            style={{
+              fontFamily: "var(--font-archivo)",
+              fontSize: "0.65rem",
+              letterSpacing: "0.25em",
+              color: "#8a7d6a",
+            }}
+          >
+            EST. 2019 · DUBLIN
+          </span>
+        </div>
       </div>
 
-      {/* 5. respiro ~5vh até a frase / 6-8. frase, linha, EST. */}
-      <div className="flex w-full flex-col items-center text-center" style={{ marginTop: "5vh" }}>
-        <p
-          style={{
-            fontFamily: "var(--font-instrument-serif)",
-            fontStyle: "italic",
-            fontSize: "clamp(2rem, 8vw, 2.8rem)",
-            lineHeight: 1.15,
-            color: "#EDE7DC",
-          }}
-        >
-          <span className="block">Where every</span>
-          <span className="block">cup begins.</span>
-        </p>
-        <div style={{ width: 60, height: 1, backgroundColor: "#C89B6A", marginTop: "3vh" }} />
-        <span
-          className="uppercase"
-          style={{
-            fontFamily: "var(--font-archivo)",
-            fontSize: "0.65rem",
-            letterSpacing: "0.25em",
-            color: "#8a7d6a",
-            marginTop: "2vh",
-          }}
-        >
-          EST. 2019 · DUBLIN
-        </span>
-      </div>
-
-      {/* 9. respiro até o menu — o mínimo que este arquivo controla;
-          menu.tsx (fechado) soma seu próprio paddingTop:14vh + offset de
-          coluna antes de "(COFFEE)" pintar (medido ~11-14vh à parte,
-          fora do meu controle), então o vão TOTAL visto na tela fica
-          maior que só este valor. */}
-      <div style={{ height: "2vh" }} />
+      {/* 9. 10vh até o "( COFFEE )" do menu — o mínimo que este arquivo
+          controla; menu.tsx (fechado) soma seu próprio paddingTop:14vh +
+          offset de coluna antes de "(COFFEE)" pintar (medido ~11-14vh à
+          parte, fora do meu controle), então o vão TOTAL visto na tela
+          fica maior que só este valor. */}
+      <div style={{ height: "10vh" }} />
     </section>
   );
 }
