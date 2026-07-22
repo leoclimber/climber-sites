@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import {
   motion,
+  useInView,
   useMotionTemplate,
   useMotionValueEvent,
   useReducedMotion,
@@ -146,7 +147,7 @@ function PinnedVideo({
   return (
     <motion.div
       ref={sectionRef}
-      className="absolute inset-0 overflow-hidden bg-black"
+      className="pour-video-mask absolute inset-0 overflow-hidden bg-black"
       style={{
         x: xPercent,
         y: yPercent,
@@ -180,6 +181,14 @@ export function Pour() {
   const start = useCoverStartInContainer();
   const { sectionRef: pourStaticRef, videoRef: pourStaticVideoRef } =
     usePlayWhileVisible<HTMLElement>();
+
+  // Reveal do label/frase mobile (BUG B): dispara quando o wrapper que
+  // envolve moldura+textos entra em viewport — mesmo padrão de
+  // useInView+once já usado em reviews.tsx, não uma reinvenção. Ref
+  // PRÓPRIO (não reaproveita pourStaticRef, que já serve o
+  // IntersectionObserver de play/pause do vídeo — um ref por hook).
+  const pourCaptionRef = useRef<HTMLDivElement>(null);
+  const captionInView = useInView(pourCaptionRef, { amount: 0.3, once: true });
 
   // offset ["start start", "end start"] (não "end end"): progresso 1 no
   // instante em que o FUNDO da section toca o TOPO da viewport — ou seja,
@@ -314,13 +323,37 @@ export function Pour() {
           scrollYProgress no desktop): !important aqui só entra no media
           query, então a medição do desktop (getBoundingClientRect lê o
           elemento renderizado, não o valor da prop) nunca muda >=768px. */}
+      {/* BUG A (piscar preto<->#1C1614): no mobile, .pour-scrub-wrapper
+          (bg-black, Tailwind), .pour-safety-backdrop (bg-black) e
+          .pour-video-mask (bg-black — a caixa que veste o vídeo, tanto no
+          PinnedVideo animado quanto no #pour-static assentado) ficavam
+          pretos puros enquanto #pour-static (sempre #1C1614, nunca mudou)
+          é a próxima coisa a aparecer assim que o pin solta — cruzar essa
+          fronteira trocava de cor num frame só. Sem tocar as classes
+          Tailwind em si (bg-black continua valendo pro desktop, que não
+          pode mudar): só sobrescreve a COR aqui dentro do media query,
+          então essas mesmas 3 caixas ficam #1C1614 desde o início no
+          mobile — nunca há transição de cor nenhuma pra cruzar. */}
       <style>{`
         @media (max-width: 768px) {
           .pour-scrub-wrapper {
             height: 300vh !important;
+            background-color: #1C1614 !important;
           }
           .pour-static-frame {
             min-height: 100vh !important;
+          }
+          .pour-safety-backdrop {
+            background-color: #1C1614 !important;
+          }
+          .pour-video-mask {
+            background-color: #1C1614 !important;
+          }
+          .pour-mobile-label {
+            display: block !important;
+          }
+          .pour-mobile-caption {
+            display: flex !important;
           }
         }
       `}</style>
@@ -446,34 +479,114 @@ export function Pour() {
           className="pour-static-frame relative flex w-full items-center justify-center"
           style={{ height: "100vh", backgroundColor: "#1C1614" }}
         >
-          <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
-            <Image
-              src="/images/pour/galeria.jpg"
-              alt=""
-              fill
-              sizes="100vw"
-              style={{ objectFit: "fill" }}
-            />
+          {/* BUG B (vazio mobile): moldura+label+frase moram juntas neste
+              wrapper pra virar UM SÓ filho do flex items-center/justify-
+              center acima — no desktop (onde label/frase ficam
+              display:none, ver media query) o wrapper só contém a moldura
+              e some visualmente, então o desktop não muda em nada. Ref
+              próprio (pourCaptionRef) pro useInView do reveal. */}
+          <div
+            ref={pourCaptionRef}
+            className="flex w-full flex-col items-center"
+          >
+            {/* Label acima — display:none por padrão (inline, sempre
+                aplicado), só vira block dentro do media query mobile (ver
+                .pour-mobile-label acima): no desktop nunca ocupa espaço
+                nem é lido por a11y como visível. */}
             <div
-              className="absolute overflow-hidden bg-black"
-              style={{
-                top: `${FRAME.top}%`,
-                left: `${FRAME.left}%`,
-                width: `${FRAME.width}%`,
-                height: `${FRAME.height}%`,
-              }}
+              className="pour-mobile-label w-full text-center uppercase"
+              style={{ display: "none", marginBottom: "6vh" }}
             >
-              <video
-                ref={pourStaticVideoRef}
-                className="h-full w-full object-cover"
-                autoPlay
-                muted
-                loop
-                playsInline
+              <motion.span
+                className="block"
+                style={{
+                  fontFamily: "var(--font-archivo)",
+                  fontSize: "0.7rem",
+                  letterSpacing: "0.3em",
+                  color: "#C89B6A",
+                }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={captionInView ? { opacity: 1, y: 0 } : undefined}
+                transition={{ duration: 0.6, delay: 0 }}
               >
-                <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
-                <source src="/video/pour/pour-loop.mp4" />
-              </video>
+                ( THE ROOM )
+              </motion.span>
+            </div>
+
+            <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
+              <Image
+                src="/images/pour/galeria.jpg"
+                alt=""
+                fill
+                sizes="100vw"
+                style={{ objectFit: "fill" }}
+              />
+              <div
+                className="pour-video-mask absolute overflow-hidden bg-black"
+                style={{
+                  top: `${FRAME.top}%`,
+                  left: `${FRAME.left}%`,
+                  width: `${FRAME.width}%`,
+                  height: `${FRAME.height}%`,
+                }}
+              >
+                <video
+                  ref={pourStaticVideoRef}
+                  className="h-full w-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                >
+                  <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
+                  <source src="/video/pour/pour-loop.mp4" />
+                </video>
+              </div>
+            </div>
+
+            {/* Frase + linha + EST abaixo — mesmo mecanismo display:none/
+                flex do label. paddingBottom:8vh no fim garante que o
+                próximo elemento de fluxo normal (Menu, arquivo fechado,
+                não editado) apareça ~8vh depois do EST, sem precisar
+                tocar menu.tsx. */}
+            <div
+              className="pour-mobile-caption w-full flex-col items-center text-center"
+              style={{ display: "none", marginTop: "6vh", paddingBottom: "8vh" }}
+            >
+              <motion.p
+                style={{
+                  fontFamily: "var(--font-instrument-serif)",
+                  fontStyle: "italic",
+                  fontSize: "clamp(1.3rem, 5vw, 1.8rem)",
+                  color: "#EDE7DC",
+                }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={captionInView ? { opacity: 1, y: 0 } : undefined}
+                transition={{ duration: 0.6, delay: 0.08 }}
+              >
+                Where every cup begins.
+              </motion.p>
+              <motion.div
+                style={{ width: 60, height: 1, backgroundColor: "#C89B6A", marginTop: "3vh" }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={captionInView ? { opacity: 1, y: 0 } : undefined}
+                transition={{ duration: 0.6, delay: 0.16 }}
+              />
+              <motion.span
+                className="uppercase"
+                style={{
+                  fontFamily: "var(--font-archivo)",
+                  fontSize: "0.65rem",
+                  letterSpacing: "0.25em",
+                  color: "#8a7d6a",
+                  marginTop: "2vh",
+                }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={captionInView ? { opacity: 1, y: 0 } : undefined}
+                transition={{ duration: 0.6, delay: 0.24 }}
+              >
+                EST. 2019 · DUBLIN
+              </motion.span>
             </div>
           </div>
         </section>
