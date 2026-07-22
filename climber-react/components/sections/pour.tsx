@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import {
   motion,
-  useInView,
   useMotionTemplate,
   useMotionValueEvent,
   useReducedMotion,
@@ -175,20 +174,91 @@ function PinnedVideo({
   );
 }
 
+// Label "( THE ROOM )" acima da moldura e frase+linha+EST abaixo —
+// compartilhados entre a versão PINADA (dentro do scrub) e a versão
+// SETTLED (#pour-static), ambas em Pour() abaixo. `opacity` recebe
+// SEMPRE `easedProgress` (a MESMA motion value que já controla o scale
+// do vídeo, nunca um valor novo) — como o texto já está com opacity ~1
+// bem ANTES de settled virar true (a mesma curva do vídeo encaixando),
+// não existe mais "pop": a troca pinado->#pour-static acontece com as
+// duas versões já visualmente idênticas (mesma opacity, mesma posição —
+// ambas usam o mesmo truque top:50vh + translate-y:-50%, ver Pour()).
+// display:none por padrão (inline, sempre aplicado) — só vira
+// block/flex dentro do media query mobile (.pour-mobile-label/-caption
+// em Pour()): no desktop nunca ocupa espaço nem existe visualmente, e
+// como não ocupa espaço, não desloca a centralização vertical da
+// moldura no desktop nem um pixel (mesma altura de antes).
+function PourLabel({ opacity }: { opacity: MotionValue<number> }) {
+  return (
+    <div
+      className="pour-mobile-label w-full text-center uppercase"
+      style={{ display: "none", marginBottom: "6vh" }}
+    >
+      <motion.span
+        className="block"
+        style={{
+          fontFamily: "var(--font-archivo)",
+          fontSize: "0.7rem",
+          letterSpacing: "0.3em",
+          color: "#C89B6A",
+          opacity,
+        }}
+      >
+        ( THE ROOM )
+      </motion.span>
+    </div>
+  );
+}
+
+// Sem paddingBottom extra de propósito: menu.tsx (arquivo fechado, não
+// editado) já tem paddingTop:14vh + offset próprio da coluna ANTES do
+// label "(COFFEE)" pintar — medido ~21vh de vão só do lado do Menu,
+// então qualquer espaço extra que eu somasse aqui só pioraria o vão
+// morto. Sem acesso pra editar menu.tsx, este é o mínimo que dá pra
+// controlar deste lado.
+function PourCaption({ opacity }: { opacity: MotionValue<number> }) {
+  return (
+    <div
+      className="pour-mobile-caption w-full flex-col items-center text-center"
+      style={{ display: "none", marginTop: "6vh" }}
+    >
+      <motion.p
+        style={{
+          fontFamily: "var(--font-instrument-serif)",
+          fontStyle: "italic",
+          fontSize: "clamp(1.3rem, 5vw, 1.8rem)",
+          color: "#EDE7DC",
+          opacity,
+        }}
+      >
+        Where every cup begins.
+      </motion.p>
+      <motion.div
+        style={{ width: 60, height: 1, backgroundColor: "#C89B6A", marginTop: "3vh", opacity }}
+      />
+      <motion.span
+        className="uppercase"
+        style={{
+          fontFamily: "var(--font-archivo)",
+          fontSize: "0.65rem",
+          letterSpacing: "0.25em",
+          color: "#8a7d6a",
+          marginTop: "2vh",
+          opacity,
+        }}
+      >
+        EST. 2019 · DUBLIN
+      </motion.span>
+    </div>
+  );
+}
+
 export function Pour() {
   const containerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const start = useCoverStartInContainer();
   const { sectionRef: pourStaticRef, videoRef: pourStaticVideoRef } =
     usePlayWhileVisible<HTMLElement>();
-
-  // Reveal do label/frase mobile (BUG B): dispara quando o wrapper que
-  // envolve moldura+textos entra em viewport — mesmo padrão de
-  // useInView+once já usado em reviews.tsx, não uma reinvenção. Ref
-  // PRÓPRIO (não reaproveita pourStaticRef, que já serve o
-  // IntersectionObserver de play/pause do vídeo — um ref por hook).
-  const pourCaptionRef = useRef<HTMLDivElement>(null);
-  const captionInView = useInView(pourCaptionRef, { amount: 0.3, once: true });
 
   // offset ["start start", "end start"] (não "end end"): progresso 1 no
   // instante em que o FUNDO da section toca o TOPO da viewport — ou seja,
@@ -345,6 +415,20 @@ export function Pour() {
           }
           .pour-safety-backdrop {
             background-color: #1C1614 !important;
+            /* 100vh (prop original) e a altura REAL do viewport visível
+               divergem nesse range (achado medindo, não estimado — mesma
+               categoria de bug do .hero-sticky em globals.css: barra de
+               endereço/toolbar do mobile some do cálculo de vh mas o
+               valor não reflete o viewport JÁ recolhido). Sobra uma tira
+               sem cobertura embaixo do backdrop onde #pour-static (que já
+               está fisicamente presente ali, só esperando o scroll
+               alcançar) aparecia visível por baixo, ANTES do pin soltar —
+               achado só depois de encher o bloco pinado com o novo
+               label/caption (mais alto que antes), que fez a tira
+               descoberta coincidir com conteúdo de verdade em vez de
+               vazio. 100dvh acompanha o viewport JÁ recolhido ao vivo,
+               fecha a tira. */
+            height: 100dvh !important;
           }
           .pour-video-mask {
             background-color: #1C1614 !important;
@@ -412,28 +496,47 @@ export function Pour() {
               className="absolute left-1/2 w-full -translate-x-1/2 -translate-y-1/2"
               style={{ top: "50vh" }}
             >
-              <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
-                <Image
-                  src="/images/pour/galeria.jpg"
-                  alt=""
-                  fill
-                  sizes="100vw"
-                  style={{ objectFit: "fill" }}
-                />
+              {/* NOVO wrapper flex-col: label/caption entram como irmãos
+                  do container-pai (moldura). Continuam dentro do
+                  `{!settled}}` do pai (desmontam junto com o resto no
+                  encaixe) — mas por opacity já estar em ~1 bem ANTES de
+                  settled virar true (ver comentário de PourLabel/
+                  PourCaption acima), a troca pra #pour-static (que
+                  renderiza a MESMA opacity=1, mesma posição) é
+                  imperceptível. No desktop label/caption são
+                  display:none (0 de altura), então este wrapper extra
+                  não desloca a moldura nem um pixel comparado à
+                  estrutura anterior (matemática: flex items-center de
+                  antes == top:50vh+translate:-50% de agora, pra uma
+                  caixa do mesmo tamanho). */}
+              <div className="flex w-full flex-col items-center">
+                <PourLabel opacity={easedProgress} />
 
-                {/* Vídeo: filho do mesmo container-pai, posição/tamanho
-                    estáticos em CSS (top:0,left:0,100%x100% — nunca
-                    anima). Só transform (translate+scale) anima,
-                    GPU-composited. Componente próprio (PinnedVideo, ver
-                    acima) só pelo play-management — nenhuma mudança na
-                    lógica de scale/scrub em si, os mesmos xPercent/
-                    yPercent/scaleX/scaleY calculados acima. */}
-                <PinnedVideo
-                  xPercent={xPercent}
-                  yPercent={yPercent}
-                  scaleX={scaleX}
-                  scaleY={scaleY}
-                />
+                <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
+                  <Image
+                    src="/images/pour/galeria.jpg"
+                    alt=""
+                    fill
+                    sizes="100vw"
+                    style={{ objectFit: "fill" }}
+                  />
+
+                  {/* Vídeo: filho do mesmo container-pai, posição/tamanho
+                      estáticos em CSS (top:0,left:0,100%x100% — nunca
+                      anima). Só transform (translate+scale) anima,
+                      GPU-composited. Componente próprio (PinnedVideo, ver
+                      acima) só pelo play-management — nenhuma mudança na
+                      lógica de scale/scrub em si, os mesmos xPercent/
+                      yPercent/scaleX/scaleY calculados acima. */}
+                  <PinnedVideo
+                    xPercent={xPercent}
+                    yPercent={yPercent}
+                    scaleX={scaleX}
+                    scaleY={scaleY}
+                  />
+                </div>
+
+                <PourCaption opacity={easedProgress} />
               </div>
             </div>
           </>
@@ -473,120 +576,72 @@ export function Pour() {
             emendava com o Menu criando uma linha visível (preto puro vs.
             #1C1614 do Menu não são a mesma cor). Trocando pra #1C1614 aqui,
             a base dessa faixa funde sem costura na próxima seção. */}
+        {/* z-index:0 explícito (defensivo, não muda nada — #pour já tem
+            z-10 e cria seu próprio stacking context, que SEMPRE pinta
+            acima de um irmão z-index:auto independente da ordem no DOM;
+            deixar 0 aqui só documenta a garantia em vez de depender do
+            "auto" implícito): #pour-static nunca pode pintar por cima do
+            bloco pinado durante o scrub, mesmo num frame de timing
+            estranho na troca do settled. */}
         <section
           id="pour-static"
           ref={pourStaticRef}
-          className="pour-static-frame relative flex w-full items-center justify-center"
-          style={{ height: "100vh", backgroundColor: "#1C1614" }}
+          className="pour-static-frame relative w-full"
+          style={{ height: "100vh", backgroundColor: "#1C1614", zIndex: 0 }}
         >
-          {/* BUG B (vazio mobile): moldura+label+frase moram juntas neste
-              wrapper pra virar UM SÓ filho do flex items-center/justify-
-              center acima — no desktop (onde label/frase ficam
-              display:none, ver media query) o wrapper só contém a moldura
-              e some visualmente, então o desktop não muda em nada. Ref
-              próprio (pourCaptionRef) pro useInView do reveal. */}
+          {/* MESMO truque do bloco pinado acima (top:50vh + translate:
+              -50%, não flex items-center/justify-center como antes):
+              ambos calculam a posição da moldura a partir do MESMO
+              referencial ("50vh a partir do topo de uma caixa que, no
+              instante exato da troca settled, está com o topo grudado no
+              topo do viewport" — verdade tanto pro filho sticky de 1px
+              do bloco pinado quanto pra ESTA section, já que scrollY ==
+              pourStaticTop nesse instante é por definição onde a section
+              começa). flex items-center centralizava dentro da altura
+              TOTAL da section (que pode sobrar folga com min-height
+              mobile) — um cálculo DIFERENTE do bloco pinado, e foi essa
+              diferença que causava o desalinhamento lateral reportado na
+              troca. Com os dois lados usando a mesma fórmula, a moldura
+              cai no mesmo pixel nos dois estados, por construção. */}
           <div
-            ref={pourCaptionRef}
-            className="flex w-full flex-col items-center"
+            className="absolute left-1/2 w-full -translate-x-1/2 -translate-y-1/2"
+            style={{ top: "50vh" }}
           >
-            {/* Label acima — display:none por padrão (inline, sempre
-                aplicado), só vira block dentro do media query mobile (ver
-                .pour-mobile-label acima): no desktop nunca ocupa espaço
-                nem é lido por a11y como visível. */}
-            <div
-              className="pour-mobile-label w-full text-center uppercase"
-              style={{ display: "none", marginBottom: "6vh" }}
-            >
-              <motion.span
-                className="block"
-                style={{
-                  fontFamily: "var(--font-archivo)",
-                  fontSize: "0.7rem",
-                  letterSpacing: "0.3em",
-                  color: "#C89B6A",
-                }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={captionInView ? { opacity: 1, y: 0 } : undefined}
-                transition={{ duration: 0.6, delay: 0 }}
-              >
-                ( THE ROOM )
-              </motion.span>
-            </div>
+            <div className="flex w-full flex-col items-center">
+              <PourLabel opacity={easedProgress} />
 
-            <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
-              <Image
-                src="/images/pour/galeria.jpg"
-                alt=""
-                fill
-                sizes="100vw"
-                style={{ objectFit: "fill" }}
-              />
-              <div
-                className="pour-video-mask absolute overflow-hidden bg-black"
-                style={{
-                  top: `${FRAME.top}%`,
-                  left: `${FRAME.left}%`,
-                  width: `${FRAME.width}%`,
-                  height: `${FRAME.height}%`,
-                }}
-              >
-                <video
-                  ref={pourStaticVideoRef}
-                  className="h-full w-full object-cover"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
+              <div className="relative w-full" style={{ aspectRatio: IMAGE_ASPECT }}>
+                <Image
+                  src="/images/pour/galeria.jpg"
+                  alt=""
+                  fill
+                  sizes="100vw"
+                  style={{ objectFit: "fill" }}
+                />
+                <div
+                  className="pour-video-mask absolute overflow-hidden bg-black"
+                  style={{
+                    top: `${FRAME.top}%`,
+                    left: `${FRAME.left}%`,
+                    width: `${FRAME.width}%`,
+                    height: `${FRAME.height}%`,
+                  }}
                 >
-                  <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
-                  <source src="/video/pour/pour-loop.mp4" />
-                </video>
+                  <video
+                    ref={pourStaticVideoRef}
+                    className="h-full w-full object-cover"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  >
+                    <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
+                    <source src="/video/pour/pour-loop.mp4" />
+                  </video>
+                </div>
               </div>
-            </div>
 
-            {/* Frase + linha + EST abaixo — mesmo mecanismo display:none/
-                flex do label. paddingBottom:8vh no fim garante que o
-                próximo elemento de fluxo normal (Menu, arquivo fechado,
-                não editado) apareça ~8vh depois do EST, sem precisar
-                tocar menu.tsx. */}
-            <div
-              className="pour-mobile-caption w-full flex-col items-center text-center"
-              style={{ display: "none", marginTop: "6vh", paddingBottom: "8vh" }}
-            >
-              <motion.p
-                style={{
-                  fontFamily: "var(--font-instrument-serif)",
-                  fontStyle: "italic",
-                  fontSize: "clamp(1.3rem, 5vw, 1.8rem)",
-                  color: "#EDE7DC",
-                }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={captionInView ? { opacity: 1, y: 0 } : undefined}
-                transition={{ duration: 0.6, delay: 0.08 }}
-              >
-                Where every cup begins.
-              </motion.p>
-              <motion.div
-                style={{ width: 60, height: 1, backgroundColor: "#C89B6A", marginTop: "3vh" }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={captionInView ? { opacity: 1, y: 0 } : undefined}
-                transition={{ duration: 0.6, delay: 0.16 }}
-              />
-              <motion.span
-                className="uppercase"
-                style={{
-                  fontFamily: "var(--font-archivo)",
-                  fontSize: "0.65rem",
-                  letterSpacing: "0.25em",
-                  color: "#8a7d6a",
-                  marginTop: "2vh",
-                }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={captionInView ? { opacity: 1, y: 0 } : undefined}
-                transition={{ duration: 0.6, delay: 0.24 }}
-              >
-                EST. 2019 · DUBLIN
-              </motion.span>
+              <PourCaption opacity={easedProgress} />
             </div>
           </div>
         </section>
