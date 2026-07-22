@@ -148,6 +148,15 @@ function PourMobileStatic() {
 
   return (
     <section id="pour" ref={sectionRef} className="relative w-full" style={{ backgroundColor: "#1C1614" }}>
+      {/* PARTE 2: degradê de transição — a seção anterior (SOBRE NÓS,
+          about.tsx, fechado) termina num fundo claro (#EDE7DC, mesma cor
+          do clip-path circular ali). Sem isto, a emenda entre o fim do
+          pin do Hero (creme) e o início desta section (#1C1614) era um
+          corte seco de cor. ~12vh de linear-gradient indo de #EDE7DC até
+          #1C1614, ANTES do label — a Parte 3 cuida do respiro exato
+          entre o fim deste degradê e o label em si. */}
+      <div style={{ height: "12vh", background: "linear-gradient(to bottom, #EDE7DC, #1C1614)" }} />
+
       {/* 1. label */}
       <div className="w-full text-center uppercase">
         <span

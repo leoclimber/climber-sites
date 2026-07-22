@@ -83,11 +83,27 @@ export function AboutReveal({ progress }: { progress: MotionValue<number> }) {
             font-size: clamp(2rem, 8.5vw, 2.6rem) !important;
           }
           .about-photo-wrap {
-            left: 0 !important;
-            top: 58vh !important;
-            width: 100% !important;
-            height: 38vh !important;
-            aspect-ratio: auto !important;
+            /* PARTE 2 (correção): a leva anterior forçava width:100% +
+               height:38vh + aspect-ratio:auto — como a foto de verdade é
+               3:4 (3456x4608px, medido no arquivo, não estimado), isso
+               espremia/cortava a proporção real pra caber numa caixa de
+               proporção diferente (~1.55:1). Aqui a caixa usa a
+               aspect-ratio REAL (3/4) com a largura calculada a partir
+               da altura disponível — não dá pra manter width:100% E a
+               proporção real ao mesmo tempo: a pin do Hero (fechado, não
+               mexer) tem ~664px de altura no mobile, a coluna de texto
+               (56vh) já ocupa ~372px, sobrando ~290px pra foto — a 390px
+               de largura (100%), 3:4 pediria ~520px de altura, quase o
+               dobro do que sobra. Preferi manter a foto INTEIRA, sem
+               corte e sem distorção (só menor/centralizada) a manter
+               100% de largura cortando ou esticando o conteúdo real. */
+            left: 50% !important;
+            right: auto !important;
+            transform: translateX(-50%) !important;
+            top: 59vh !important;
+            width: auto !important;
+            height: 34vh !important;
+            aspect-ratio: 3 / 4 !important;
           }
         }
       `}</style>
