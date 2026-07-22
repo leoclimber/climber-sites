@@ -174,6 +174,27 @@ function PourMobileStatic() {
   const { sectionRef, videoRef } = usePlayWhileVisible<HTMLElement>();
   const { ref: revealRef, visible } = useRevealOnce<HTMLDivElement>();
 
+  // PARTE 1 (correção): iOS mostra o botão de play nativo quando decide
+  // que o autoplay não foi permitido — o motivo mais comum é o atributo
+  // `muted` não estar presente no HTML no momento em que o Safari avalia
+  // a política de autoplay. Medido (não suposto): React nunca renderiza
+  // `muted` como ATRIBUTO HTML pra <video>/<audio> — só seta a
+  // PROPRIEDADE .muted via JS depois da hidratação (limitação documentada
+  // do próprio React, não bug deste código) — confirmado aqui via
+  // `video.hasAttribute("muted")` retornando false mesmo com
+  // `video.muted` já true. setAttribute explícito, redundante de
+  // propósito com o atributo JSX muted={true} abaixo e com o play()
+  // condicional de usePlayWhileVisible (que só dispara quando a section
+  // intersecta): este roda uma vez, sem condição, assim que o elemento
+  // existe.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = true;
+    video.setAttribute("muted", "");
+    video.play().catch(() => {});
+  }, [videoRef]);
+
   // Reveal por stagger — só nos 5 elementos de TEXTO (label, linha de
   // contexto, frase, linha, EST); a cena/vídeo (item 4) fica sempre
   // opacity:1, sem reveal — um vídeo autoplay+loop escondido atrás de
@@ -189,6 +210,19 @@ function PourMobileStatic() {
 
   return (
     <section id="pour" ref={sectionRef} className="relative w-full" style={{ backgroundColor: "#1C1614" }}>
+      {/* PARTE 1: some com QUALQUER controle nativo que o iOS decida
+          desenhar por cima do vídeo (o botão de play central é o mais
+          comum, mas o Safari às vezes desenha uma barra inteira) — puro
+          reforço visual por cima do fix de autoplay acima; escopado à
+          classe própria do vídeo mobile (não .pour-video-mask, essa é só
+          do desktop, intocada) — este componente só existe no DOM
+          mobile, então não precisa de @media aqui. */}
+      <style>{`
+        .pour-mobile-video::-webkit-media-controls,
+        .pour-mobile-video::-webkit-media-controls-start-playback-button {
+          display: none !important;
+        }
+      `}</style>
       {/* PARTE 2: degradê de transição — a seção anterior (SOBRE NÓS,
           about.tsx, fechado) termina num fundo claro (#EDE7DC, mesma cor
           do clip-path circular ali). Sem isto, a emenda entre o fim do
@@ -246,11 +280,15 @@ function PourMobileStatic() {
           >
             <video
               ref={videoRef}
-              className="h-full w-full object-cover"
+              className="pour-mobile-video h-full w-full object-cover"
               autoPlay
               muted
               loop
               playsInline
+              disablePictureInPicture
+              controls={false}
+              preload="auto"
+              {...{ "webkit-playsinline": "true" }}
             >
               <source src="/video/pour/pour-loop-mobile.mp4" media="(max-width: 767px)" />
               <source src="/video/pour/pour-loop.mp4" />
