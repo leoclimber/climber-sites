@@ -6,7 +6,6 @@ import {
   motion,
   useMotionTemplate,
   useMotionValueEvent,
-  useReducedMotion,
   useScroll,
   useSpring,
   useTransform,
@@ -108,6 +107,32 @@ function usePourIsMobile() {
     return () => mq.removeEventListener("change", handler);
   }, []);
   return isMobile;
+}
+
+// PARTE 1 — fix de hidratação: `useReducedMotion` do framer-motion NÃO é
+// seguro pra SSR — ele lê matchMedia de forma SÍNCRONA já no primeiro
+// render (`initPrefersReducedMotion()` roda no CORPO da função, fora de
+// useEffect), então no servidor (sem window) ele assume false, mas no
+// PRIMEIRO RENDER DO CLIENTE ele já lê o valor REAL do SO — se o
+// dispositivo/navegador testado tiver "reduzir movimento" ativado, o
+// cliente já monta a árvore de reduced-motion no primeiro paint enquanto
+// o HTML do servidor tinha montado a árvore normal (ou vice-versa):
+// hydration mismatch de verdade, reproduzido forçando
+// prefers-reduced-motion:reduce via Playwright (o mesmo bug aparece em
+// hero.tsx, fora do meu escopo — arquivo fechado — mas Pour tinha a
+// MESMA vulnerabilidade, aqui corrigida). Troca pelo mesmo padrão já
+// usado em usePourIsMobile: null nos dois lados até o efeito medir de
+// verdade, sem NUNCA divergir entre servidor/cliente no primeiro paint.
+function usePrefersReducedMotionSafe() {
+  const [value, setValue] = useState<boolean | null>(null);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setValue(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setValue(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return value;
 }
 
 // Versão mobile: seção normal de página (sem altura artificial, sem
@@ -420,7 +445,7 @@ function PourCaption({ opacity }: { opacity: MotionValue<number> }) {
 
 export function Pour() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotionSafe();
   const isMobile = usePourIsMobile();
   const start = useCoverStartInContainer();
   const { sectionRef: pourStaticRef, videoRef: pourStaticVideoRef } =
@@ -532,6 +557,23 @@ export function Pour() {
   const xPercent = useMotionTemplate`${left}%`;
   const yPercent = useMotionTemplate`${top}%`;
 
+  // Nenhuma das duas árvores renderiza até AMBOS prefersReducedMotion e
+  // isMobile terem um valor real (nem null): o primeiro paint do
+  // cliente (hydration) precisa bater exatamente com o que o servidor
+  // mandou (null nos dois, aqui) — só depois que os efeitos de
+  // usePrefersReducedMotionSafe/usePourIsMobile rodam (medindo o
+  // dispositivo de verdade) é que decidimos qual árvore montar. Sem
+  // este gate combinado, mesmo com isMobile já resolvido, um
+  // dispositivo com "reduzir movimento" ativado no SO podia divergir
+  // servidor/cliente (framer's useReducedMotion lê matchMedia síncrono
+  // já no primeiro render do cliente — reproduzido forçando
+  // prefers-reduced-motion:reduce, ver comentário em
+  // usePrefersReducedMotionSafe acima) e gerar hydration mismatch
+  // mesmo sem nenhum problema no isMobile em si.
+  if (prefersReducedMotion === null || isMobile === null) {
+    return null;
+  }
+
   if (prefersReducedMotion) {
     return (
       <section id="pour" className="relative w-full overflow-hidden bg-black">
@@ -560,19 +602,6 @@ export function Pour() {
         </div>
       </section>
     );
-  }
-
-  // isMobile ainda não determinado (useEffect de usePourIsMobile ainda
-  // não rodou) — não renderiza NENHUMA das duas árvores. É isto que
-  // fecha o bug do flash reportado: sem este gate, o primeiro paint do
-  // cliente caía direto na árvore de desktop (scrub/pin) logo abaixo,
-  // que só some um instante depois quando o efeito resolve pra mobile —
-  // tempo suficiente pra aparecer um segundo vídeo, o label na posição
-  // antiga e um pedaço maior da própria foto (tons claros) no estado
-  // "fullscreen cover" do desktop. Null aqui custa um instante sem a
-  // seção (até o efeito rodar), não um flash de conteúdo errado.
-  if (isMobile === null) {
-    return null;
   }
 
   // Mobile: nem chega a montar o JSX de scrub/pin/settled abaixo — troca
