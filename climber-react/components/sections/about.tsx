@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, type MotionValue, useMotionValueEvent, useTransform } from "framer-motion";
 
 // Últimos 20% do scroll da imersão — mesmo ponto de WHITEOUT_START usado no
@@ -55,57 +55,61 @@ export function AboutReveal({ progress }: { progress: MotionValue<number> }) {
     return `circle(${t * MAX_CLIP_RADIUS}% at 50% 50%)`;
   });
 
+  // MOBILE-ONLY: o bloco empilhado (kicker/título/parágrafo/rodapé/foto)
+  // é mais alto que os ~100vh disponíveis dentro do pin (a foto sozinha,
+  // em largura total e proporção real 3:4, já pede ~78vh) — impossível
+  // caber tudo de uma vez sem cortar. Em vez de cortar (bug relatado: a
+  // foto perdia a xícara pro overflow-hidden do wrapper), o bloco todo
+  // PANA verticalmente — a MESMA técnica de scroll-scrub já usada pro
+  // clip-path acima, só que aplicada como translateY no conteúdo em vez
+  // de crescer um raio. Mede a altura real do conteúdo via ref (não
+  // chuta um valor em vh) pra funcionar em qualquer largura/fonte/
+  // quebra de linha sem recalibrar manualmente. Em telas >=768px este
+  // ref nunca é medido de verdade (o wrapper que o contém fica
+  // display:none via media query, ver <style> abaixo — offsetHeight de
+  // elemento display:none é 0), então panDistance fica 0 e o transform
+  // não tem efeito nenhum no desktop.
+  const panContentRef = useRef<HTMLDivElement>(null);
+  const panViewportRef = useRef<HTMLDivElement>(null);
+  const [panDistance, setPanDistance] = useState(0);
+  useEffect(() => {
+    function measure() {
+      const content = panContentRef.current;
+      const viewport = panViewportRef.current;
+      if (!content || !viewport) return;
+      setPanDistance(Math.max(0, content.scrollHeight - viewport.offsetHeight));
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+  const panY = useTransform(progress, [WHITEOUT_START, 1], [0, -panDistance]);
+
   return (
     <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
-      {/* Mobile (<768px) só: título+foto do desktop são posicionamento
-          absoluto lado-a-lado com valores em vw/ch calibrados pra essa
-          composição — em telas estreitas o título (width:15ch num
-          clamp que já bate no mínimo de 3.2rem ali) fica bem mais largo
-          que a coluna de 55vw, estourando por cima da foto/viewport. Em
-          vez de tocar os valores desktop (proibido — TRAVA), sobrescreve
-          só dentro do media query, via !important, os 3 blocos que
-          precisam mudar de geometria: coluna de texto vira full-width no
-          topo, título ganha wrap natural numa fonte menor, foto desce pra
-          embaixo do texto em vez de ficar do lado — os dois juntos ainda
-          cabem dentro dos ~100dvh do pin do Hero (56vh texto + 2vh
-          respiro + 38vh foto = 96vh). Nenhuma regra aqui tem efeito em
+      {/* Mobile (<768px) só: a versão desktop (texto+foto lado a lado,
+          absolute posicionado em vw/ch calibrados pra essa composição)
+          simplesmente não cabe numa tela estreita sem cortar algo — uma
+          leva anterior tentou empurrar a foto pra full-width mantendo o
+          resto igual, e o excesso de altura (foto sozinha pede ~78vh
+          numa largura de 390px, na proporção real 3:4) estourava o
+          fundo dos ~100vh do pin e era cortado pelo overflow-hidden do
+          wrapper — sumia a metade de baixo da foto (a xícara, bug
+          relatado). Em vez de cortar, esconde os blocos desktop aqui
+          (.about-text-col/.about-photo-wrap) e mostra, só em mobile, o
+          bloco empilhado abaixo (kicker → título → parágrafo → rodapé →
+          foto, todos em fluxo normal, mais alto que os 100vh
+          disponíveis) que PANA verticalmente (panY, calculado acima) em
+          vez de tentar caber tudo de uma vez. Nenhuma regra aqui afeta
           >=768px: cada seletor só existe dentro do media query. */}
       <style>{`
         @media (max-width: 767px) {
-          .about-text-col {
-            width: 100% !important;
-            height: 56vh !important;
-            padding-top: 5vh !important;
-          }
-          .about-title {
-            width: 100% !important;
-            max-width: 100% !important;
-            font-size: clamp(2rem, 8.5vw, 2.6rem) !important;
-          }
+          .about-text-col,
           .about-photo-wrap {
-            /* PARTE 2 (correção, pedido explícito de largura total): a
-               leva anterior deixava a foto menor (~54vw, centralizada)
-               pra caber inteira dentro da pin do Hero (fechada, ~664px
-               no mobile) — mas isso lia como "foto pequena, muito vazio
-               em cima". Aqui: width:100% de verdade (sangra nas bordas),
-               height:auto pela aspect-ratio REAL (3/4, medida no
-               arquivo — nunca deformada) — SEM tentar caber inteira na
-               pin: a 390px de largura, 3:4 pede ~520px de altura, mais
-               do que os ~290px que sobram depois da coluna de texto
-               (56vh) dentro da pin de ~664px. O excesso é cortado pela
-               MESMA overflow-hidden que este componente (AboutReveal) já
-               tem no wrapper mais externo — corte de CONTAINER (mostra
-               o topo da foto, esconde o resto), não o corte de
-               object-fit/deformação que existia antes (que espremia a
-               imagem TODA pra caber, distorcendo). Medido depois de
-               aplicar: ver relatório. */
-            left: 0 !important;
-            right: auto !important;
-            transform: none !important;
-            top: 62vh !important;
-            width: 100% !important;
-            height: auto !important;
-            aspect-ratio: 3 / 4 !important;
+            display: none !important;
+          }
+          .about-mobile-pan-viewport {
+            display: block !important;
           }
         }
       `}</style>
@@ -298,6 +302,121 @@ export function AboutReveal({ progress }: { progress: MotionValue<number> }) {
               <span>↳</span>
               <span>06:14 — first pour of the day</span>
             </div>
+          </motion.div>
+        </div>
+
+        {/* MOBILE-ONLY: bloco empilhado com pan vertical — ver comentário
+            grande acima do <style>. display:none por padrão (regra
+            inline abaixo), só vira display:block dentro do media query
+            (max-width:767px) definido no <style> acima. Ocupa a MESMA
+            posição/tamanho do pin (absolute inset-0, ~100vh) — é a
+            JANELA (overflow:hidden) através da qual o conteúdo mais alto
+            pana. */}
+        <div
+          ref={panViewportRef}
+          className="about-mobile-pan-viewport absolute inset-0 overflow-hidden"
+          style={{ display: "none" }}
+        >
+          <motion.div ref={panContentRef} className="px-6" style={{ y: panY, paddingTop: "15vh", paddingBottom: "6vh" }}>
+            <motion.div
+              className="uppercase text-[#151008]"
+              style={{ fontSize: "0.7rem", letterSpacing: "0.35em" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: entered ? 0.45 : 0 }}
+              transition={{ duration: 0.3, ease: "linear" }}
+            >
+              (About us)
+            </motion.div>
+            <motion.div
+              className="mt-4 h-px w-full"
+              style={{ backgroundColor: RULE_COLOR }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: entered ? 1 : 0 }}
+              transition={{ duration: 0.3, ease: "linear" }}
+            />
+
+            <h2
+              className="mt-6 uppercase text-[#151008]"
+              style={{
+                fontFamily: "var(--font-archivo)",
+                fontSize: "clamp(2.2rem, 9vw, 2.8rem)",
+                lineHeight: 0.95,
+                fontWeight: 800,
+                letterSpacing: "-0.02em",
+                maxWidth: "14ch",
+              }}
+            >
+              {TITLE_WORDS.map((word, i) => (
+                <span key={word} className="mr-[0.24em] inline-block overflow-hidden align-top">
+                  <motion.span
+                    className="inline-block"
+                    initial={{ y: "100%" }}
+                    animate={{ y: entered ? "0%" : "100%" }}
+                    transition={{
+                      duration: 0.6,
+                      ease: EASE_POWER3_OUT,
+                      delay: entered ? i * 0.08 : 0,
+                    }}
+                  >
+                    {word}
+                  </motion.span>
+                </span>
+              ))}
+            </h2>
+
+            <motion.p
+              className="text-[#151008]"
+              style={{ fontSize: "0.95rem", lineHeight: 1.75, maxWidth: "44ch", marginTop: "3vh" }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: entered ? 0.7 : 0, y: entered ? 0 : 20 }}
+              transition={{ duration: 0.5, ease: EASE_POWER3_OUT, delay: entered ? 0.7 : 0 }}
+            >
+              Every cup starts before sunrise. We pick the beans, dial in the
+              grind, and pull shot after shot until it&apos;s right. No rush
+              — just craft. You&apos;ll taste it in the first sip.
+            </motion.p>
+
+            <motion.div
+              className="flex items-center gap-4 text-[#151008]"
+              style={{ marginTop: "4vh", fontSize: "0.75rem", letterSpacing: "0.25em" }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: entered ? 0.4 : 0, y: entered ? 0 : 20 }}
+              transition={{ duration: 0.5, ease: EASE_POWER3_OUT, delay: entered ? 0.9 : 0 }}
+            >
+              <span className="uppercase">Est. 2019</span>
+              <span className="h-4 w-px bg-current" />
+              <span className="uppercase">100% Arabica</span>
+            </motion.div>
+
+            {/* Foto: largura total, proporção real (3:4, medida no
+                arquivo: 3456x4608 = exatamente 3/4 — confirmado via
+                header do JPEG) — zero object-fit:cover cortando nada,
+                já que a caixa bate exatamente na proporção da imagem.
+                Fica alcançável porque o bloco INTEIRO pana (acima), não
+                porque a foto encolheu. */}
+            <motion.div
+              className="relative w-full overflow-hidden"
+              style={{ aspectRatio: "3 / 4", marginTop: "5vh" }}
+              initial={{ clipPath: "inset(100% 0 0 0)" }}
+              animate={{ clipPath: entered ? "inset(0% 0 0 0)" : "inset(100% 0 0 0)" }}
+              transition={{ duration: PHOTO_REVEAL_DURATION, ease: EASE_POWER4_INOUT, delay: entered ? PHOTO_REVEAL_DELAY : 0 }}
+            >
+              <Image src="/images/about/sobre.jpg" alt="" fill sizes="100vw" className="object-cover" />
+              <div
+                className="pointer-events-none absolute bottom-0 left-0 z-10"
+                style={{ width: "100%", height: "25%", background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }}
+              />
+              <motion.div
+                className="absolute bottom-0 left-0 z-20 flex items-center gap-1"
+                style={{ padding: "4vw", fontSize: "0.7rem", letterSpacing: "0.1em", color: "rgba(255,255,255,0.9)", fontWeight: 400 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: entered ? 1 : 0 }}
+                transition={{ duration: 0.6, ease: "linear", delay: entered ? PHOTO_REVEAL_DELAY + PHOTO_REVEAL_DURATION : 0 }}
+              >
+                <span>↳</span>
+                <span>06:14 — first pour of the day</span>
+              </motion.div>
+            </motion.div>
           </motion.div>
         </div>
       </motion.div>

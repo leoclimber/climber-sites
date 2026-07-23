@@ -170,10 +170,17 @@ export function Hero() {
     // Desktop (lg+): +40% de altura (150vh -> 210vh) pra dar mais fôlego
     // de rolagem à imersão — as frações de fase acima não mudam porque
     // tudo é dirigido por scrollYProgress (0-1 relativo à altura do
-    // container), nunca por vh/pixel absoluto. Mobile mantém 150vh: o
-    // dedo já rende pouco progresso por swipe, mais altura ali significa
-    // só mais swipes repetidos pra atravessar a mesma imersão.
-    <section id="hero" ref={containerRef} className="relative z-20 h-[150vh] w-full lg:h-[210vh]">
+    // container), nunca por vh/pixel absoluto.
+    // Mobile (<lg): 320vh, não mais 150vh — a fase final (80-100%, About
+    // revelando+panando dentro do pin, ver about.tsx) precisa de
+    // distância de scroll real pra (a) o pan vertical do conteúdo
+    // empilhado (kicker→título→parágrafo→foto) não parecer instantâneo, e
+    // (b) dar "peso" suficiente nessa fase pra um flick forte gastar seu
+    // momento ali dentro em vez de atravessar reto pro Pour. Ainda é
+    // TUDO dirigido por scrollYProgress (0-1 relativo à altura do
+    // container) — só a altura do container mudou, as frações de fase
+    // continuam as mesmas.
+    <section id="hero" ref={containerRef} className="relative z-20 h-[320vh] w-full lg:h-[210vh]">
       <div
         className="hero-sticky sticky top-0 h-screen w-full overflow-hidden"
         style={{ background: "#150c07" }}
