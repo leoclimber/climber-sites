@@ -1,0 +1,80 @@
+/* Estilos exclusivos do Café Lisboa (Clean A). Importado só pelo layout
+   desta rota — não mexe em app/globals.css, que pertence ao café
+   cinematográfico e ao shell compartilhado. */
+
+.cl-esteira {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.cl-esteira-track {
+  display: inline-flex;
+  align-items: center;
+  will-change: transform;
+}
+
+.cl-esteira-track[data-dir="rtl"] {
+  animation: cl-esteira-scroll var(--cl-dur, 60s) linear infinite;
+}
+
+.cl-esteira-track[data-dir="ltr"] {
+  animation: cl-esteira-scroll var(--cl-dur, 50s) linear infinite reverse;
+}
+
+.cl-esteira:hover .cl-esteira-track,
+.cl-esteira[data-paused="true"] .cl-esteira-track {
+  animation-play-state: paused;
+}
+
+@keyframes cl-esteira-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-esteira-track {
+    animation: none !important;
+    transform: none !important;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+  .cl-esteira-track [data-dup="true"] {
+    display: none;
+  }
+  .cl-esteira {
+    overflow: visible;
+    white-space: normal;
+  }
+}
+
+/* Mosaico — grade fixa de 5 slots (rodada 6). Slot A trava em 45% da
+   largura útil; os outros dividem o resto respeitando a proporção real de
+   cada foto (ver components/cafe-lisboa/gallery-grid.tsx). */
+.cl-mosaic {
+  display: grid;
+  grid-template-columns: 45% 12.5% 14.6428571%;
+  gap: 24px;
+}
+
+.cl-mosaic-col {
+  display: grid;
+  gap: 24px;
+}
+
+/* Scrollbar dos carrosséis de arraste mobile — discreta, não desaparece
+   (esconder scrollbar sem indicador visual próprio prejudica affordance
+   de "isso rola"). */
+.cl-drag-row {
+  scrollbar-width: thin;
+  scrollbar-color: #8b4a2f #e7e2db;
+}
+.cl-drag-row::-webkit-scrollbar {
+  height: 4px;
+}
+.cl-drag-row::-webkit-scrollbar-thumb {
+  background: #8b4a2f;
+}
