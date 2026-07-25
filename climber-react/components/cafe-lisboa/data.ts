@@ -5,6 +5,7 @@
 export const business = {
   name: "Café Lisboa",
   addressLine: "14 Meath Street, Dublin 8, D08 X2N1",
+  addressShort: "14 Meath Street, Dublin 8",
   phoneDisplay: "+353 1 234 5678",
   phoneHref: "tel:+35312345678",
   instagramHandle: "@cafelisboa_dublin",
@@ -12,6 +13,8 @@ export const business = {
   mapsHref:
     "https://www.google.com/maps/search/?api=1&query=14+Meath+Street%2C+Dublin+8%2C+D08+X2N1",
   establishedYear: 2019,
+  rating: 4.8,
+  reviewCount: 503,
 };
 
 export const hours = [
@@ -31,14 +34,21 @@ export const menuCategories: { id: string; label: string; items: MenuItem[] }[] 
       { name: "Filter, single origin", price: "4.50" },
       { name: "Cortado", price: "3.80" },
       { name: "Pour over, house blend", price: "4.80" },
+      { name: "Espresso", price: "3.20" },
+      { name: "Cappuccino", price: "4.00" },
+      { name: "Mocha", price: "4.60" },
+      { name: "Iced americano", price: "4.00" },
     ],
   },
   {
     id: "pastries",
     label: "Pastries",
     items: [
-      { name: "Pain au chocolat", price: "3.60", allergens: ["G"] },
-      { name: "Carrot cake", price: "4.90", allergens: ["G", "N"] },
+      { name: "Butter croissant", price: "3.20", allergens: ["G", "D"] },
+      { name: "Pain au chocolat", price: "3.60", allergens: ["G", "D"] },
+      { name: "Almond croissant", price: "3.80", allergens: ["G", "D", "N"] },
+      { name: "Cinnamon bun", price: "3.90", allergens: ["G", "D"] },
+      { name: "Banana bread", price: "3.50", allergens: ["G", "D", "N"] },
       { name: "Scone, seasonal jam", price: "3.40", allergens: ["G", "D"] },
     ],
   },
@@ -46,16 +56,21 @@ export const menuCategories: { id: string; label: string; items: MenuItem[] }[] 
     id: "toasted",
     label: "Toasted",
     items: [
-      { name: "Avocado on sourdough", price: "8.90", allergens: ["G"] },
+      { name: "Sourdough & avocado", price: "8.90", allergens: ["G"] },
       { name: "Toastie, ham & cheese", price: "6.50", allergens: ["G", "D"] },
+      { name: "Mozzarella & tomato", price: "7.20", allergens: ["G", "D"] },
+      { name: "Two eggs, sourdough", price: "7.80", allergens: ["G"] },
     ],
   },
   {
     id: "cold",
     label: "Cold",
     items: [
-      { name: "Iced latte", price: "4.60" },
-      { name: "Cold brew", price: "4.30" },
+      { name: "Iced latte", price: "4.50", allergens: ["D"] },
+      { name: "Cold brew", price: "4.20" },
+      { name: "Iced matcha", price: "4.90", allergens: ["D"] },
+      { name: "Affogato", price: "4.80", allergens: ["D"] },
+      { name: "Sparkling water", price: "3.00" },
     ],
   },
 ];
@@ -102,6 +117,9 @@ export const reviews = [
   { quote: "Best flat white south of the Liffey.", author: "Aoife" },
   { quote: "The kind of café you plan your morning around.", author: "Marcus" },
   { quote: "Quiet, unhurried — exactly what Meath Street needed.", author: "Niamh" },
+  { quote: "Sara pulls the best flat white I've had outside Lisbon.", author: "Tom" },
+  { quote: "My laptop and I have unofficially moved in.", author: "Gráinne" },
+  { quote: "Small, honest, and the pastries sell out for a reason.", author: "Diarmuid" },
 ];
 
 export const mosaicSlots = [

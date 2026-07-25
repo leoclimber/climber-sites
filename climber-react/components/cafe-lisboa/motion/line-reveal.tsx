@@ -1,10 +1,11 @@
 "use client";
 
 import { motion, type Transition } from "framer-motion";
+import type { ReactNode } from "react";
 import { usePrefersReducedMotion } from "./hooks";
 
 type LineRevealProps = {
-  lines: string[];
+  lines: ReactNode[];
   as?: "h1" | "h2" | "h3" | "p";
   className?: string;
   lineClassName?: string;

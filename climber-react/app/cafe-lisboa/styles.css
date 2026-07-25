@@ -51,18 +51,23 @@
   }
 }
 
-/* Mosaico — grade fixa de 5 slots (rodada 6). Slot A trava em 45% da
-   largura útil; os outros dividem o resto respeitando a proporção real de
-   cada foto (ver components/cafe-lisboa/gallery-grid.tsx). */
+/* Mosaico — grade de 12 colunas, edge-to-edge (rodada 7). As frações abaixo
+   (3fr / 1fr / 1.5fr) foram medidas no browser pras alturas reais baterem
+   os pisos pedidos (feature >=620px, secundárias >=300px) com a proporção
+   REAL de cada fotoo (atmosphere-04 3:2, detail-04 e facade-vertical
+   retrato ~0.78, product-01 quadrado) — a grade antiga em % fixo somava só
+   ~72% da largura (45+12.5+14.64), deixando ~28% de vazio à direita; fr
+   sempre fecha 100%, então esse vazio não existe mais estruturalmente. */
 .cl-mosaic {
   display: grid;
-  grid-template-columns: 45% 12.5% 14.6428571%;
-  gap: 24px;
+  grid-template-columns: 3fr 1fr 1.5fr;
+  gap: 10px;
+  align-items: start;
 }
 
 .cl-mosaic-col {
   display: grid;
-  gap: 24px;
+  gap: 10px;
 }
 
 /* Scrollbar dos carrosséis de arraste mobile — discreta, não desaparece
@@ -77,4 +82,39 @@
 }
 .cl-drag-row::-webkit-scrollbar-thumb {
   background: #8b4a2f;
+}
+
+/* Vapor/luz quente ambiente no hero — puro CSS (gradiente radial + opacidade
+   pulsando devagar), nunca canvas nem sequência de frames. */
+.cl-hero-steam {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 45%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 60% 70% at 50% 100%,
+    rgba(232, 184, 138, 0.28) 0%,
+    rgba(232, 184, 138, 0) 70%
+  );
+  mix-blend-mode: screen;
+  animation: cl-steam-drift 8s ease-in-out infinite;
+}
+
+@keyframes cl-steam-drift {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translateY(-14px) scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-hero-steam {
+    animation: none;
+    opacity: 0.6;
+  }
 }

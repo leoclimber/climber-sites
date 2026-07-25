@@ -43,14 +43,18 @@ export function Menu() {
         ))}
       </div>
 
-      <StaggerGroup
-        as="ul"
-        stagger={0.06}
-        className="mt-10 grid gap-x-16 gap-y-1 md:grid-cols-2"
-      >
-        {category.items.map((item) => (
-          <StaggerItem as="li" key={item.name}>
-            <MenuRow name={item.name} price={item.price} allergens={item.allergens} />
+      {/* key={active}: força remontar o grupo a cada troca de categoria.
+          Sem isso, o whileInView/once:true do StaggerGroup só dispara UMA
+          vez pra sempre (a mesma instância do componente persiste entre
+          trocas de aba) — itens de categorias trocadas depois disso nascem
+          e ficam presos no estado "hidden" (opacity:0) porque não existe
+          nenhum novo evento de entrada em viewport pra acordar eles. Com a
+          key, cada categoria ganha sua própria instância e o observer
+          dispara de novo (a seção já está visível, então dispara na hora). */}
+      <StaggerGroup key={active} as="ul" stagger={0.06} className="mt-10 flex flex-col gap-1">
+        {category.items.map((item, i) => (
+          <StaggerItem as="li" key={`${category.id}-${item.name}`}>
+            <MenuRow index={i} name={item.name} price={item.price} allergens={item.allergens} />
           </StaggerItem>
         ))}
       </StaggerGroup>
@@ -66,10 +70,12 @@ export function Menu() {
 }
 
 function MenuRow({
+  index,
   name,
   price,
   allergens,
 }: {
+  index: number;
   name: string;
   price: string;
   allergens?: readonly string[];
@@ -87,13 +93,18 @@ function MenuRow({
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, amount: 0.4 }}
-      className="flex items-baseline justify-between gap-4 py-4"
+      className="flex items-baseline justify-between gap-4 border-b border-[#E7E2DB] py-4"
     >
-      <span className="text-[1.0625rem] text-[#1C1917]">
-        {name}
-        {allergens && (
-          <sup className="ml-1 text-[0.65rem] text-[#78716C]">{allergens.join(" ")}</sup>
-        )}
+      <span className="flex items-baseline gap-4">
+        <span className="text-[0.75rem] tabular-nums text-[#A8A29E]">
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <span className="text-[1.0625rem] text-[#1C1917]">
+          {name}
+          {allergens && (
+            <sup className="ml-1 text-[0.65rem] text-[#78716C]">{allergens.join(" ")}</sup>
+          )}
+        </span>
       </span>
       <span className="relative flex-1 self-end overflow-hidden">
         <motion.span

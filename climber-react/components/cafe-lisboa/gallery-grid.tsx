@@ -21,24 +21,26 @@ export function GalleryGrid() {
   const [slotD, slotE] = [mosaicSlots[3], mosaicSlots[4]];
 
   return (
-    <section id="cl-gallery" className="bg-[#FAF8F5] px-6 py-16 md:px-16 md:py-24">
-      <Rule label="05 · O Espaço" />
+    <section id="cl-gallery" className="bg-[#FAF8F5] py-16 md:py-24">
+      <div className="px-6 md:px-16">
+        <Rule label="05 · O Espaço" />
+      </div>
 
-      <div className="hidden md:block">
+      <div className="hidden md:block md:px-4">
         <div className="cl-mosaic">
-          <MosaicTile slot={slotA} index={0} onOpen={() => setOpenIndex(0)} />
+          <MosaicTile slot={slotA} index={0} sizes="55vw" onOpen={() => setOpenIndex(0)} />
           <div className="cl-mosaic-col">
-            <MosaicTile slot={slotB} index={1} onOpen={() => setOpenIndex(1)} />
-            <MosaicTile slot={slotC} index={2} onOpen={() => setOpenIndex(2)} />
+            <MosaicTile slot={slotB} index={1} sizes="18vw" onOpen={() => setOpenIndex(1)} />
+            <MosaicTile slot={slotC} index={2} sizes="18vw" onOpen={() => setOpenIndex(2)} />
           </div>
           <div className="cl-mosaic-col">
-            <MosaicTile slot={slotD} index={3} onOpen={() => setOpenIndex(3)} />
-            <MosaicTile slot={slotE} index={4} onOpen={() => setOpenIndex(4)} />
+            <MosaicTile slot={slotD} index={3} sizes="27vw" onOpen={() => setOpenIndex(3)} />
+            <MosaicTile slot={slotE} index={4} sizes="27vw" onOpen={() => setOpenIndex(4)} />
           </div>
         </div>
       </div>
 
-      <div className="cl-drag-row flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 md:hidden">
+      <div className="cl-drag-row -mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 md:hidden">
         {mosaicSlots.map((slot, i) => (
           <button
             key={slot.id}
@@ -60,10 +62,12 @@ export function GalleryGrid() {
 function MosaicTile({
   slot,
   index,
+  sizes = "(min-width: 768px) 50vw, 100vw",
   onOpen,
 }: {
   slot: (typeof mosaicSlots)[number];
   index: number;
+  sizes?: string;
   onOpen: () => void;
 }) {
   return (
@@ -71,18 +75,22 @@ function MosaicTile({
       <Tappable
         as="button"
         onClick={onOpen}
-        className="block w-full cursor-pointer"
+        className="group block w-full cursor-pointer overflow-hidden"
         style={{ aspectRatio: slot.ratio }}
         aria-label={`Open ${slot.alt} full screen`}
       >
-        <div className="relative h-full w-full">
+        <div className="relative h-full w-full overflow-hidden">
           <Image
             src={slot.src}
             alt={slot.alt}
             fill
-            sizes="(min-width: 768px) 45vw, 100vw"
+            sizes={sizes}
             loading="lazy"
-            className="object-contain"
+            className="object-cover transition-transform duration-[600ms] ease-out group-hover:scale-[1.05]"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#3A1F0F]/30 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
           />
         </div>
       </Tappable>

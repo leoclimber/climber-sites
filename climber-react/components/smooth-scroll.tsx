@@ -218,7 +218,7 @@ export function SmoothScroll() {
       // discrepância, sempre bate com o range real em que o pin segura.
       function computeTouchAboutAnchor() {
         const hero = document.getElementById("hero");
-        const heroSticky = document.querySelector(".hero-sticky");
+        const heroSticky = document.querySelector<HTMLElement>(".hero-sticky");
         const pour = document.getElementById("pour");
         if (!hero || !heroSticky || !pour) return null;
         const heroTop = hero.getBoundingClientRect().top + window.scrollY;

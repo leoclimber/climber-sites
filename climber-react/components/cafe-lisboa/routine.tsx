@@ -1,83 +1,131 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
-import { motion, useMotionValueEvent, useScroll } from "framer-motion";
-import { Rule } from "./manifesto";
+import { useRef } from "react";
+import { interpolate, useMotionValueEvent, useScroll } from "framer-motion";
+import { usePrefersReducedMotion } from "./motion/hooks";
 import { routineSteps } from "./data";
 
-// Destaque 2/4: sticky bidirecional no desktop (painel travado em 38vh,
-// exatamente — não interpretar), arraste horizontal no mobile.
+// Rodada 7: trocado o crossfade discreto (desktop) + carrossel snap (mobile)
+// por UM scrub contínuo só, baseado em scroll nativo, nas duas telas — só o
+// CSS de layout muda (lado a lado no desktop, empilhado no mobile). Rolagem
+// nativa dentro de um wrapper alto já dá "para no meio se soltar no meio" e
+// bidirecional de graça, sem reimplementar detecção de gesto por JS (o
+// próprio components/smooth-scroll.tsx documenta o quanto isso é frágil
+// pra touch real neste projeto — não repetir aqui).
+//
+// Escrita no DOM via CSS custom properties num único ref (não vários
+// useTransform ligados via `style` em elementos diferentes): medido nesta
+// rodada que, com 6 useTransform derivados do mesmo scrollYProgress
+// alimentando `style` em elementos DIFERENTES, o valor interno da motion
+// value (.get()) ficava sempre correto mas a escrita real no DOM travava no
+// valor do primeiro render pra ALGUNS dos elementos (não todos, sem padrão
+// óbvio) — confirmado em dev E build de produção, não era artefato do
+// Strict Mode. Uma escrita imperativa só, no elemento ancestral comum,
+// elimina a dependência nesse mecanismo por completo.
+const B1 = 0.3;
+const B2 = 0.36;
+const B3 = 0.64;
+const B4 = 0.7;
+const STOPS = [0, B1, B2, B3, B4, 1];
+
+const BG = interpolate(STOPS, ["#2A1D14", "#2A1D14", "#6B4A33", "#6B4A33", "#EDE4D6", "#EDE4D6"]);
+const FG = interpolate(STOPS, ["#F5EFE6", "#F5EFE6", "#F5EFE6", "#F5EFE6", "#1C1917", "#1C1917"]);
+const MUTED = interpolate(STOPS, ["#C9B8A8", "#C9B8A8", "#DCC9B6", "#DCC9B6", "#78716C", "#78716C"]);
+const OPACITY_BEAN = interpolate([0, B1, B2], [1, 1, 0]);
+const OPACITY_METHOD = interpolate([B1, B2, B3, B4], [0, 1, 1, 0]);
+const OPACITY_CUP = interpolate([B3, B4, 1], [0, 1, 1]);
+const OPACITY_BY_INDEX = [OPACITY_BEAN, OPACITY_METHOD, OPACITY_CUP];
+const PANEL_OPACITY_VAR = ["--cl-op-0", "--cl-op-1", "--cl-op-2"] as const;
+
 export function Routine() {
-  return (
-    <section id="cl-routine" className="bg-[#FAF8F5] px-6 py-16 md:px-16 md:py-24">
-      <Rule label="04 · A Rotina" />
-      <RoutineDesktop />
-      <RoutineMobile />
-    </section>
-  );
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = usePrefersReducedMotion();
+
+  if (reducedMotion) {
+    return <RoutineStatic />;
+  }
+
+  return <RoutineScrub wrapperRef={wrapperRef} />;
 }
 
-function RoutineDesktop() {
-  const [active, setActive] = useState(0);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+function RoutineScrub({ wrapperRef }: { wrapperRef: React.RefObject<HTMLDivElement | null> }) {
+  const stickyRef = useRef<HTMLDivElement>(null);
 
-  // Progresso contínuo de rolagem da SEÇÃO INTEIRA (0 no topo do wrapper,
-  // 1 no fim), dividido em 3 terços iguais. Uma função contínua nunca tem
-  // "zona morta" entre passos — ao contrário de 3 observers de viewport
-  // independentes (tentativa anterior: com o texto mais curto que a tela,
-  // sobrava faixa onde nenhum dos três cruzava o centro ao mesmo tempo, e
-  // "Method" nunca vencia a corrida contra o vizinho). Bidirecional de
-  // graça: o valor de progresso responde à posição atual, não a uma
-  // direção de rolagem.
   const { scrollYProgress } = useScroll({
     target: wrapperRef,
     offset: ["start start", "end end"],
   });
 
-  useMotionValueEvent(scrollYProgress, "change", (progress) => {
-    const index = Math.min(2, Math.floor(progress * 3));
-    setActive(index);
+  useMotionValueEvent(scrollYProgress, "change", (p) => {
+    const node = stickyRef.current;
+    if (!node) return;
+    node.style.backgroundColor = BG(p);
+    node.style.setProperty("--cl-fg", FG(p));
+    node.style.setProperty("--cl-muted", MUTED(p));
+    node.style.setProperty("--cl-op-0", String(OPACITY_BEAN(p)));
+    node.style.setProperty("--cl-op-1", String(OPACITY_METHOD(p)));
+    node.style.setProperty("--cl-op-2", String(OPACITY_CUP(p)));
   });
 
   return (
-    <div ref={wrapperRef} className="hidden md:grid md:grid-cols-[38vw_1fr] md:gap-16">
-      <div>
-        <div className="sticky top-24 h-[38vh] w-full overflow-hidden">
-          {routineSteps.map((step, i) => (
-            <motion.div
-              key={step.label}
-              className="absolute inset-0"
-              animate={{ opacity: active === i ? 1 : 0 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-            >
+    <div ref={wrapperRef} id="cl-routine" className="relative h-[340vh]">
+      <div
+        ref={stickyRef}
+        className="sticky top-0 h-screen overflow-hidden"
+        style={
+          {
+            backgroundColor: "#2A1D14",
+            "--cl-fg": "#F5EFE6",
+            "--cl-muted": "#C9B8A8",
+            "--cl-op-0": "1",
+            "--cl-op-1": "0",
+            "--cl-op-2": "0",
+          } as React.CSSProperties
+        }
+      >
+        <div
+          className="absolute left-6 top-8 z-10 flex items-center gap-3 text-[0.8125rem] tracking-[0.15em] text-[var(--cl-muted)] [text-shadow:0_1px_8px_rgba(0,0,0,0.35)] md:left-16 md:top-10 md:[text-shadow:none]"
+        >
+          <span className="h-6 w-[2px] bg-[var(--cl-fg)]" aria-hidden />
+          04 · A ROTINA
+        </div>
+
+        {routineSteps.map((step, i) => (
+          <div
+            key={step.label}
+            className="absolute inset-0 flex flex-col md:flex-row"
+            style={{ opacity: `var(${PANEL_OPACITY_VAR[i]})` }}
+          >
+            <div className="relative h-[42vh] w-full shrink-0 overflow-hidden md:h-full md:w-[45%]">
               <Image
                 src={step.image}
                 alt={`${step.label} — Café Lisboa's coffee routine`}
                 fill
-                sizes="38vw"
+                sizes="(min-width: 768px) 45vw, 100vw"
                 loading="lazy"
                 className="object-cover"
               />
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-col">
-        {routineSteps.map((step, i) => (
-          <div key={step.label} className="flex min-h-[75vh] flex-col justify-center gap-3">
-            <div className="flex items-center gap-3 text-[0.875rem] tracking-[0.05em] text-[#8B4A2F]">
-              <span className="h-px w-10 bg-[#8B4A2F]" aria-hidden />
-              {String(i + 1).padStart(2, "0")} / 03
             </div>
-            <h3 className="font-[family-name:var(--font-newsreader)] text-[2rem] text-[#1C1917]">
-              {step.label}
-            </h3>
-            <div className="flex flex-col gap-1 text-[1.0625rem] leading-[1.6] text-[#78716C]">
-              {step.lines.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
+
+            <div className="relative flex flex-1 flex-col justify-center gap-3 px-6 py-8 md:px-16">
+              <div className="flex items-center gap-3 text-[0.875rem] tracking-[0.05em] text-[var(--cl-muted)]">
+                <span className="h-px w-10 bg-current" aria-hidden />
+                {String(i + 1).padStart(2, "0")} / 03
+              </div>
+              <h3 className="font-[family-name:var(--font-newsreader)] text-[clamp(1.9rem,4vw,2.75rem)] text-[var(--cl-fg)]">
+                {step.label}
+              </h3>
+              <div className="flex flex-col gap-1 text-[1.0625rem] leading-[1.6] text-[var(--cl-muted)] md:hidden">
+                {step.mobileLines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+              <div className="hidden flex-col gap-1 text-[1.0625rem] leading-[1.6] text-[var(--cl-muted)] md:flex">
+                {step.lines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
             </div>
           </div>
         ))}
@@ -86,57 +134,57 @@ function RoutineDesktop() {
   );
 }
 
-function RoutineMobile() {
-  const [active, setActive] = useState(0);
+// prefers-reduced-motion: nada de pin nem scroll-scrub — os 3 passos viram
+// uma lista empilhada normal, cada um com sua própria foto e fundo fixo.
+function RoutineStatic() {
+  const bg = ["#2A1D14", "#6B4A33", "#EDE4D6"];
+  const fg = ["#F5EFE6", "#F5EFE6", "#1C1917"];
+  const muted = ["#C9B8A8", "#DCC9B6", "#78716C"];
 
   return (
-    <div className="md:hidden">
-      <div
-        className="cl-drag-row flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4"
-        onScroll={(e) => {
-          const el = e.currentTarget;
-          const cardWidth = el.firstElementChild?.clientWidth ?? 1;
-          setActive(Math.round(el.scrollLeft / (cardWidth + 16)));
-        }}
-      >
-        {routineSteps.map((step, i) => (
-          <div
-            key={step.label}
-            className="relative w-[82vw] shrink-0 snap-start"
-          >
-            <div className="relative aspect-[4/3] w-full overflow-hidden">
-              <Image
-                src={step.image}
-                alt={`${step.label} — Café Lisboa's coffee routine`}
-                fill
-                sizes="82vw"
-                loading="lazy"
-                className="object-cover"
-              />
-              <span className="absolute right-3 top-3 bg-[#1C1917] px-2 py-1 text-[0.6875rem] tracking-[0.05em] text-[#FAF8F5]">
-                {String(i + 1).padStart(2, "0")} / 03
-              </span>
+    <section id="cl-routine">
+      <div className="bg-[#FAF8F5] px-6 pt-16 md:px-16 md:pt-24">
+        <div className="mb-6 flex items-center gap-3">
+          <span className="h-6 w-[2px] bg-[#8B4A2F]" aria-hidden />
+          <span className="text-[0.8125rem] tracking-[0.15em] text-[#78716C]">04 · A Rotina</span>
+        </div>
+      </div>
+      {routineSteps.map((step, i) => (
+        <div key={step.label} className="flex flex-col md:flex-row" style={{ backgroundColor: bg[i] }}>
+          <div className="relative h-[42vh] w-full shrink-0 md:h-[70vh] md:w-[45%]">
+            <Image
+              src={step.image}
+              alt={`${step.label} — Café Lisboa's coffee routine`}
+              fill
+              sizes="(min-width: 768px) 45vw, 100vw"
+              loading="lazy"
+              className="object-cover"
+            />
+          </div>
+          <div className="flex flex-1 flex-col justify-center gap-3 px-6 py-10 md:px-16">
+            <div className="flex items-center gap-3 text-[0.875rem] tracking-[0.05em]" style={{ color: muted[i] }}>
+              <span className="h-px w-10 bg-current" aria-hidden />
+              {String(i + 1).padStart(2, "0")} / 03
             </div>
-            <h3 className="mt-4 font-[family-name:var(--font-newsreader)] text-[1.5rem] text-[#1C1917]">
+            <h3
+              className="font-[family-name:var(--font-newsreader)] text-[clamp(1.9rem,4vw,2.75rem)]"
+              style={{ color: fg[i] }}
+            >
               {step.label}
             </h3>
-            <div className="mt-1 flex flex-col gap-0.5 text-[0.9375rem] leading-[1.5] text-[#78716C]">
+            <div className="flex flex-col gap-1 text-[1.0625rem] leading-[1.6] md:hidden" style={{ color: muted[i] }}>
               {step.mobileLines.map((line) => (
                 <p key={line}>{line}</p>
               ))}
             </div>
+            <div className="hidden flex-col gap-1 text-[1.0625rem] leading-[1.6] md:flex" style={{ color: muted[i] }}>
+              {step.lines.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
-      <div className="mt-4 flex gap-1.5" aria-hidden>
-        {routineSteps.map((step, i) => (
-          <span
-            key={step.label}
-            className="h-1.5 w-1.5 rounded-full transition-colors"
-            style={{ backgroundColor: active === i ? "#8B4A2F" : "#D9CFC2" }}
-          />
-        ))}
-      </div>
-    </div>
+        </div>
+      ))}
+    </section>
   );
 }
