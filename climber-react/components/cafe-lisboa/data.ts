@@ -80,39 +80,6 @@ export const allergenLegend = "G Gluten · N Nuts · D Dairy";
 export const allergenDeclaration =
   "Full allergen declaration (14): celery, gluten, crustaceans, eggs, fish, lupin, milk, molluscs, mustard, nuts, peanuts, sesame, soybeans, sulphites — ask your server.";
 
-export const routineSteps = [
-  {
-    label: "Bean",
-    lines: [
-      "Arrives green from a single farm in Minas Gerais.",
-      "Roasted here in 12kg batches, every Tuesday.",
-      "Rested 48 hours before it's ground.",
-    ],
-    mobileLines: ["Roasted here weekly, 12kg batches.", "Rested 48 hours before grinding."],
-    image: "/images/gallery/1.jpg",
-  },
-  {
-    label: "Method",
-    lines: [
-      "Filtered through a V60, one cup at a time.",
-      "Water at 94°C, three minutes per pour.",
-      "No batch brew, ever, after ten.",
-    ],
-    mobileLines: ["V60, one cup at a time.", "94°C, three minutes per pour."],
-    image: "/images/gallery/sobre.jpg",
-  },
-  {
-    label: "Cup",
-    lines: [
-      "Served in stoneware fired in Stoneybatter.",
-      "Holds heat twice as long as standard ceramic.",
-      "Yours to keep at the table — no rush.",
-    ],
-    mobileLines: ["Stoneware fired in Stoneybatter.", "Holds heat twice as long."],
-    image: "/images/gallery/4.jpg",
-  },
-];
-
 export const reviews = [
   { quote: "Best flat white south of the Liffey.", author: "Aoife" },
   { quote: "The kind of café you plan your morning around.", author: "Marcus" },
@@ -129,3 +96,26 @@ export const mosaicSlots = [
   { id: "D", src: "/images/gallery/atmosphere-03.jpg", alt: "Reading corner with a leather armchair and marble table", ratio: 3 / 2 },
   { id: "E", src: "/images/gallery/facade-vertical.jpg", alt: "Café Lisboa's green shopfront at dusk", ratio: 3584 / 4608 },
 ] as const;
+
+// Dados só da seção "Build Yours" — separados de menuCategories de propósito
+// (o cardápio está fechado/aprovado, não mexer nele). "Americano" aqui é um
+// item novo desta seção, distinto do "Iced americano" do cardápio (mesmo
+// preço, €4.00, coincidência).
+export const buildYoursOptions = {
+  coffees: [
+    { id: "flat-white", name: "Flat white", price: 4.2 },
+    { id: "cappuccino", name: "Cappuccino", price: 4.0 },
+    { id: "americano", name: "Americano", price: 4.0 },
+    { id: "cortado", name: "Cortado", price: 3.8 },
+    { id: "mocha", name: "Mocha", price: 4.6 },
+  ],
+  sizes: [
+    { id: "regular", name: "Regular", delta: 0 },
+    { id: "large", name: "Large", delta: 0.6 },
+  ],
+  extras: [
+    { id: "none", name: "None", delta: 0 },
+    { id: "extra-shot", name: "Extra shot", delta: 0.5 },
+    { id: "oat", name: "Oat", delta: 0.4 },
+  ],
+} as const;

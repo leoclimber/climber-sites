@@ -260,25 +260,41 @@ async function computeBgColor(imagePaths) {
   const avg = [totalR / count, totalG / count, totalB / count];
   const hsl = rgbToHsl(...avg);
 
-  // Busca binária na luminosidade (HSL "L"), mantendo matiz/saturação,
-  // até a luminância relativa WCAG cair em 0.10–0.14.
+  // A instrução original pede luminância 0.10–0.14 E contraste >=7:1 contra
+  // #F7F2EA — pra essa cor de texto específica essas duas coisas são
+  // matematicamente incompatíveis (0.10–0.14 de luminância só dá ~6.1–6.7:1
+  // de contraste, nunca 7:1). A trava de contraste é explícita ("se não
+  // passar, escurecer até passar"), então ela manda: busca binária na
+  // luminosidade HSL (mantendo matiz/saturação) pelo ponto MAIS CLARO
+  // possível que ainda bate >=7:1 de contraste, não por uma faixa de
+  // luminância fixa.
+  const fgLuminance = relativeLuminance(...hexToRgb(FG_HEX));
+  const targetContrast = 7.05; // pequena margem acima do mínimo exigido
   let lo = 0;
   let hi = hsl.l;
-  let bestRgb = avg;
+  let bestRgb = hslToRgb(hsl.h, hsl.s, 0);
   for (let i = 0; i < 40; i++) {
     const mid = (lo + hi) / 2;
     const rgb = hslToRgb(hsl.h, hsl.s, mid);
     const lum = relativeLuminance(...rgb);
-    bestRgb = rgb;
-    if (lum > 0.14) hi = mid;
-    else if (lum < 0.1) lo = mid;
-    else break;
+    const contrast = contrastRatio(fgLuminance, lum);
+    if (contrast >= targetContrast) {
+      bestRgb = rgb;
+      lo = mid;
+    } else {
+      hi = mid;
+    }
   }
   const finalLuminance = relativeLuminance(...bestRgb);
+  const finalContrast = contrastRatio(fgLuminance, finalLuminance);
   console.log(
-    `[veu] build-yours bg: hex=${toHex(bestRgb)} luminance=${finalLuminance.toFixed(3)}`
+    `[veu] build-yours bg: hex=${toHex(bestRgb)} luminance=${finalLuminance.toFixed(3)} contrast=${finalContrast.toFixed(2)}:1`
   );
-  return { hex: toHex(bestRgb), luminance: Number(finalLuminance.toFixed(4)) };
+  return {
+    hex: toHex(bestRgb),
+    luminance: Number(finalLuminance.toFixed(4)),
+    contrastRatio: Number(finalContrast.toFixed(2)),
+  };
 }
 
 async function main() {

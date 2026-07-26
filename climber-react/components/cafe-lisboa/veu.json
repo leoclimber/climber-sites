@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-26T12:25:55.086Z",
+  "generatedAt": "2026-07-26T12:37:24.793Z",
   "fg": "#F7F2EA",
   "veilRgb": [
     18,
@@ -41,7 +41,8 @@
   },
   "heroBlurDataURL": "data:image/jpeg;base64,/9j/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAALABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAABQb/xAAhEAEAAgIBAwUAAAAAAAAAAAABAgMAEQQFIkExcYGRof/EABUBAQEAAAAAAAAAAAAAAAAAAAME/8QAFhEBAQEAAAAAAAAAAAAAAAAAAAES/9oADAMBAAIRAxEAPwAhqLpU0vZIg7d+d7PzGeFxoUW0ysI9kUZL6+cn677KwIIfAv3jHSuTdO6UZTU0un2wLVGX/9k=",
   "buildYoursBg": {
-    "hex": "#6e523d",
-    "luminance": 0.0969
+    "hex": "#674c39",
+    "luminance": 0.0835,
+    "contrastRatio": 7.06
   }
 }

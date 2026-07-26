@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { animate } from "framer-motion";
 
 // Fonte única de verdade pra prefers-reduced-motion neste produto — os
@@ -42,6 +42,36 @@ export function useCountUp(target: number, start: boolean, duration = 1.6) {
     });
     return () => controls.stop();
   }, [start, target, duration, reducedMotion]);
+
+  return value;
+}
+
+// Irmão do useCountUp: em vez de contar de 0 quando entra em viewport, re-anima
+// do valor MOSTRADO ATUAL pro novo `target` toda vez que `target` muda —
+// mesmo mecanismo (`animate()`, mesmo easing), gatilho diferente. Usado pelo
+// preço do Build Yours: cada toque numa opção sobe/desce do preço antigo pro
+// novo, não reinicia do zero.
+export function useAnimatedNumber(target: number, duration = 0.42) {
+  const reducedMotion = usePrefersReducedMotion();
+  const [value, setValue] = useState(target);
+  const prevTarget = useRef(target);
+
+  useEffect(() => {
+    if (prevTarget.current === target) return;
+    const from = prevTarget.current;
+    prevTarget.current = target;
+
+    if (reducedMotion) {
+      setValue(target);
+      return;
+    }
+    const controls = animate(from, target, {
+      duration,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: setValue,
+    });
+    return () => controls.stop();
+  }, [target, duration, reducedMotion]);
 
   return value;
 }
