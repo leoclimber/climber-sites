@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { createPortal } from "react-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MaskReveal, Tappable } from "./motion";
 import { usePrefersReducedMotion } from "./motion/hooks";
@@ -14,28 +14,73 @@ import { mosaicSlots } from "./data";
 // .cl-mosaic) e a altura de cada foto nasce do próprio aspect-ratio, nunca
 // de object-fit: cover ou altura forçada. Sem destaque próprio: reveal em
 // máscara com stagger na entrada, depois paradas; clique abre lightbox.
+//
+// Base das 3 colunas igualada (Fase E): coluna 2 (B+C) é a âncora — nem A
+// nem C mudam de recorte/tamanho. Só o slot A (coluna 1, único e por isso
+// também "o último" dela) e o slot E (último da coluna 3) ganham uma altura
+// calculada pra fechar exatamente na mesma base, com object-cover só neles
+// pra acomodar. A conta não dá pra fechar em CSS puro (fr-tracks + aspect
+// ratio + gap fixo de 10px não é proporção limpa entre si), por isso mede
+// de verdade via ResizeObserver — mesmo padrão de runtime-measurement já
+// usado em smooth-scroll.tsx pros anchors de scroll.
 export function GalleryGrid() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const slotA = mosaicSlots[0];
   const [slotB, slotC] = [mosaicSlots[1], mosaicSlots[2]];
   const [slotD, slotE] = [mosaicSlots[3], mosaicSlots[4]];
 
+  const tileARef = useRef<HTMLDivElement>(null);
+  const col2Ref = useRef<HTMLDivElement>(null);
+  const tileDRef = useRef<HTMLDivElement>(null);
+  const [adjustedHeights, setAdjustedHeights] = useState<{ a: number; e: number } | null>(null);
+
+  useEffect(() => {
+    function measure() {
+      if (!col2Ref.current || !tileDRef.current) return;
+      const target = col2Ref.current.offsetHeight;
+      if (target === 0) return; // mosaico desktop escondido (mobile usa a faixa de arraste)
+      const dHeight = tileDRef.current.offsetHeight;
+      setAdjustedHeights({ a: target, e: Math.max(target - dHeight - 10, 0) });
+    }
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (col2Ref.current) observer.observe(col2Ref.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
   return (
-    <section id="cl-gallery" className="bg-[#FAF8F5] py-16 md:py-24">
+    <section id="cl-gallery" className="bg-[#FAF8F5] pt-12 pb-9 md:pt-16 md:pb-12">
       <div className="px-6 md:px-16">
         <Rule label="05 · O Espaço" />
       </div>
 
       <div className="hidden md:block md:px-4">
         <div className="cl-mosaic">
-          <MosaicTile slot={slotA} index={0} sizes="55vw" onOpen={() => setOpenIndex(0)} />
-          <div className="cl-mosaic-col">
+          <MosaicTile
+            slot={slotA}
+            index={0}
+            sizes="55vw"
+            onOpen={() => setOpenIndex(0)}
+            tileRef={tileARef}
+            heightOverride={adjustedHeights?.a}
+          />
+          <div className="cl-mosaic-col" ref={col2Ref}>
             <MosaicTile slot={slotB} index={1} sizes="18vw" onOpen={() => setOpenIndex(1)} />
             <MosaicTile slot={slotC} index={2} sizes="18vw" onOpen={() => setOpenIndex(2)} />
           </div>
           <div className="cl-mosaic-col">
-            <MosaicTile slot={slotD} index={3} sizes="27vw" onOpen={() => setOpenIndex(3)} />
-            <MosaicTile slot={slotE} index={4} sizes="27vw" onOpen={() => setOpenIndex(4)} />
+            <MosaicTile slot={slotD} index={3} sizes="27vw" onOpen={() => setOpenIndex(3)} tileRef={tileDRef} />
+            <MosaicTile
+              slot={slotE}
+              index={4}
+              sizes="27vw"
+              onOpen={() => setOpenIndex(4)}
+              heightOverride={adjustedHeights?.e}
+            />
           </div>
         </div>
       </div>
@@ -64,36 +109,45 @@ function MosaicTile({
   index,
   sizes = "(min-width: 768px) 50vw, 100vw",
   onOpen,
+  tileRef,
+  heightOverride,
 }: {
   slot: (typeof mosaicSlots)[number];
   index: number;
   sizes?: string;
   onOpen: () => void;
+  tileRef?: Ref<HTMLDivElement>;
+  heightOverride?: number;
 }) {
   return (
     <MaskReveal index={index}>
-      <Tappable
-        as="button"
-        onClick={onOpen}
-        className="group block w-full cursor-pointer overflow-hidden"
-        style={{ aspectRatio: slot.ratio }}
-        aria-label={`Open ${slot.alt} full screen`}
+      <div
+        ref={tileRef}
+        className="w-full"
+        style={heightOverride ? { height: heightOverride } : { aspectRatio: slot.ratio }}
       >
-        <div className="relative h-full w-full overflow-hidden">
-          <Image
-            src={slot.src}
-            alt={slot.alt}
-            fill
-            sizes={sizes}
-            loading="lazy"
-            className="object-cover transition-transform duration-[600ms] ease-out group-hover:scale-[1.05]"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#3A1F0F]/30 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-          />
-        </div>
-      </Tappable>
+        <Tappable
+          as="button"
+          onClick={onOpen}
+          className="group block h-full w-full cursor-pointer overflow-hidden"
+          aria-label={`Open ${slot.alt} full screen`}
+        >
+          <div className="relative h-full w-full overflow-hidden">
+            <Image
+              src={slot.src}
+              alt={slot.alt}
+              fill
+              sizes={sizes}
+              loading="lazy"
+              className="object-cover transition-transform duration-[600ms] ease-out group-hover:scale-[1.05]"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#3A1F0F]/30 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+            />
+          </div>
+        </Tappable>
+      </div>
     </MaskReveal>
   );
 }

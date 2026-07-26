@@ -64,7 +64,7 @@ export function Hours() {
   const status = useOpenStatus();
 
   return (
-    <section id="cl-hours" className="bg-[#FAF8F5] px-6 py-16 md:px-16 md:py-24">
+    <section id="cl-hours" className="bg-[#FAF8F5] px-6 py-9 md:px-16 md:py-12">
       <Rule label="06 · Horários + Localização" />
 
       <div className="grid gap-10 md:grid-cols-2 md:items-stretch md:gap-16">
@@ -101,7 +101,7 @@ export function Hours() {
             }}
           />
 
-          <span className="absolute left-4 top-4 font-mono text-[0.75rem] text-[#F7F2EA]">
+          <span className="absolute left-4 top-4 text-[0.75rem] text-[#F7F2EA]">
             Meath Street, Dublin 8
           </span>
           <span className="absolute bottom-4 right-4 flex items-center gap-2 bg-[#1C1917] px-4 py-2 text-[0.8125rem] font-medium text-[#FAF8F5] transition-transform group-hover:translate-x-0.5">

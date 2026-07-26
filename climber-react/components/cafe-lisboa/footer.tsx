@@ -22,7 +22,7 @@ export function Footer() {
           {business.name}
         </h2>
 
-        <div className="mt-8 grid gap-10 md:mt-10 md:grid-cols-[1.4fr_1fr_1.4fr] md:gap-12">
+        <div className="mt-8 grid gap-10 md:mt-10 md:grid-cols-2 md:gap-12">
           <div className="flex flex-col gap-3 text-[1.1875rem] text-[#F5F0E8]">
             <a
               href={business.instagramHref}
@@ -44,16 +44,6 @@ export function Footer() {
               {business.addressLine}
             </a>
           </div>
-
-          <div className="hidden flex-col gap-2 text-[0.875rem] text-[#D8CFC2] md:flex">
-            <span className="tracking-[0.1em] text-[#A8A29E]">DELIVERY</span>
-            <span>Deliveroo</span>
-            <span>Just Eat</span>
-            <span>Uber Eats</span>
-          </div>
-          <p className="text-[0.875rem] text-[#D8CFC2] md:hidden">
-            Deliveroo · Just Eat · Uber Eats
-          </p>
 
           <div className="hidden flex-col gap-1 text-[0.8125rem] leading-[1.6] text-[#8A8378] md:flex">
             <p>{allergenDeclaration}</p>

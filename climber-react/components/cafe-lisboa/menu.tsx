@@ -15,7 +15,7 @@ export function Menu() {
   const category = menuCategories.find((c) => c.id === active) ?? menuCategories[0];
 
   return (
-    <section id="cl-menu" className="bg-[#FAF8F5] px-6 py-16 md:px-16 md:py-24">
+    <section id="cl-menu" className="bg-[#FAF8F5] px-6 pt-9 pb-0 md:px-16 md:pt-12">
       <Rule label="03 · Menu" />
 
       <div className="cl-drag-row -mx-6 flex gap-8 overflow-x-auto px-6 pb-1 md:mx-0 md:gap-10 md:px-0">

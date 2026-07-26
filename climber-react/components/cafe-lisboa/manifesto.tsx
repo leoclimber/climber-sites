@@ -10,7 +10,7 @@ export function Manifesto() {
   return (
     <section id="cl-manifesto" className="relative overflow-hidden bg-[#FAF8F5]">
       <div className="grid md:grid-cols-[minmax(0,1fr)_55%]">
-        <div className="flex flex-col justify-center px-6 py-16 md:px-16 md:py-28">
+        <div className="flex flex-col justify-center px-6 pt-18 pb-9 md:px-16 md:pt-24 md:pb-12">
           <Rule label="02 · Manifesto" />
 
           <LineReveal
@@ -19,7 +19,7 @@ export function Manifesto() {
             className="font-[family-name:var(--font-newsreader)] text-[clamp(2rem,5vw,3rem)] leading-[1.05] tracking-[-0.02em] text-[#1C1917]"
           />
 
-          <StaggerGroup className="mt-8 flex max-w-md flex-col gap-5 text-[1.0625rem] leading-[1.65] text-[#78716C]">
+          <StaggerGroup className="mt-8 flex w-[88%] max-w-[62ch] flex-col gap-5 text-[1.0625rem] leading-[1.65] text-[#78716C]">
             <StaggerItem>
               We opened the green corner door in 2019. The beans are roasted
               in small batches, once a week, so nothing sits past its peak.
