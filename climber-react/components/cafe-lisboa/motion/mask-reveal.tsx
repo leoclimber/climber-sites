@@ -1,12 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { usePrefersReducedMotion } from "./hooks";
 
 type MaskRevealProps = {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
   /** ordem no stagger de um grupo (mosaico) — cada slot atrasa +0.1s */
   index?: number;
   maskColor?: string;
@@ -20,17 +21,22 @@ type MaskRevealProps = {
 export function MaskReveal({
   children,
   className = "",
+  style,
   index = 0,
   maskColor = "#FAF8F5",
 }: MaskRevealProps) {
   const reducedMotion = usePrefersReducedMotion();
 
   if (reducedMotion) {
-    return <div className={`relative overflow-hidden ${className}`}>{children}</div>;
+    return (
+      <div className={`relative overflow-hidden ${className}`} style={style}>
+        {children}
+      </div>
+    );
   }
 
   return (
-    <div className={`relative overflow-hidden ${className}`}>
+    <div className={`relative overflow-hidden ${className}`} style={style}>
       {children}
       <motion.div
         aria-hidden
