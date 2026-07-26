@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-07-26T12:25:55.086Z",
+  "fg": "#F7F2EA",
+  "veilRgb": [
+    18,
+    13,
+    11
+  ],
+  "presets": {
+    "ESCURA": {
+      "a1": 0.18,
+      "a2": 0.58,
+      "a3": 0.8
+    },
+    "MEDIA": {
+      "a1": 0.3,
+      "a2": 0.76,
+      "a3": 0.92
+    },
+    "CLARA": {
+      "a1": 0.44,
+      "a2": 0.88,
+      "a3": 0.97
+    }
+  },
+  "hero": {
+    "preset": "ESCURA",
+    "needsDesaturate": true,
+    "avgLuminance": 0.2271,
+    "avgSaturation": 0.506,
+    "contrastRatio": 12.03,
+    "forcedA3": null
+  },
+  "map": {
+    "preset": "ESCURA",
+    "needsDesaturate": false,
+    "avgLuminance": 0.0729,
+    "avgSaturation": 0.3146,
+    "contrastRatio": 15.09,
+    "forcedA3": null
+  },
+  "heroBlurDataURL": "data:image/jpeg;base64,/9j/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAALABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAABQb/xAAhEAEAAgIBAwUAAAAAAAAAAAABAgMAEQQFIkExcYGRof/EABUBAQEAAAAAAAAAAAAAAAAAAAME/8QAFhEBAQEAAAAAAAAAAAAAAAAAAAES/9oADAMBAAIRAxEAPwAhqLpU0vZIg7d+d7PzGeFxoUW0ysI9kUZL6+cn677KwIIfAv3jHSuTdO6UZTU0un2wLVGX/9k=",
+  "buildYoursBg": {
+    "hex": "#6e523d",
+    "luminance": 0.0969
+  }
+}

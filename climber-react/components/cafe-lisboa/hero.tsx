@@ -1,73 +1,82 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
-import {
-  motion,
-  useInView,
-  useMotionValue,
-  useScroll,
-  useSpring,
-  useTransform,
-} from "framer-motion";
+import { useRef } from "react";
+import { useInView } from "framer-motion";
 import { LineReveal, useCountUp } from "./motion";
-import { usePrefersReducedMotion } from "./motion/hooks";
 import { business } from "./data";
+import veu from "./veu.json";
 
-// Duas colunas literais (texto ~43% | foto ~57%), no mesmo espírito do
-// Manifesto — nunca foto full-bleed com texto por cima. Três camadas de
-// movimento na foto: 1) parallax de scroll (translateY, mais devagar que o
-// texto), 2) drift de mouse em desktop com ponteiro fino (translateX/Y
-// pequeno, spring), 3) vapor/luz quente ambiente (CSS puro, sem canvas).
+// Capa full-bleed — mesma estrutura no mobile e no desktop, muda só a
+// escala (clamp/vw). Foto 100%, scrim fixo no topo (legibilidade do
+// wordmark), véu adaptativo calculado em build time por scripts/veu.mjs
+// (preset + necessidade de dessaturar + trava de contraste já resolvida —
+// ver components/cafe-lisboa/veu.json, zero cálculo de imagem no cliente).
+const preset = veu.presets[veu.hero.preset as keyof typeof veu.presets];
+const a3 = veu.hero.forcedA3 ?? preset.a3;
+const [vr, vg, vb] = veu.veilRgb;
+
 export function Hero() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const photoRef = useRef<HTMLDivElement>(null);
   const trustBarRef = useRef<HTMLDivElement>(null);
-  const reducedMotion = usePrefersReducedMotion();
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end start"],
-  });
-  const photoY = useTransform(scrollYProgress, [0, 1], reducedMotion ? [0, 0] : [0, 120]);
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 60, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 60, damping: 20 });
-
-  useEffect(() => {
-    if (reducedMotion) return;
-    const canHoverFine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    if (!canHoverFine) return;
-    const el = photoRef.current;
-    if (!el) return;
-
-    function onMove(e: MouseEvent) {
-      const rect = el!.getBoundingClientRect();
-      const relX = (e.clientX - rect.left) / rect.width - 0.5;
-      const relY = (e.clientY - rect.top) / rect.height - 0.5;
-      mouseX.set(relX * 18);
-      mouseY.set(relY * 18);
-    }
-    el.addEventListener("mousemove", onMove);
-    return () => el.removeEventListener("mousemove", onMove);
-  }, [reducedMotion, mouseX, mouseY]);
-
-  // Um único gatilho de viewport pra ambos os contadores (nota e reviews)
-  // dispararem juntos, em vez de cada número medir sua própria visibilidade.
-  const trustInView = useInView(trustBarRef, { once: true, amount: 0.6 });
+  const trustInView = useInView(trustBarRef, { once: true, amount: 0.4 });
   const ratingValue = useCountUp(business.rating, trustInView, 1.4);
-  const reviewValue = useCountUp(business.reviewCount, trustInView, 1.6);
+  const reviewValue = useCountUp(business.reviewCount, trustInView, 1.4);
 
   return (
     <section
-      ref={sectionRef}
       id="cl-hero"
-      className="relative w-full overflow-hidden bg-[#1C1917] md:grid md:h-screen md:min-h-[640px] md:grid-cols-[43%_1fr] md:items-stretch"
+      className="relative h-[100svh] min-h-[560px] w-full overflow-hidden bg-[#1C1614] md:h-screen md:min-h-[720px]"
     >
-      <div className="relative z-10 order-2 flex flex-col justify-center gap-5 px-6 py-14 md:order-1 md:px-14 md:py-0">
-        <span className="text-[0.8125rem] tracking-[0.15em] text-[#E9DFCF]/70">
+      <Image
+        src="/images/gallery/atmosphere-02.jpg"
+        alt="Sunlit counter at Café Lisboa, espresso machine steaming, coffee bags on the shelf"
+        fill
+        sizes="100vw"
+        preload
+        placeholder="blur"
+        blurDataURL={veu.heroBlurDataURL}
+        className="object-cover"
+      />
+
+      {veu.hero.needsDesaturate && (
+        <div
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 h-[55%]"
+          style={{
+            backdropFilter: "saturate(.45)",
+            WebkitBackdropFilter: "saturate(.45)",
+          }}
+        />
+      )}
+
+      {/* Véu adaptativo — preset escolhido em build time (ver veu.json) */}
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background: `linear-gradient(to bottom, transparent 0%, rgba(${vr},${vg},${vb},${preset.a1}) 34%, rgba(${vr},${vg},${vb},${preset.a2}) 62%, rgba(${vr},${vg},${vb},${a3}) 100%)`,
+        }}
+      />
+
+      {/* Scrim fixo no topo — legibilidade do wordmark, independe do véu adaptativo */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-[120px]"
+        style={{
+          background: "linear-gradient(to bottom, rgba(18,13,11,.7), transparent)",
+        }}
+      />
+
+      <div
+        className="absolute left-6 top-0 z-10 pt-[max(1.25rem,env(safe-area-inset-top))] md:left-[6.5vw]"
+      >
+        <span className="font-[family-name:var(--font-newsreader)] text-[1.15rem] tracking-tight text-[#F7F2EA]">
+          Café Lisboa
+        </span>
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-10 md:px-[6.5vw] md:pb-14">
+        <span className="block text-[0.62rem] tracking-[0.26em] text-[#C89B6A]">
           // FRESHLY BREWED · DUBLIN 8
         </span>
 
@@ -76,90 +85,53 @@ export function Hero() {
           onMount
           lines={[
             "Your morning,",
-            <>
-              <em className="italic text-[#8B4A2F]">done right</em>.
-            </>,
+            <em className="italic text-[#C89B6A]">done right.</em>,
           ]}
-          className="font-[family-name:var(--font-newsreader)] text-[clamp(2.5rem,5.5vw,5rem)] leading-[1.02] tracking-[-0.02em] text-[#FAF8F5]"
+          className="mt-2 font-[family-name:var(--font-newsreader)] text-[clamp(2.6rem,6.4vw,5.2rem)] leading-[0.98] tracking-[-0.02em] text-[#F7F2EA]"
         />
 
-        <motion.p
-          initial={reducedMotion ? undefined : { opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-[38ch] text-[clamp(1rem,1.4vw,1.15rem)] leading-[1.5] text-[#E9DFCF]"
-        >
+        <p className="mt-4 max-w-[46ch] text-[1rem] leading-[1.5] text-[#F7F2EA]/80 md:text-[1.05rem]">
           Open since seven. The first pour goes out at ten past.
-        </motion.p>
+        </p>
 
-        <motion.div
-          initial={reducedMotion ? undefined : { opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.75, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-3"
-        >
+        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
           <a
             href="#cl-menu"
-            className="inline-flex items-center bg-[#8B4A2F] px-7 py-3.5 text-[0.95rem] font-medium tracking-[0.02em] text-[#FAF8F5] transition-colors hover:bg-[#7A3F27] active:scale-[0.97] active:opacity-90"
+            className="inline-flex min-h-[48px] items-center bg-[#C89B6A] px-7 text-[0.95rem] font-medium tracking-[0.02em] text-[#1C1614] transition-opacity hover:opacity-90 active:scale-[0.97]"
           >
             View the menu
           </a>
           <a
             href="#cl-hours"
-            className="group inline-flex items-center gap-1.5 text-[0.9rem] text-[#E9DFCF] active:opacity-70"
+            className="group inline-flex min-h-[48px] items-center gap-1.5 text-[0.9rem] text-[#F7F2EA] active:opacity-70"
           >
             Find us
             <span aria-hidden className="transition-transform group-hover:translate-x-1">
               →
             </span>
           </a>
-        </motion.div>
+        </div>
 
-        <motion.div
+        <div
           ref={trustBarRef}
-          initial={reducedMotion ? undefined : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.95 }}
-          className="mt-6 flex flex-col gap-3 border-t border-[#E9DFCF]/25 pt-5 text-[0.8125rem] tracking-[0.03em] text-[#E9DFCF]/85 md:mt-8"
+          className="mt-8 flex max-w-md items-start gap-8 border-t border-[#F7F2EA]/20 pt-5 md:max-w-none md:gap-12"
         >
-          <span>{business.addressShort}</span>
-          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span aria-hidden className="text-[#8B4A2F]">
-              ★
-            </span>
-            <span className="tabular-nums">{ratingValue.toFixed(1)}</span>
-            <span className="text-[#E9DFCF]/50">on Google</span>
-            <span aria-hidden className="text-[#E9DFCF]/40">
-              ·
-            </span>
-            <span className="tabular-nums">{Math.round(reviewValue)}</span>
-            <span className="text-[#E9DFCF]/50">reviews</span>
-            <span aria-hidden className="text-[#E9DFCF]/40">
-              ·
-            </span>
-            <span>Open from 7AM</span>
-          </span>
-        </motion.div>
-      </div>
-
-      <div
-        ref={photoRef}
-        className="relative order-1 aspect-[4/5] w-full overflow-hidden md:order-2 md:aspect-auto md:h-full"
-      >
-        <motion.div className="absolute inset-0" style={{ y: photoY }}>
-          <motion.div className="absolute inset-0" style={{ x: springX, y: springY, scale: 1.14 }}>
-            <Image
-              src="/images/gallery/atmosphere-02.jpg"
-              alt="Sunlit counter at Café Lisboa, espresso machine steaming, coffee bags on the shelf"
-              fill
-              sizes="(min-width: 768px) 57vw, 100vw"
-              preload
-              className="object-cover"
-            />
-          </motion.div>
-        </motion.div>
-        <div aria-hidden className="cl-hero-steam" />
+          <StatBlock value={ratingValue.toFixed(1)} label="GOOGLE RATING" />
+          <StatBlock value={String(Math.round(reviewValue))} label="REVIEWS" />
+          <StatBlock value="7AM" label="OPEN FROM" />
+        </div>
       </div>
     </section>
+  );
+}
+
+function StatBlock({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="font-[family-name:var(--font-newsreader)] text-[clamp(1.7rem,3.4vw,2.6rem)] tabular-nums text-[#F7F2EA]">
+        {value}
+      </span>
+      <span className="text-[0.56rem] tracking-[0.18em] text-[#F7F2EA]/55">{label}</span>
+    </div>
   );
 }
