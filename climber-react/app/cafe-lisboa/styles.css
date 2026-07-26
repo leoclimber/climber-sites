@@ -151,3 +151,28 @@
     transform: none;
   }
 }
+
+/* Vapor da xícara do Build Yours — duas linhas finas, mesmo mix de opacity
+   pulsante do vapor do hero, mas sem blend/translate exagerado (é um
+   detalhe pequeno de 20-30px, não uma faixa inteira de seção). */
+.cl-cup-steam {
+  animation: cl-cup-steam-drift 4s ease-in-out infinite;
+}
+
+@keyframes cl-cup-steam-drift {
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.35;
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-cup-steam {
+    animation: none;
+  }
+}
