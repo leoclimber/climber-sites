@@ -119,3 +119,35 @@
     opacity: 0.6;
   }
 }
+
+/* Reveal do headline do hero — CSS puro, sem Framer Motion (Hero virou
+   Server Component na Fase 4: zero JS no caminho crítico). Mesma curva da
+   regra BASE do documento mestre (translateY 110%->0%, 900ms,
+   cubic-bezier(0.16,1,0.3,1)), stagger por linha via --cl-hero-line-delay
+   inline em cada span. */
+.cl-hero-line-mask {
+  display: block;
+  overflow: hidden;
+}
+
+.cl-hero-line-mask > span {
+  display: block;
+  animation: cl-hero-line-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--cl-hero-line-delay, 0s);
+}
+
+@keyframes cl-hero-line-in {
+  from {
+    transform: translateY(110%);
+  }
+  to {
+    transform: translateY(0%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-hero-line-mask > span {
+    animation: none;
+    transform: none;
+  }
+}

@@ -1,27 +1,19 @@
-"use client";
-
 import Image from "next/image";
-import { useRef } from "react";
-import { useInView } from "framer-motion";
-import { LineReveal, useCountUp } from "./motion";
-import { business } from "./data";
+import { HeroStats } from "./hero-stats";
 import veu from "./veu.json";
 
-// Capa full-bleed — mesma estrutura no mobile e no desktop, muda só a
-// escala (clamp/vw). Foto 100%, scrim fixo no topo (legibilidade do
-// wordmark), véu adaptativo calculado em build time por scripts/veu.mjs
-// (preset + necessidade de dessaturar + trava de contraste já resolvida —
-// ver components/cafe-lisboa/veu.json, zero cálculo de imagem no cliente).
+// Capa full-bleed — Server Component (Fase 4): zero JS no caminho crítico,
+// texto e foto aparecem sem esperar hidratação nenhuma. Reveal do headline é
+// CSS puro (ver .cl-hero-line-mask em styles.css); só o contador de stats
+// sai pra um client component isolado, carregado depois (ver hero-stats.tsx).
+// Véu adaptativo calculado em build time por scripts/veu.mjs (preset +
+// necessidade de dessaturar + trava de contraste já resolvida — ver
+// components/cafe-lisboa/veu.json, zero cálculo de imagem no cliente).
 const preset = veu.presets[veu.hero.preset as keyof typeof veu.presets];
 const a3 = veu.hero.forcedA3 ?? preset.a3;
 const [vr, vg, vb] = veu.veilRgb;
 
 export function Hero() {
-  const trustBarRef = useRef<HTMLDivElement>(null);
-  const trustInView = useInView(trustBarRef, { once: true, amount: 0.4 });
-  const ratingValue = useCountUp(business.rating, trustInView, 1.4);
-  const reviewValue = useCountUp(business.reviewCount, trustInView, 1.4);
-
   return (
     <section
       id="cl-hero"
@@ -33,6 +25,7 @@ export function Hero() {
         fill
         sizes="100vw"
         preload
+        fetchPriority="high"
         placeholder="blur"
         blurDataURL={veu.heroBlurDataURL}
         className="object-cover"
@@ -70,7 +63,7 @@ export function Hero() {
       <div
         className="absolute left-6 top-0 z-10 pt-[max(1.25rem,env(safe-area-inset-top))] md:left-[6.5vw]"
       >
-        <span className="font-[family-name:var(--font-newsreader)] text-[1.15rem] tracking-tight text-[#F7F2EA]">
+        <span className="font-[family-name:var(--font-newsreader-hero)] text-[1.15rem] tracking-tight text-[#F7F2EA]">
           Café Lisboa
         </span>
       </div>
@@ -80,15 +73,20 @@ export function Hero() {
           // FRESHLY BREWED · DUBLIN 8
         </span>
 
-        <LineReveal
-          as="h1"
-          onMount
-          lines={[
-            "Your morning,",
-            <em className="italic text-[#C89B6A]">done right.</em>,
-          ]}
-          className="mt-2 font-[family-name:var(--font-newsreader)] text-[clamp(2.6rem,6.4vw,5.2rem)] leading-[0.98] tracking-[-0.02em] text-[#F7F2EA]"
-        />
+        <h1 className="mt-2 font-[family-name:var(--font-newsreader-hero)] text-[clamp(2.6rem,6.4vw,5.2rem)] leading-[0.98] tracking-[-0.02em] text-[#F7F2EA]">
+          <span
+            className="cl-hero-line-mask"
+            style={{ ["--cl-hero-line-delay" as string]: "0s" }}
+          >
+            <span>Your morning,</span>
+          </span>
+          <span
+            className="cl-hero-line-mask"
+            style={{ ["--cl-hero-line-delay" as string]: "0.09s" }}
+          >
+            <span className="italic text-[#C89B6A]">done right.</span>
+          </span>
+        </h1>
 
         <p className="mt-4 max-w-[46ch] text-[1rem] leading-[1.5] text-[#F7F2EA]/80 md:text-[1.05rem]">
           Open since seven. The first pour goes out at ten past.
@@ -112,26 +110,8 @@ export function Hero() {
           </a>
         </div>
 
-        <div
-          ref={trustBarRef}
-          className="mt-8 flex max-w-md items-start gap-8 border-t border-[#F7F2EA]/20 pt-5 md:max-w-none md:gap-12"
-        >
-          <StatBlock value={ratingValue.toFixed(1)} label="GOOGLE RATING" />
-          <StatBlock value={String(Math.round(reviewValue))} label="REVIEWS" />
-          <StatBlock value="7AM" label="OPEN FROM" />
-        </div>
+        <HeroStats />
       </div>
     </section>
-  );
-}
-
-function StatBlock({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="font-[family-name:var(--font-newsreader)] text-[clamp(1.7rem,3.4vw,2.6rem)] tabular-nums text-[#F7F2EA]">
-        {value}
-      </span>
-      <span className="text-[0.56rem] tracking-[0.18em] text-[#F7F2EA]/55">{label}</span>
-    </div>
   );
 }
