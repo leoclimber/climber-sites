@@ -60,7 +60,7 @@ export function Hero() {
         }}
       />
 
-      {/* Scrim fixo no topo — legibilidade do wordmark, independe do véu adaptativo */}
+      {/* Scrim fixo no topo — vinheta de tom, independe do véu adaptativo */}
       <div
         aria-hidden
         className="absolute inset-x-0 top-0 h-[120px]"
@@ -69,15 +69,7 @@ export function Hero() {
         }}
       />
 
-      <div
-        className="absolute left-6 top-0 z-10 pt-[max(1.25rem,env(safe-area-inset-top))] md:left-[6.5vw]"
-      >
-        <span className="font-[family-name:var(--font-newsreader-hero)] text-[1.05rem] tracking-tight text-[#F7F2EA]">
-          Café Lisboa
-        </span>
-      </div>
-
-      <div className="absolute inset-0 z-10 flex flex-col justify-start px-6 pt-[8vh] md:px-[6.5vw]">
+      <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-[8vh] md:px-[6.5vw]">
         <span className="block text-[0.62rem] tracking-[0.26em] text-[#C89B6A]">
           // FRESHLY BREWED · DUBLIN 8
         </span>

@@ -14,7 +14,7 @@ export function HeroStatsCounter() {
   return (
     <div
       ref={trustBarRef}
-      className="mt-8 flex max-w-md items-start gap-8 border-t border-[#F7F2EA]/20 pt-5 md:max-w-none md:gap-12"
+      className="mt-8 flex max-w-md items-start gap-8 border-t border-[#F7F2EA]/20 pt-5 md:max-w-[720px] md:gap-12"
     >
       <StatBlock value={ratingValue.toFixed(1)} label="GOOGLE RATING" />
       <StatBlock value={String(Math.round(reviewValue))} label="REVIEWS" />

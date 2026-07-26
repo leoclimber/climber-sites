@@ -16,7 +16,7 @@ const AnimatedStats = dynamic(
 
 function StaticStats() {
   return (
-    <div className="mt-8 flex max-w-md items-start gap-8 border-t border-[#F7F2EA]/20 pt-5 md:max-w-none md:gap-12">
+    <div className="mt-8 flex max-w-md items-start gap-8 border-t border-[#F7F2EA]/20 pt-5 md:max-w-[720px] md:gap-12">
       <StatBlock value={business.rating.toFixed(1)} label="GOOGLE RATING" />
       <StatBlock value={String(business.reviewCount)} label="REVIEWS" />
       <StatBlock value="7AM" label="OPEN FROM" />
