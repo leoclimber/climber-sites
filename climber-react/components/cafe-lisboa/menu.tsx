@@ -51,7 +51,12 @@ export function Menu() {
           nenhum novo evento de entrada em viewport pra acordar eles. Com a
           key, cada categoria ganha sua própria instância e o observer
           dispara de novo (a seção já está visível, então dispara na hora). */}
-      <StaggerGroup key={active} as="ul" stagger={0.06} className="mt-10 flex flex-col gap-1">
+      <StaggerGroup
+        key={active}
+        as="ul"
+        stagger={0.06}
+        className="mx-auto mt-12 flex max-w-[1100px] flex-col gap-1 md:mt-16"
+      >
         {category.items.map((item, i) => (
           <StaggerItem as="li" key={`${category.id}-${item.name}`}>
             <MenuRow index={i} name={item.name} price={item.price} allergens={item.allergens} />
@@ -59,13 +64,33 @@ export function Menu() {
         ))}
       </StaggerGroup>
 
-      <div className="mt-12 flex flex-col gap-1 border-t border-[#E7E2DB] pt-6 text-[0.8125rem] text-[#78716C]">
-        <p>
-          {allergenLegend} — {allergenDeclaration}
-        </p>
+      <div className="mx-auto mt-12 flex max-w-[1100px] flex-col gap-3 border-t border-[#E7E2DB] pt-6 text-[0.8125rem] text-[#78716C]">
+        <AllergenDisclosure />
         <p>Prices include VAT</p>
       </div>
     </section>
+  );
+}
+
+function AllergenDisclosure() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div>
+      <Tappable
+        as="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex min-h-[44px] items-center text-[0.8125rem] text-[#78716C] underline decoration-[#A8A29E] underline-offset-2"
+      >
+        Allergen info (14) →
+      </Tappable>
+      {open && (
+        <p className="mt-2">
+          {allergenLegend} — {allergenDeclaration}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -93,26 +118,25 @@ function MenuRow({
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, amount: 0.4 }}
-      className="flex items-baseline justify-between gap-4 border-b border-[#E7E2DB] py-4"
+      className="flex items-baseline border-b border-[#E7E2DB] py-4"
     >
-      <span className="flex items-baseline gap-4">
-        <span className="text-[0.75rem] tabular-nums text-[#A8A29E]">
-          {String(index + 1).padStart(2, "0")}
-        </span>
-        <span className="text-[1.0625rem] text-[#1C1917]">
-          {name}
-          {allergens && (
-            <sup className="ml-1 text-[0.65rem] text-[#78716C]">{allergens.join(" ")}</sup>
-          )}
-        </span>
+      <span className="shrink-0 text-[0.75rem] tabular-nums text-[#A8A29E]">
+        {String(index + 1).padStart(2, "0")}
       </span>
-      <span className="relative flex-1 self-end overflow-hidden">
+      <span className="ml-4 text-[1.0625rem] text-[#1C1917]">
+        {name}
+        {allergens && (
+          <sup className="ml-1 text-[0.65rem] text-[#78716C]">{allergens.join(" ")}</sup>
+        )}
+      </span>
+      <span className="relative mx-2 min-w-[8px] flex-1 self-end overflow-hidden">
         <motion.span
           variants={{
             hidden: { scaleX: reducedMotion ? 1 : 0 },
             show: { scaleX: 1, transition: { duration: 0.7, ease: [0.65, 0, 0.35, 1] } },
           }}
-          className="block h-px origin-left border-b border-dashed border-[#E7E2DB]"
+          className="block h-px w-full origin-left border-b border-dotted"
+          style={{ borderColor: "rgba(28,22,20,.25)" }}
           aria-hidden
         />
       </span>
