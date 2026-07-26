@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Rule } from "./manifesto";
 import { business, hours } from "./data";
+import veu from "./veu.json";
+
+// Mesmo véu adaptativo do hero (scripts/veu.mjs), calculado pra
+// facade-vertical.jpg — protege o rótulo do endereço em cima da foto.
+const mapPreset = veu.presets[veu.map.preset as keyof typeof veu.presets];
+const mapA3 = veu.map.forcedA3 ?? mapPreset.a3;
+const [mvr, mvg, mvb] = veu.veilRgb;
 
 // "Open now" — calculado no fuso de Dublin (Europe/Dublin), não no fuso da
 // máquina de quem visita. Só roda no cliente, depois do mount: o servidor
@@ -59,22 +67,41 @@ export function Hours() {
     <section id="cl-hours" className="bg-[#FAF8F5] px-6 py-16 md:px-16 md:py-24">
       <Rule label="06 · Horários + Localização" />
 
-      <div className="grid gap-10 md:grid-cols-2 md:gap-16">
+      <div className="grid gap-10 md:grid-cols-2 md:items-stretch md:gap-16">
         <a
           href={business.mapsHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="group relative block aspect-[4/3] w-full overflow-hidden bg-[#D9CFC2] active:scale-[0.97] active:opacity-70 md:aspect-[16/9]"
+          className="group relative block aspect-[4/3] w-full overflow-hidden bg-[#1C1614] active:scale-[0.97] active:opacity-70 md:aspect-auto md:h-full"
         >
+          <Image
+            src="/images/gallery/facade-vertical.jpg"
+            alt="Café Lisboa's green shopfront on Meath Street"
+            fill
+            sizes="(min-width: 768px) 50vw, 100vw"
+            className="object-cover"
+          />
+
+          {veu.map.needsDesaturate && (
+            <div
+              aria-hidden
+              className="absolute inset-x-0 bottom-0 h-[55%]"
+              style={{
+                backdropFilter: "saturate(.45)",
+                WebkitBackdropFilter: "saturate(.45)",
+              }}
+            />
+          )}
+
           <div
             aria-hidden
-            className="absolute inset-0 opacity-60"
+            className="absolute inset-0"
             style={{
-              backgroundImage:
-                "repeating-linear-gradient(45deg, #BFB2A0 0 10px, transparent 10px 20px)",
+              background: `linear-gradient(to bottom, rgba(${mvr},${mvg},${mvb},${mapPreset.a1}) 0%, transparent 30%, transparent 65%, rgba(${mvr},${mvg},${mvb},${mapA3}) 100%)`,
             }}
           />
-          <span className="absolute left-4 top-4 font-mono text-[0.75rem] text-[#4A4136]">
+
+          <span className="absolute left-4 top-4 font-mono text-[0.75rem] text-[#F7F2EA]">
             Meath Street, Dublin 8
           </span>
           <span className="absolute bottom-4 right-4 flex items-center gap-2 bg-[#1C1917] px-4 py-2 text-[0.8125rem] font-medium text-[#FAF8F5] transition-transform group-hover:translate-x-0.5">

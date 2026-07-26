@@ -3,14 +3,14 @@ import { business, allergenDeclaration } from "./data";
 // Destaque 4/4: marquee, direção OPOSTA à esteira das avaliações (a esteira
 // roda direita->esquerda; aqui é esquerda->direita — mesma técnica de
 // duplicar o conteúdo e transladar -50%, só que animation-direction:
-// reverse). Newsreader grande, opacidade 0.12 sobre #FAF8F5 — não é dark
+// reverse). Newsreader grande, opacidade 0.32 sobre #FAF8F5 — não é dark
 // mode, o rodapé escuro só começa depois da faixa.
 export function Footer() {
   const brandText = `${business.name.toUpperCase()} · MEATH STREET · DUBLIN 8 · EST. ${business.establishedYear} · `;
 
   return (
     <footer id="cl-footer">
-      <div className="cl-esteira bg-[#FAF8F5]" style={{ height: "min(11vw, 110px)" }}>
+      <div className="cl-esteira bg-[#FAF8F5]">
         <div className="cl-esteira-track" data-dir="ltr" style={{ ["--cl-dur" as string]: "50s" }}>
           <MarqueeText text={brandText} />
           <MarqueeText text={brandText} dup />
@@ -65,7 +65,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-[#332C23] pt-6 text-[0.75rem] text-[#6E6656] md:mt-14">
-          © {business.name} · touch targets ≥44px · prefers-reduced-motion respected
+          © {business.name}
         </div>
       </div>
     </footer>
@@ -76,7 +76,7 @@ function MarqueeText({ text, dup = false }: { text: string; dup?: boolean }) {
   return (
     <span
       className="shrink-0 whitespace-nowrap font-[family-name:var(--font-newsreader)] font-semibold tracking-[-0.02em] text-[#1C1917]"
-      style={{ fontSize: "min(9vw, 108px)", opacity: 0.12 }}
+      style={{ fontSize: "min(9vw, 108px)", opacity: 0.32 }}
       data-dup={dup}
     >
       {text}

@@ -5,6 +5,7 @@
 .cl-esteira {
   overflow: hidden;
   white-space: nowrap;
+  padding: 48px 0;
 }
 
 .cl-esteira-track {

@@ -29,7 +29,7 @@ const MOBILE_GROUPS = chunk(reviews, 1);
 
 export function Reviews() {
   return (
-    <section id="cl-reviews" className="bg-[#FAF8F5] pb-[140px] pt-16 md:pb-[220px] md:pt-24">
+    <section id="cl-reviews" className="bg-[#FAF8F5] pb-20 pt-16 md:pb-[120px] md:pt-24">
       <div className="px-6 md:px-16">
         <Rule label="07 · Avaliações" />
       </div>
@@ -114,7 +114,7 @@ function QuoteCarousel({ groups, intervalMs }: { groups: (typeof reviews)[number
 
 function QuoteCard({ quote, author }: { quote: string; author: string }) {
   return (
-    <div className="flex flex-1 flex-col gap-3 md:gap-4">
+    <div className="flex flex-1 flex-col justify-between gap-6 border border-[#E7E2DB] bg-white p-8">
       <p className="font-[family-name:var(--font-newsreader)] text-[1.4rem] italic leading-[1.3] text-[#1C1917] md:text-[1.75rem]">
         &ldquo;{quote}&rdquo;
       </p>
