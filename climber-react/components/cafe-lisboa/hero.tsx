@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { HeroStats } from "./hero-stats";
+import { business } from "./data";
 import veu from "./veu.json";
 
 // Capa full-bleed — Server Component (Fase 4): zero JS no caminho crítico,
@@ -13,11 +14,19 @@ const preset = veu.presets[veu.hero.preset as keyof typeof veu.presets];
 const a3 = veu.hero.forcedA3 ?? preset.a3;
 const [vr, vg, vb] = veu.veilRgb;
 
+// Regra de fábrica: nome com mais de 16 caracteres cai um degrau de
+// tamanho, pra nunca quebrar em mais de 2 linhas.
+const NAME_LONG_THRESHOLD = 16;
+const nameFontSize =
+  business.name.length > NAME_LONG_THRESHOLD
+    ? "clamp(2.2rem, 5vw, 3.9rem)"
+    : "clamp(2.8rem, 6.4vw, 5rem)";
+
 export function Hero() {
   return (
     <section
       id="cl-hero"
-      className="relative h-[100svh] min-h-[560px] w-full overflow-hidden bg-[#1C1614] md:h-screen md:min-h-[720px]"
+      className="relative h-[100svh] min-h-[560px] w-full overflow-hidden bg-[#1C1614] md:h-screen md:min-h-[680px]"
     >
       <Image
         src="/images/gallery/atmosphere-02.jpg"
@@ -63,30 +72,36 @@ export function Hero() {
       <div
         className="absolute left-6 top-0 z-10 pt-[max(1.25rem,env(safe-area-inset-top))] md:left-[6.5vw]"
       >
-        <span className="font-[family-name:var(--font-newsreader-hero)] text-[1.15rem] tracking-tight text-[#F7F2EA]">
+        <span className="font-[family-name:var(--font-newsreader-hero)] text-[1.05rem] tracking-tight text-[#F7F2EA]">
           Café Lisboa
         </span>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-10 md:px-[6.5vw] md:pb-14">
+      <div className="absolute inset-0 z-10 flex flex-col justify-start px-6 pt-[8vh] md:px-[6.5vw]">
         <span className="block text-[0.62rem] tracking-[0.26em] text-[#C89B6A]">
           // FRESHLY BREWED · DUBLIN 8
         </span>
 
-        <h1 className="mt-2 font-[family-name:var(--font-newsreader-hero)] text-[clamp(2.6rem,6.4vw,5.2rem)] leading-[0.98] tracking-[-0.02em] text-[#F7F2EA]">
+        <h1
+          className="mt-2 font-[family-name:var(--font-newsreader-hero)] leading-[0.98] tracking-[-0.02em] text-[#F7F2EA]"
+          style={{ fontSize: nameFontSize }}
+        >
           <span
             className="cl-hero-line-mask"
             style={{ ["--cl-hero-line-delay" as string]: "0s" }}
           >
-            <span>Your morning,</span>
+            <span>{business.name}</span>
           </span>
+        </h1>
+
+        <p className="mt-1 whitespace-nowrap font-[family-name:var(--font-newsreader-hero)] text-[clamp(1.3rem,2.6vw,1.9rem)] italic text-[#C89B6A]">
           <span
             className="cl-hero-line-mask"
             style={{ ["--cl-hero-line-delay" as string]: "0.09s" }}
           >
-            <span className="italic text-[#C89B6A]">done right.</span>
+            <span>Your morning, done right.</span>
           </span>
-        </h1>
+        </p>
 
         <p className="mt-4 max-w-[46ch] text-[1rem] leading-[1.5] text-[#F7F2EA]/80 md:text-[1.05rem]">
           Open since seven. The first pour goes out at ten past.
