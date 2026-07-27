@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { Rule } from "./manifesto";
@@ -26,10 +27,29 @@ export function Reviews() {
 
 function ReviewsCarousel() {
   const reducedMotion = usePrefersReducedMotion();
-  const [emblaRef] = useEmblaCarousel(
+  const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: true, dragFree: false, duration: 24 },
     reducedMotion ? [] : [Autoplay({ delay: 4500, stopOnInteraction: false })]
   );
+
+  // Fase 6d: indicador de posição mobile ("01 / 06") — lê o índice
+  // selecionado direto da API do embla (mesma instância que já dirige o
+  // autoplay/arraste, não duplica nenhuma lógica de scroll).
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    function onSelect() {
+      setSelectedIndex(emblaApi!.selectedScrollSnap());
+    }
+    onSelect();
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+      emblaApi.off("reInit", onSelect);
+    };
+  }, [emblaApi]);
 
   if (reducedMotion) {
     return (
@@ -64,13 +84,23 @@ function ReviewsCarousel() {
           ))}
         </div>
       </div>
+
+      <p
+        className="mt-4 text-[0.75rem] tracking-[0.14em] md:hidden"
+        style={{ color: "rgba(28,22,20,0.45)" }}
+        aria-hidden
+      >
+        {String(selectedIndex + 1).padStart(2, "0")} / {String(reviews.length).padStart(2, "0")}
+      </p>
     </div>
   );
 }
 
 function QuoteCard({ quote, author }: { quote: string; author: string }) {
   return (
-    <div className="flex h-full flex-col justify-between gap-6 border border-[#E7E2DB] bg-white p-8">
+    <div
+      className="flex h-full flex-col justify-between gap-6 border border-[#E7E2DB] bg-white p-8 max-md:border-[rgba(28,22,20,0.12)] max-md:shadow-[0_1px_3px_rgba(28,22,20,0.06)]"
+    >
       <p className="font-[family-name:var(--font-newsreader)] text-[1.4rem] italic leading-[1.3] text-[#1C1917] md:text-[1.75rem]">
         &ldquo;{quote}&rdquo;
       </p>

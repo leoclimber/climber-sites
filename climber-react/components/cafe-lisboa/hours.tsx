@@ -139,7 +139,12 @@ export function Hours() {
             <a href={business.mapsHref} target="_blank" rel="noopener noreferrer" className="w-fit hover:text-[#1C1917]">
               {business.addressLine}
             </a>
-            <a href={business.phoneHref} className="w-fit hover:text-[#1C1917]">
+            {/* Fase 6b: telefone parecia não-tocável (cinza, sem sublinhado).
+                Mesmo tratamento do rodapé — mobile só, desktop intocado. */}
+            <a
+              href={business.phoneHref}
+              className="w-fit max-md:underline max-md:decoration-[#8B4A2F] max-md:decoration-1 max-md:underline-offset-4 hover:text-[#1C1917]"
+            >
               {business.phoneDisplay}
             </a>
           </div>

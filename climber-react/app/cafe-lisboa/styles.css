@@ -8,6 +8,15 @@
   padding: 48px 0;
 }
 
+/* Fase 6c: no celular só cabe metade de duas palavras do marquee, lê como
+   bug em vez de destaque tipográfico. Some abaixo de 768px; desktop
+   continua exatamente como está. */
+@media (max-width: 768px) {
+  .cl-esteira {
+    display: none;
+  }
+}
+
 .cl-esteira-track {
   display: inline-flex;
   align-items: center;

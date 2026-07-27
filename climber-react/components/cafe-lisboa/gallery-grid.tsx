@@ -29,6 +29,20 @@ export function GalleryGrid() {
   const [slotB, slotC] = [mosaicSlots[1], mosaicSlots[2]];
   const [slotD, slotE] = [mosaicSlots[3], mosaicSlots[4]];
 
+  // Indicador de arraste mobile (Fase 6a) — mesma cor/altura do ProgressBar
+  // do topo da página (h-[3px] bg-[#8B4A2F]), scaleX em vez de width pelo
+  // mesmo motivo: composita na GPU, não dispara layout a cada frame de
+  // scroll horizontal.
+  const dragRowRef = useRef<HTMLDivElement>(null);
+  const [dragProgress, setDragProgress] = useState(0);
+
+  function handleDragScroll() {
+    const el = dragRowRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setDragProgress(max > 0 ? el.scrollLeft / max : 0);
+  }
+
   const tileARef = useRef<HTMLDivElement>(null);
   const col2Ref = useRef<HTMLDivElement>(null);
   const tileDRef = useRef<HTMLDivElement>(null);
@@ -85,7 +99,23 @@ export function GalleryGrid() {
         </div>
       </div>
 
-      <div className="cl-drag-row -mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 md:hidden">
+      {/* Fase 6a: -mx-6+px-6 (pensado pra sangrar dos dois lados) na
+          verdade empurrava a 1ª foto 24px além da goteira real do rótulo
+          (medido: rótulo em x=24, foto em x=-24). Duas causas empilhadas:
+          a margem negativa, E o fato de scroll-snap-type:mandatory ignorar
+          padding comum — sem scroll-padding correspondente, o navegador
+          nunca considera scrollLeft=0 uma posição "encaixada" (o padding
+          não é um ponto de snap válido) e pula direto pra a foto colada na
+          borda. pl-6 (sem margem negativa) resolve a 1ª causa; scroll-pl-6
+          (mesma medida, como scroll-padding) resolve a 2ª — só assim
+          scrollLeft=0 vira um snap válido e a foto cai nos mesmos 24px do
+          rótulo. A última foto continua "sangrando" pra fora — isso vem da
+          largura w-[72vw] de cada foto, nunca dependeu do padding. */}
+      <div
+        ref={dragRowRef}
+        onScroll={handleDragScroll}
+        className="cl-drag-row flex snap-x snap-mandatory gap-4 overflow-x-auto pl-6 scroll-pl-6 md:hidden"
+      >
         {mosaicSlots.map((slot, i) => (
           <button
             key={slot.id}
@@ -97,6 +127,15 @@ export function GalleryGrid() {
             <Image src={slot.src} alt={slot.alt} fill sizes="72vw" loading="lazy" className="object-cover" />
           </button>
         ))}
+      </div>
+
+      <div className="mt-5 flex justify-center md:hidden" aria-hidden>
+        <div className="h-[3px] w-16 overflow-hidden rounded-full" style={{ backgroundColor: "rgba(28,22,20,0.15)" }}>
+          <div
+            className="h-full w-full origin-left rounded-full bg-[#8B4A2F]"
+            style={{ transform: `scaleX(${Math.max(dragProgress, 0.08)})` }}
+          />
+        </div>
       </div>
 
       <Lightbox slot={openIndex !== null ? mosaicSlots[openIndex] : null} onClose={() => setOpenIndex(null)} />
