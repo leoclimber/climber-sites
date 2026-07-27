@@ -16,57 +16,54 @@ export function Menu() {
 
   return (
     <section id="cl-menu" className="bg-[#FAF8F5] px-6 pt-9 pb-0 md:px-16 md:pt-12">
-      <Rule label="03 · Menu" />
+      <div className="mx-auto max-w-[1100px]">
+        <Rule label="03 · Menu" />
 
-      <div className="cl-drag-row -mx-6 flex gap-8 overflow-x-auto px-6 pb-1 md:mx-0 md:gap-10 md:px-0">
-        {menuCategories.map((c) => (
-          <Tappable
-            key={c.id}
-            as="button"
-            onClick={() => setActive(c.id)}
-            className="relative shrink-0 whitespace-nowrap py-2 text-[1.1rem] md:text-[1.2rem]"
-            aria-pressed={active === c.id}
-          >
-            <span
-              className="font-[family-name:var(--font-newsreader)]"
-              style={{ color: active === c.id ? "#1C1917" : "#A8A29E" }}
+        <div className="cl-drag-row -mx-6 flex gap-8 overflow-x-auto px-6 pb-1 md:mx-0 md:gap-10 md:px-0">
+          {menuCategories.map((c) => (
+            <Tappable
+              key={c.id}
+              as="button"
+              onClick={() => setActive(c.id)}
+              className="relative shrink-0 whitespace-nowrap py-2 text-[1.1rem] md:text-[1.2rem]"
+              aria-pressed={active === c.id}
             >
-              {c.label}
-            </span>
-            {active === c.id && (
-              <motion.span
-                layoutId="cl-menu-underline"
-                className="absolute -bottom-0.5 left-0 h-[2px] w-full bg-[#8B4A2F]"
-              />
-            )}
-          </Tappable>
-        ))}
-      </div>
+              <span
+                className="font-[family-name:var(--font-newsreader)]"
+                style={{ color: active === c.id ? "#1C1917" : "#A8A29E" }}
+              >
+                {c.label}
+              </span>
+              {active === c.id && (
+                <motion.span
+                  layoutId="cl-menu-underline"
+                  className="absolute -bottom-0.5 left-0 h-[2px] w-full bg-[#8B4A2F]"
+                />
+              )}
+            </Tappable>
+          ))}
+        </div>
 
-      {/* key={active}: força remontar o grupo a cada troca de categoria.
-          Sem isso, o whileInView/once:true do StaggerGroup só dispara UMA
-          vez pra sempre (a mesma instância do componente persiste entre
-          trocas de aba) — itens de categorias trocadas depois disso nascem
-          e ficam presos no estado "hidden" (opacity:0) porque não existe
-          nenhum novo evento de entrada em viewport pra acordar eles. Com a
-          key, cada categoria ganha sua própria instância e o observer
-          dispara de novo (a seção já está visível, então dispara na hora). */}
-      <StaggerGroup
-        key={active}
-        as="ul"
-        stagger={0.06}
-        className="mx-auto mt-12 flex max-w-[1100px] flex-col gap-1 md:mt-16"
-      >
-        {category.items.map((item, i) => (
-          <StaggerItem as="li" key={`${category.id}-${item.name}`}>
-            <MenuRow index={i} name={item.name} price={item.price} allergens={item.allergens} />
-          </StaggerItem>
-        ))}
-      </StaggerGroup>
+        {/* key={active}: força remontar o grupo a cada troca de categoria.
+            Sem isso, o whileInView/once:true do StaggerGroup só dispara UMA
+            vez pra sempre (a mesma instância do componente persiste entre
+            trocas de aba) — itens de categorias trocadas depois disso nascem
+            e ficam presos no estado "hidden" (opacity:0) porque não existe
+            nenhum novo evento de entrada em viewport pra acordar eles. Com a
+            key, cada categoria ganha sua própria instância e o observer
+            dispara de novo (a seção já está visível, então dispara na hora). */}
+        <StaggerGroup key={active} as="ul" stagger={0.06} className="mt-12 flex flex-col gap-1 md:mt-16">
+          {category.items.map((item, i) => (
+            <StaggerItem as="li" key={`${category.id}-${item.name}`}>
+              <MenuRow index={i} name={item.name} price={item.price} allergens={item.allergens} />
+            </StaggerItem>
+          ))}
+        </StaggerGroup>
 
-      <div className="mx-auto mt-12 flex max-w-[1100px] flex-col gap-3 border-t border-[#E7E2DB] pt-6 text-[0.8125rem] text-[#78716C]">
-        <AllergenDisclosure />
-        <p>Prices include VAT</p>
+        <div className="mt-12 flex flex-col gap-3 border-t border-[#E7E2DB] pt-6 text-[0.8125rem] text-[#78716C]">
+          <AllergenDisclosure />
+          <p>Prices include VAT</p>
+        </div>
       </div>
     </section>
   );
