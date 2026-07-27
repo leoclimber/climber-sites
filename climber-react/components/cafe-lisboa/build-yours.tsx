@@ -83,7 +83,12 @@ export function BuildYours() {
     >
       <GrainAndVignette />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[1240px] flex-col gap-3 md:flex-row md:items-start md:gap-[96px]">
+      {/* Desktop (Fase 4): md:items-stretch (era md:items-start) faz as
+          duas colunas ocuparem a mesma altura de linha (a da coluna direita,
+          que é a mais alta); md:mt-auto no grupo de eixos (abaixo) empurra
+          só ELE pro fim da coluna esquerda agora esticada, fechando o vão
+          marrom sem redistribuir o espaço entre eyebrow/headline/parágrafo. */}
+      <div className="relative z-10 mx-auto flex w-full max-w-[1240px] flex-col gap-3 md:flex-row md:items-stretch md:gap-[96px]">
         <div className="flex flex-col md:w-[52%]">
           <span className="text-[0.55rem] tracking-[0.26em] text-[#C89B6A]">04 · BUILD YOURS</span>
           <h2 className="mt-2 font-[family-name:var(--font-newsreader)] text-[clamp(2rem,4.4vw,3.2rem)] leading-[1.05] text-[#F7F2EA]">
@@ -93,7 +98,7 @@ export function BuildYours() {
             Three taps. Know the price before you walk in.
           </p>
 
-          <div className="mt-4 flex flex-col gap-4 md:mt-12 md:gap-8">
+          <div className="mt-4 flex flex-col gap-4 md:mt-auto md:gap-8">
             <OptionAxis
               label="COFFEE"
               options={buildYoursOptions.coffees}
@@ -159,7 +164,10 @@ function OptionAxis<T extends { id: string; name: string }>({
   return (
     <div className="flex flex-col gap-2">
       <span className="text-[0.53rem] tracking-[0.22em] text-[#F7F2EA]/42">{label}</span>
-      <div className="flex flex-wrap gap-x-5 gap-y-3">
+      {/* Mobile (Fase 4): grade fixa de 3 colunas, mesmo pro SIZE (2 opções)
+          e EXTRA (3 opções) — "herdam a mesma grade". Desktop mantém o
+          flex-wrap de sempre, intocado. */}
+      <div className="flex flex-wrap gap-x-5 gap-y-3 max-md:grid max-md:grid-cols-3 max-md:gap-3">
         {options.map((opt) => {
           const selected = opt.id === selectedId;
           return (
@@ -168,13 +176,11 @@ function OptionAxis<T extends { id: string; name: string }>({
               as="button"
               onClick={() => onSelect(opt.id)}
               aria-pressed={selected}
-              className="flex min-h-[44px] items-center font-[family-name:var(--font-newsreader)] text-[clamp(1rem,1.5vw,1.15rem)] transition-colors duration-200"
-              style={{
-                color: selected ? "#C89B6A" : "rgba(247,242,234,0.45)",
-                textDecoration: selected ? "underline" : "none",
-                textDecorationThickness: "1.6px",
-                textUnderlineOffset: "4px",
-              }}
+              className={`flex min-h-[44px] items-center font-[family-name:var(--font-newsreader)] text-[clamp(1rem,1.5vw,1.15rem)] transition-colors duration-200 max-md:min-h-[48px] max-md:justify-center max-md:rounded-[4px] max-md:px-2 max-md:text-center max-md:text-[0.95rem] ${
+                selected
+                  ? "md:text-[#C89B6A] md:underline md:decoration-[1.6px] md:underline-offset-4 max-md:border max-md:border-transparent max-md:bg-[rgba(232,201,160,0.14)] max-md:text-[#E8C9A0] max-md:underline max-md:decoration-2 max-md:underline-offset-4"
+                  : "md:text-[rgba(247,242,234,0.45)] max-md:border max-md:border-[rgba(247,242,234,0.18)] max-md:text-[rgba(247,242,234,0.72)] max-md:no-underline"
+              }`}
             >
               {opt.name}
             </Tappable>
@@ -201,7 +207,8 @@ function ExtraAxis({
   return (
     <div className="flex flex-col gap-2">
       <span className="text-[0.53rem] tracking-[0.22em] text-[#F7F2EA]/42">EXTRA</span>
-      <div className="flex flex-wrap gap-x-5 gap-y-3">
+      {/* Mobile (Fase 4): mesma grade de 3 colunas do COFFEE/SIZE. */}
+      <div className="flex flex-wrap gap-x-5 gap-y-3 max-md:grid max-md:grid-cols-3 max-md:gap-3">
         {buildYoursOptions.extras.map((opt) => {
           const selected = opt.id === "none" ? activeExtras.size === 0 : activeExtras.has(opt.id);
           return (
@@ -210,13 +217,11 @@ function ExtraAxis({
               as="button"
               onClick={() => (opt.id === "none" ? onClear() : onToggle(opt.id))}
               aria-pressed={selected}
-              className="flex min-h-[44px] items-center font-[family-name:var(--font-newsreader)] text-[clamp(1rem,1.5vw,1.15rem)] transition-colors duration-200"
-              style={{
-                color: selected ? "#C89B6A" : "rgba(247,242,234,0.45)",
-                textDecoration: selected ? "underline" : "none",
-                textDecorationThickness: "1.6px",
-                textUnderlineOffset: "4px",
-              }}
+              className={`flex min-h-[44px] items-center font-[family-name:var(--font-newsreader)] text-[clamp(1rem,1.5vw,1.15rem)] transition-colors duration-200 max-md:min-h-[48px] max-md:justify-center max-md:rounded-[4px] max-md:px-2 max-md:text-center max-md:text-[0.95rem] ${
+                selected
+                  ? "md:text-[#C89B6A] md:underline md:decoration-[1.6px] md:underline-offset-4 max-md:border max-md:border-transparent max-md:bg-[rgba(232,201,160,0.14)] max-md:text-[#E8C9A0] max-md:underline max-md:decoration-2 max-md:underline-offset-4"
+                  : "md:text-[rgba(247,242,234,0.45)] max-md:border max-md:border-[rgba(247,242,234,0.18)] max-md:text-[rgba(247,242,234,0.72)] max-md:no-underline"
+              }`}
             >
               {opt.name}
             </Tappable>
