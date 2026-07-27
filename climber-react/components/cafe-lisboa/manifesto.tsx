@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
 import { LineReveal, MaskReveal, StaggerGroup, StaggerItem } from "./motion";
 import { business } from "./data";
 
@@ -10,45 +9,30 @@ import { business } from "./data";
 // deixou de sangrar até a borda pra não competir com o mosaico, que é
 // edge-to-edge e é a seção mais forte do site).
 //
-// A Régua fica FORA do grid de 2 colunas, de propósito: assim o topo da
-// foto (que começa junto com a linha de cima do grid, md:items-start) cai
-// exatamente no topo da HEADLINE, não no topo da seção — sem precisar medir
-// a altura da Régua. A altura da foto em si (base = 64px acima do fim do
-// texto) já não dá pra fechar em CSS puro (depende da altura real do
-// parágrafo, que muda com a largura da viewport), por isso mede de verdade
-// via ResizeObserver, mesmo padrão já usado no mosaico (gallery-grid.tsx).
+// Desktop (Fase 2 da leva final): geometria travada em pixel, não mais
+// medida via ResizeObserver — separação garantida entre a capa e a foto do
+// manifesto exige uma ordem fixa (creme → rótulo → headline → só então a
+// foto começa, 400px abaixo do topo da seção), não uma altura que reage ao
+// texto. A foto sai do grid (vira md:absolute, ancorada na seção que já é
+// `relative`) com tamanho fixo 760×1013 (aspect 3/4) sangrando na borda
+// direita da viewport; a coluna de texto vira uma faixa fixa de 820px que
+// começa na goteira de 64px. md:min-h no wrapper reserva a altura pra base
+// da foto ficar 140px acima do fim da seção, mesmo com o texto sendo bem
+// mais curto que a foto (a régua fica FORA do grid, como antes). Mobile
+// segue 100% inalterado: mesma pilha de 1 coluna, mesmas classes base.
 export function Manifesto() {
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [photoHeight, setPhotoHeight] = useState<number | null>(null);
-
-  useEffect(() => {
-    function measure() {
-      if (!contentRef.current) return;
-      if (window.innerWidth < 768) {
-        setPhotoHeight(null); // mobile: foto usa a altura natural própria dela
-        return;
-      }
-      setPhotoHeight(Math.max(contentRef.current.offsetHeight - 64, 200));
-    }
-    measure();
-    const observer = new ResizeObserver(measure);
-    if (contentRef.current) observer.observe(contentRef.current);
-    window.addEventListener("resize", measure);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, []);
-
   return (
-    <section id="cl-manifesto" className="relative overflow-hidden bg-[#FAF8F5] pt-[120px]">
+    <section
+      id="cl-manifesto"
+      className="relative overflow-hidden bg-[#FAF8F5] pt-[120px] md:pt-[140px] md:min-h-[1553px]"
+    >
       <div className="px-6 md:px-16">
         <Rule label="02 · Manifesto" />
       </div>
 
-      <div className="grid md:grid-cols-[minmax(0,1fr)_55%] md:items-start">
-        <div className="flex flex-col px-6 pb-9 md:px-16 md:pb-12">
-          <div ref={contentRef}>
+      <div className="grid md:items-start">
+        <div className="flex flex-col px-6 pb-9 md:w-[820px] md:px-0 md:ml-16 md:pb-12">
+          <div>
             <LineReveal
               as="h2"
               lines={["Meath Street, every", "morning since 2019."]}
@@ -78,16 +62,13 @@ export function Manifesto() {
           </div>
         </div>
 
-        <div className="px-6 pb-16 md:px-0 md:pb-0 md:pr-[6.5vw]">
-          <MaskReveal
-            className={photoHeight ? "min-h-[200px]" : "min-h-[280px] md:min-h-[420px]"}
-            style={photoHeight ? { height: photoHeight } : undefined}
-          >
+        <div className="px-6 pb-16 md:absolute md:right-0 md:top-[400px] md:h-[1013px] md:w-[760px] md:px-0 md:pb-0">
+          <MaskReveal className="min-h-[280px] md:h-full md:min-h-0">
             <Image
               src="/images/gallery/atmosphere-03.jpg"
               alt="Leather armchair beside a marble table, an open book and a cup of coffee, morning light"
               fill
-              sizes="(min-width: 768px) 55vw, 100vw"
+              sizes="(min-width: 768px) 760px, 100vw"
               loading="lazy"
               className="object-cover"
             />
