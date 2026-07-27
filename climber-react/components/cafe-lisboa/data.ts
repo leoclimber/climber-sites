@@ -108,6 +108,7 @@ export const buildYoursOptions = {
     { id: "americano", name: "Americano", price: 4.0 },
     { id: "cortado", name: "Cortado", price: 3.8 },
     { id: "mocha", name: "Mocha", price: 4.6 },
+    { id: "espresso", name: "Espresso", price: 3.2 },
   ],
   sizes: [
     { id: "regular", name: "Regular", delta: 0 },
