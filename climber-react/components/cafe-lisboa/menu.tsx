@@ -16,7 +16,13 @@ export function Menu() {
 
   return (
     <section id="cl-menu" className="bg-[#FAF8F5] px-6 pt-9 pb-0 md:px-16 md:pt-12">
-      <div className="mx-auto max-w-[1100px]">
+      {/* Desktop (Fase 3): container de 1100px deixa de se centralizar
+          dentro da faixa já com goteira (o que empurrava o início pra
+          x≈403) e passa a começar na própria goteira de 64px do padding
+          da seção, igual às outras 6 seções cream. mx-auto continua
+          existindo pro mobile (onde não faz diferença visual nenhuma,
+          já que 1100px nunca é o fator limitante ali). */}
+      <div className="mx-auto max-w-[1100px] md:mx-0">
         <Rule label="03 · Menu" />
 
         <div className="cl-drag-row -mx-6 flex gap-8 overflow-x-auto px-6 pb-1 md:mx-0 md:gap-10 md:px-0">
@@ -52,7 +58,17 @@ export function Menu() {
             nenhum novo evento de entrada em viewport pra acordar eles. Com a
             key, cada categoria ganha sua própria instância e o observer
             dispara de novo (a seção já está visível, então dispara na hora). */}
-        <StaggerGroup key={active} as="ul" stagger={0.06} className="mt-12 flex flex-col gap-1 md:mt-16">
+        {/* Mobile (Fase 3): altura travada no maior conteúdo real (Coffee,
+            8 itens = 496px medido de verdade via Playwright, não chutado) —
+            trocar de aba não muda mais a altura do container, então a
+            página não pula debaixo do dedo. max-md: só existe abaixo de
+            768px; desktop usa a altura natural de sempre. */}
+        <StaggerGroup
+          key={active}
+          as="ul"
+          stagger={0.06}
+          className="mt-12 flex flex-col gap-1 max-md:min-h-[496px] md:mt-16"
+        >
           {category.items.map((item, i) => (
             <StaggerItem as="li" key={`${category.id}-${item.name}`}>
               <MenuRow index={i} name={item.name} price={item.price} allergens={item.allergens} />
