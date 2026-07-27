@@ -17,7 +17,7 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="bg-[#1C1917] px-6 py-14 md:px-16 md:py-16">
+      <div className="bg-[#1C1917] px-6 pt-[72px] pb-14 md:px-16 md:pt-16 md:pb-16">
         <h2 className="font-[family-name:var(--font-newsreader)] text-[clamp(2rem,3vw,2.75rem)] text-[#FAF8F5]">
           {business.name}
         </h2>

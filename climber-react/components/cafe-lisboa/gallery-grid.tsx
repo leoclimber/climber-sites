@@ -67,7 +67,7 @@ export function GalleryGrid() {
   }, []);
 
   return (
-    <section id="cl-gallery" className="bg-[#FAF8F5] pt-12 pb-9 md:pt-16 md:pb-12">
+    <section id="cl-gallery" className="bg-[#FAF8F5] pt-[70px] pb-9 md:pt-[126px] md:pb-12">
       <div className="px-6 md:px-16">
         <Rule label="05 · O Espaço" />
       </div>

@@ -5,7 +5,8 @@
 .cl-esteira {
   overflow: hidden;
   white-space: nowrap;
-  padding: 48px 0;
+  padding-top: 112px;
+  padding-bottom: 48px;
 }
 
 /* Fase 6c: no celular só cabe metade de duas palavras do marquee, lê como

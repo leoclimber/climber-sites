@@ -78,7 +78,7 @@ export function BuildYours() {
   return (
     <section
       id="cl-build-yours"
-      className="relative flex min-h-[560px] w-full flex-col overflow-hidden px-6 pt-18 pb-6 md:pb-8 md:px-[6.5vw] md:pt-24"
+      className="relative flex min-h-[560px] w-full flex-col overflow-hidden px-6 pt-24 pb-6 md:pb-8 md:px-[6.5vw] md:pt-40"
       style={{ backgroundColor: bg }}
     >
       <GrainAndVignette />

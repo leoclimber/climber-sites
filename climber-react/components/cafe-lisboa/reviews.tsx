@@ -16,7 +16,7 @@ import { reviews } from "./data";
 // arrastar.
 export function Reviews() {
   return (
-    <section id="cl-reviews" className="bg-[#FAF8F5] pb-6 pt-9 md:pb-12 md:pt-12">
+    <section id="cl-reviews" className="bg-[#FAF8F5] pb-6 pt-[58px] md:pb-12 md:pt-[110px]">
       <div className="px-6 md:px-16">
         <Rule label="07 · Avaliações" />
       </div>

@@ -64,7 +64,7 @@ export function Hours() {
   const status = useOpenStatus();
 
   return (
-    <section id="cl-hours" className="bg-[#FAF8F5] px-6 py-9 md:px-16 md:py-12">
+    <section id="cl-hours" className="bg-[#FAF8F5] px-6 pt-[58px] pb-9 md:px-16 md:pt-[110px] md:pb-12">
       <Rule label="06 · Horários + Localização" />
 
       <div className="grid gap-10 md:grid-cols-2 md:items-stretch md:gap-16">

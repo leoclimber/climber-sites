@@ -15,7 +15,7 @@ export function Menu() {
   const category = menuCategories.find((c) => c.id === active) ?? menuCategories[0];
 
   return (
-    <section id="cl-menu" className="bg-[#FAF8F5] px-6 pt-9 pb-0 md:px-16 md:pt-12">
+    <section id="cl-menu" className="bg-[#FAF8F5] px-6 pt-[30px] pb-0 md:px-16 md:pt-[18px]">
       {/* Desktop (Fase 3): container de 1100px deixa de se centralizar
           dentro da faixa já com goteira (o que empurrava o início pra
           x≈403) e passa a começar na própria goteira de 64px do padding
