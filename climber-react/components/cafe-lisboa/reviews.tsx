@@ -41,17 +41,28 @@ function ReviewsCarousel() {
     );
   }
 
+  // overflow-hidden e padding não podem estar no MESMO elemento aqui: o
+  // clip de overflow-hidden acontece na borda externa (padding-box) do
+  // elemento, então conteúdo que estoura (o card espiando na borda) seria
+  // cortado na borda verdadeira da viewport, ignorando o padding — só o
+  // lado esquerdo (fluxo normal, não-overflowing) respeitava a margem. Por
+  // isso o padding fica num contêiner de FORA, sem overflow-hidden, e o
+  // overflow-hidden fica num contêiner de DENTRO, sem padding próprio —
+  // a largura dele já vem encolhida pelo padding do pai, então o clip
+  // acontece exatamente na margem certa dos dois lados.
   return (
-    <div className="mt-10 overflow-hidden px-6 md:mt-12 md:px-16" ref={emblaRef}>
-      <div className="flex gap-6 md:gap-8">
-        {reviews.map((r) => (
-          <div
-            key={r.author}
-            className="min-w-0 shrink-0 grow-0 basis-[88%] md:basis-[calc(33.333%-1.334rem)]"
-          >
-            <QuoteCard quote={r.quote} author={r.author} />
-          </div>
-        ))}
+    <div className="mt-10 px-6 md:mt-12 md:px-16">
+      <div className="overflow-hidden" ref={emblaRef}>
+        <div className="flex gap-6 md:gap-8">
+          {reviews.map((r) => (
+            <div
+              key={r.author}
+              className="min-w-0 shrink-0 grow-0 basis-[88%] md:basis-[calc(33.333%-1.334rem)]"
+            >
+              <QuoteCard quote={r.quote} author={r.author} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { business, allergenDeclaration } from "./data";
+import { business } from "./data";
 
 // Destaque 4/4: marquee, direção OPOSTA à esteira das avaliações (a esteira
 // roda direita->esquerda; aqui é esquerda->direita — mesma técnica de
@@ -45,12 +45,8 @@ export function Footer() {
             </a>
           </div>
 
-          <div className="hidden flex-col gap-1 text-[0.8125rem] leading-[1.6] text-[#8A8378] md:flex">
-            <p>{allergenDeclaration}</p>
-            <p>Prices include VAT · Est. {business.establishedYear}</p>
-          </div>
-          <p className="text-[0.75rem] text-[#8A8378] md:hidden">
-            Full allergen list (14) on request · Prices include VAT
+          <p className="text-[0.8125rem] text-[#8A8378]">
+            Prices include VAT · Est. {business.establishedYear}
           </p>
         </div>
 
