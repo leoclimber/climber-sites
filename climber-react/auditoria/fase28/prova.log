@@ -1,0 +1,51 @@
+Fase 28 -- verificacao, desktop 1920x1080:
+
+1. Distancia base do rotulo "02 . Manifesto" -> topo da headline: 32px
+   (Rule mb-6=24px + md:gap-2=8px no flex-col do wrapper, sem colapso de
+   margem porque flex nao colapsa margens entre filhos).
+
+2. Distancia base da headline -> topo da foto: 96px
+   (md:mt-24 no wrapper "row", que contem as duas colunas lado a lado).
+
+3. Distancia base da headline -> topo do primeiro paragrafo: 96px
+   (mesmo mt-24 acima -- paragrafo e foto sao as duas colunas da MESMA
+   linha, entao os dois comecam no mesmo topo por construcao).
+
+4. Distancia base da foto da capa -> topo da foto do manifesto: 402.78px
+   (>= 400px). Nota: com pt-140 (valor antigo) essa distancia fechava em
+   ~392.78px -- os tres espacamentos exatos (itens 1-3) mais a altura REAL
+   da headline (~100.8px, inalterada desde a Fase 2) somam menos que 400.
+   Como nenhum dos itens 1-3 pode mudar (sao verificados exatos) e o
+   padding-top nao tem verificacao propria nesta fase, subiu de 140px pra
+   150px (unico grau de liberdade livre) pra fechar o >=400px com folga.
+
+5. Maior area de creme continuo na secao:
+   a) vao horizontal texto->foto: largura=120px (intocado, Fase 27) --
+      dentro do teto de 200px.
+   b) faixa regua->headline: 32px de altura, largura total -- dentro do
+      teto de 200px.
+   c) faixa headline->linha (foto/paragrafo): 96px de altura, largura
+      total -- dentro do teto de 200px.
+   d) ACHADO, fora do teto: sobra vertical entre o bloco de detalhes e
+      "EST. 2019", dentro da coluna de texto: 520px de largura x 268.6px
+      de altura -- ACIMA do teto de 200px.
+      Causa mecanica: mover a headline pra fora da coluna (exigido por
+      esta fase) libera ~132.8px que a headline+margem ocupavam ali
+      dentro; a altura da coluna continua fixa em 768px (exigido pela
+      Fase 27, pra EST.2019 continuar alinhada com a base da foto -- ver
+      abaixo, diferenca 0px) e o unico espaco flexivel na coluna e o
+      mt-auto antes de EST. 2019 (o respiro de 48px antes do bloco de
+      detalhes e um valor FIXO da Fase 27c, nao pode absorver parte da
+      sobra). Sem alterar a foto/coluna (proibido nesta fase) ou o bloco
+      de detalhes, nao ha como redistribuir essa sobra em duas areas
+      menores -- fica registrado como pendencia pra uma fase futura
+      (reduzir a altura da coluna/foto, ou adicionar conteudo ao bloco de
+      detalhes).
+
+Verificacao adicional (nao pedida explicitamente, mas a Fase 27 exige que
+continue valendo): diferenca entre o bottom de "EST. 2019" e o bottom da
+foto = 0px. Largura/posicao da foto (1152px, x=704 a x=1856) preservadas
+exatamente da Fase 27.
+
+Mobile: 100% inalterado (ver manifesto-mobile.png, pixel a pixel igual ao
+da Fase 27).

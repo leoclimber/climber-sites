@@ -64,62 +64,100 @@ function ManifestoDetails() {
 // deixou de sangrar até a borda pra não competir com o mosaico, que é
 // edge-to-edge e é a seção mais forte do site).
 //
-// Desktop (Fase 2, geometria; Fase 21, tamanho fixo): a régua "02 ·
-// Manifesto" começa a ordem fixa (creme → rótulo → headline → só então a
-// foto, 400px abaixo do topo da seção — essa separação por título não
-// muda). A foto sai do grid (md:absolute, ancorada na seção `relative`),
-// sangrando na borda direita; a coluna de texto é uma faixa fixa de 520px
-// que começa na goteira de 64px. Nem a foto nem a altura da seção dependem
-// de nenhuma medição de texto — tudo em constantes no topo do arquivo.
-// Mobile segue 100% inalterado: mesma pilha de 1 coluna, mesmas classes
-// base, nada disto (nenhuma classe md:) chega a aplicar abaixo de 769px.
+// Fase 28 (desktop): rótulo "02 · Manifesto" e headline viram UM bloco de
+// fluxo normal (nada de position:absolute pros dois) no topo da seção —
+// antes o rótulo ficava sozinho ali (fluxo normal) enquanto a headline
+// vivia dentro da coluna de texto, ancorada a 400px via position:absolute
+// (Fase 21/27), criando ~240px de creme morto entre os dois porque só
+// coincidiam por acaso com essa constante. Rótulo+headline moram no mesmo
+// wrapper (px-6 md:px-16, largura total) que vira md:flex md:flex-col
+// md:gap-2 no desktop: o Rule mantém seu próprio mb-6 (24px, componente
+// compartilhado por todas as seções, não mexido) e gap-2 (8px) soma mais
+// 24+8=32px — o valor exato pedido, sem depender de margin-collapsing
+// (que um flex container desliga por padrão) nem duplicar o Rule.
+//
+// A foto e a coluna de texto DEIXAM de ser position:absolute com top fixo
+// (Fase 21/27) — agora é uma segunda linha em fluxo normal (row: flex row
+// no desktop), empurrada 96px abaixo da headline via margin-top no PRÓPRIO
+// row (mt-24 no desktop == 96px), o que resolve os dois alvos ("topo da
+// foto" e "topo do primeiro parágrafo") com UM único valor, sem medir nada:
+// os dois são as duas colunas dessa mesma linha, começando no mesmo topo
+// por construção (md:items-start). A foto não busca mais se alinhar com a
+// headline por uma constante em comum (400px); a base real de alinhamento
+// agora é a base da HEADLINE, não o topo da seção. Larguras/altura da
+// coluna (520×768) e da foto (1152×768, 3:2 real do arquivo — Fase 27) e o
+// vão de 120px entre elas continuam intocados, junto com o bloco de
+// detalhes e "EST. 2019" (mt-auto dentro da coluna de altura 768, ver
+// ManifestoDetails acima). Como tudo agora é fluxo normal (sem position:
+// absolute), a altura mínima artificial da seção sai (md:min-h-[...]) —
+// a seção passa a ter a altura real do próprio conteúdo, fechada por um
+// md:pb-[140px] (o mesmo respiro que a Fase 8a usa pro ritmo de 160px até
+// o Cardápio, antes garantido pelo min-height).
+// Mobile segue 100% inalterado: mesma pilha de 1 coluna, mesmos números
+// (Rule mb-6 + StaggerGroup renderizado logo em seguida = mesmos 24px de
+// sempre entre rótulo e headline; row com mt-8 = os mesmos 32px de sempre
+// entre headline e primeiro parágrafo) — nenhuma classe md: chega a
+// aplicar abaixo de 769px.
+//
+// Nota sobre o padding-top do desktop: com os três espaçamentos exatos
+// exigidos por esta fase (32px régua->headline, 96px headline->foto/
+// parágrafo) e a altura REAL da headline renderizada (~100.8px, 2 linhas
+// a 48px/1.05 de leading — igual desde a Fase 2, não mudou aqui), 140px
+// de pt não fecha mais mais os >=400px exigidos entre a base da foto da
+// capa e o topo da foto do manifesto (dava ~392.8px). Os três espaçamentos
+// e a altura da headline são os valores medidos/verificados desta fase;
+// o padding-top é o único grau de liberdade que não tem verificação
+// própria, então sobe pra 150px (folga de ~7px sobre o mínimo de 147.2px)
+// pra fechar o item 4 sem tocar em nenhum número que a fase pede pra
+// medir exato.
 export function Manifesto() {
   return (
     <section
       id="cl-manifesto"
-      className="relative overflow-hidden bg-[#FAF8F5] pt-[120px] md:pt-[140px] md:min-h-[1308px]"
+      className="relative overflow-hidden bg-[#FAF8F5] pt-[120px] md:pt-[150px] md:pb-[140px]"
     >
-      <div className="px-6 md:px-16">
+      <div className="px-6 md:flex md:flex-col md:gap-2 md:px-16">
         <Rule label="02 · Manifesto" />
+        <LineReveal
+          as="h2"
+          lines={["Meath Street, every", "morning since 2019."]}
+          className="font-[family-name:var(--font-newsreader)] text-[clamp(2rem,5vw,3rem)] leading-[1.05] tracking-[-0.02em] text-[#1C1917]"
+        />
       </div>
 
-      <div className="grid md:items-start">
-        <div className="flex flex-col px-6 pb-9 md:absolute md:left-16 md:top-[400px] md:h-[768px] md:w-[520px] md:px-0 md:pb-0">
-          <div className="flex flex-col md:h-full">
-            <div>
-              <LineReveal
-                as="h2"
-                lines={["Meath Street, every", "morning since 2019."]}
-                className="font-[family-name:var(--font-newsreader)] text-[clamp(2rem,5vw,3rem)] leading-[1.05] tracking-[-0.02em] text-[#1C1917]"
-              />
+      {/* md:shrink-0 nas duas colunas abaixo: sem ele, o flex encolhe as
+          larguras fixas (520/1152) sempre que a viewport "real" (menos a
+          largura da scrollbar vertical, que em Windows/Chrome tira uns
+          15px do 1920 nominal) é menor que a soma goteira+colunas+vão —
+          media 1141px em vez de 1152px. shrink-0 preserva os 520/1152/120
+          exatos da Fase 27, intocados. */}
+      <div className="mt-8 flex flex-col px-6 md:mt-24 md:flex-row md:items-start md:gap-[120px] md:px-16">
+        <div className="flex flex-col pb-9 md:h-[768px] md:w-[520px] md:shrink-0 md:pb-0">
+          <StaggerGroup className="flex w-[88%] max-w-[62ch] flex-col gap-5 text-[1.0625rem] leading-[1.65] text-[#78716C]">
+            <StaggerItem>
+              We opened the green corner door in 2019. The beans are roasted
+              in small batches, once a week, so nothing sits past its peak.
+            </StaggerItem>
+            <StaggerItem>
+              This isn&rsquo;t a place to rush through. There&rsquo;s a
+              reading chair, a marble table, and regulars who stay all
+              morning with a coffee gone cold.
+            </StaggerItem>
+            <StaggerItem>
+              Ask for Sara behind the counter — she&rsquo;s been pulling
+              shots here since day one.
+            </StaggerItem>
+          </StaggerGroup>
 
-              <StaggerGroup className="mt-8 flex w-[88%] max-w-[62ch] flex-col gap-5 text-[1.0625rem] leading-[1.65] text-[#78716C]">
-                <StaggerItem>
-                  We opened the green corner door in 2019. The beans are roasted
-                  in small batches, once a week, so nothing sits past its peak.
-                </StaggerItem>
-                <StaggerItem>
-                  This isn&rsquo;t a place to rush through. There&rsquo;s a
-                  reading chair, a marble table, and regulars who stay all
-                  morning with a coffee gone cold.
-                </StaggerItem>
-                <StaggerItem>
-                  Ask for Sara behind the counter — she&rsquo;s been pulling
-                  shots here since day one.
-                </StaggerItem>
-              </StaggerGroup>
-            </div>
+          <ManifestoDetails />
 
-            <ManifestoDetails />
-
-            <div className="mt-10 md:mt-auto flex items-center gap-3 text-[0.75rem] tracking-[0.15em] text-[#78716C]">
-              <span className="h-[2px] w-10 bg-[#8B4A2F]" aria-hidden />
-              EST. {business.establishedYear}
-            </div>
+          <div className="mt-10 md:mt-auto flex items-center gap-3 text-[0.75rem] tracking-[0.15em] text-[#78716C]">
+            <span className="h-[2px] w-10 bg-[#8B4A2F]" aria-hidden />
+            EST. {business.establishedYear}
           </div>
         </div>
 
-        <div className="px-6 pb-16 md:absolute md:left-[704px] md:top-[400px] md:h-[768px] md:w-[1152px] md:px-0 md:pb-0">
+        <div className="pb-16 md:h-[768px] md:w-[1152px] md:shrink-0 md:pb-0">
           {/* Fase 19 [SO DESKTOP]: PhotoReveal por fora (clip-path+scale,
               novo sistema) — MaskReveal segue por dentro só pro mobile
               (vira no-op no desktop, ver useIsDesktop). Fase 27: quadro
