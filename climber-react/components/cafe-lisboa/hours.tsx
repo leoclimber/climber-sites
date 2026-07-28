@@ -101,7 +101,10 @@ export function Hours() {
             }}
           />
 
-          <span className="absolute left-4 top-4 text-[0.75rem] text-[#F7F2EA]">
+          <span
+            className="absolute left-4 top-4 text-[0.75rem] text-[#F7F2EA]"
+            style={{ textShadow: "0 2px 12px rgba(0,0,0,0.65)" }}
+          >
             Meath Street, Dublin 8
           </span>
           <span className="absolute bottom-4 right-4 flex items-center gap-2 bg-[#1C1917] px-4 py-2 text-[0.8125rem] font-medium text-[#FAF8F5] transition-transform group-hover:translate-x-0.5">

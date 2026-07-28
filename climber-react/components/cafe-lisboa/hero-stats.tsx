@@ -24,13 +24,23 @@ function StaticStats() {
   );
 }
 
+const STAT_TEXT_SHADOW = "0 2px 12px rgba(0,0,0,0.65)";
+
 function StatBlock({ value, label }: { value: string; label: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="font-[family-name:var(--font-newsreader)] text-[clamp(1.7rem,3.4vw,2.6rem)] tabular-nums text-[#F7F2EA]">
+      <span
+        className="font-[family-name:var(--font-newsreader)] text-[clamp(1.7rem,3.4vw,2.6rem)] tabular-nums text-[#F7F2EA]"
+        style={{ textShadow: STAT_TEXT_SHADOW }}
+      >
         {value}
       </span>
-      <span className="text-[0.56rem] tracking-[0.18em] text-[#F7F2EA]/55">{label}</span>
+      <span
+        className="text-[0.56rem] tracking-[0.18em] text-[#F7F2EA]/55"
+        style={{ textShadow: STAT_TEXT_SHADOW }}
+      >
+        {label}
+      </span>
     </div>
   );
 }

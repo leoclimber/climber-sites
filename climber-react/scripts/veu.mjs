@@ -44,15 +44,28 @@ const PRESETS = {
   CLARA: { a1: 0.44, a2: 0.88, a3: 0.97 },
 };
 const PRESET_ORDER = ["ESCURA", "MEDIA", "CLARA"];
-const HEADLINE_POSITION = 0.75;
+const HEADLINE_POSITION = 0.75; // usado só pelo véu do mapa/fachada (analyzeVeil), sistema antigo intocado
 
-// Auto-ajuste do scrim local do hero (Fase 1): degraus de 0,04 até o teto de 0,88.
-const SCRIM_OPACITY_START = 0.72;
+// Scrim de contraste do hero (Fase 11 da leva de fechamento do desktop):
+// deixou de ser medido pela luminância da foto ATUAL (isso só prova pra
+// UMA foto) e virou uma elipse de fórmula fixa (radial-gradient ancorada
+// em 22%/72% do bloco+folga, ver hero.tsx), com um único parâmetro
+// ajustável — a opacidade central — provado contra 3 cenários de fundo
+// (foto real, branco liso, cinza #C8C8C8) nos dois viewports. Sobe em
+// degraus de 0,04 até o teto de 0,90 se algum cenário reprovar.
+const SCRIM_FOLGA_PX = 120; // -inset-[120px] do container em hero.tsx
+const SCRIM_CENTER_X_FRAC = 0.22;
+const SCRIM_CENTER_Y_FRAC = 0.72;
+const SCRIM_ELLIPSE_RX_FACTOR = 1.3;
+const SCRIM_ELLIPSE_RY_FACTOR = 1.1;
+const SCRIM_STOPS = [
+  [0, 1],
+  [0.45, 0.55],
+  [0.78, 0],
+]; // [distância radial normalizada, fração da opacidade de pico]
+const SCRIM_OPACITY_START = 0.82;
 const SCRIM_OPACITY_STEP = 0.04;
-const SCRIM_OPACITY_MAX = 0.88;
-const SCRIM_MASK_FEATHER_PX = 80;
-const SCRIM_SLACK_PX = 64;
-const SCRIM_EXTRA_BOTTOM_PX = 40;
+const SCRIM_OPACITY_MAX = 0.9;
 
 function srgbToLinear(c) {
   const cs = c / 255;
@@ -379,28 +392,71 @@ async function samplePhotoRegion(imageSharpMeta, imageBuffer, box, coverMap, con
   return { avgRgb, lightRgb };
 }
 
-function clamp01(v) {
-  return Math.max(0, Math.min(1, v));
+// Mesma matemática do radial-gradient CSS em hero.tsx: elipse com raios em
+// % do container (bloco de texto + 120px de folga de cada lado), centro em
+// (22%, 72%) desse container, 3 stops interpolados linearmente entre si
+// pela distância radial normalizada (0 no centro, 1 na borda da elipse).
+// Avaliada no CENTRO do elemento (mesma aproximação documentada de sempre
+// neste arquivo — não integra pixel a pixel o glyph).
+function radialScrimAlphaAt(centerX, centerY, blockBox, peakOpacity) {
+  const containerLeft = blockBox.left - SCRIM_FOLGA_PX;
+  const containerTop = blockBox.top - SCRIM_FOLGA_PX;
+  const containerWidth = blockBox.right - blockBox.left + 2 * SCRIM_FOLGA_PX;
+  const containerHeight = blockBox.bottom - blockBox.top + 2 * SCRIM_FOLGA_PX;
+
+  const cx = containerLeft + SCRIM_CENTER_X_FRAC * containerWidth;
+  const cy = containerTop + SCRIM_CENTER_Y_FRAC * containerHeight;
+  const rx = SCRIM_ELLIPSE_RX_FACTOR * containerWidth;
+  const ry = SCRIM_ELLIPSE_RY_FACTOR * containerHeight;
+
+  const d = Math.sqrt(((centerX - cx) / rx) ** 2 + ((centerY - cy) / ry) ** 2);
+
+  const stops = SCRIM_STOPS;
+  if (d <= stops[0][0]) return peakOpacity * stops[0][1];
+  if (d >= stops[stops.length - 1][0]) return peakOpacity * stops[stops.length - 1][1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    const [p0, v0] = stops[i];
+    const [p1, v1] = stops[i + 1];
+    if (d >= p0 && d <= p1) {
+      const t = (d - p0) / (p1 - p0);
+      return peakOpacity * (v0 + (v1 - v0) * t);
+    }
+  }
+  return 0;
 }
 
-// Máscara suave de 80px nas 4 bordas do scrim, avaliada no CENTRO do
-// elemento (aproximação: não integra a máscara por cima de cada pixel do
-// glyph, só usa o ponto central do bounding box — documentado, mesmo
-// espírito de aproximação que o resto deste arquivo já assume).
-function maskFactorAt(centerX, centerY, box) {
-  const distLeft = centerX - box.left;
-  const distRight = box.right - centerX;
-  const distTop = centerY - box.top;
-  const distBottom = box.bottom - centerY;
-  const maskH = clamp01(Math.min(distLeft, SCRIM_MASK_FEATHER_PX) / SCRIM_MASK_FEATHER_PX) *
-    clamp01(Math.min(distRight, SCRIM_MASK_FEATHER_PX) / SCRIM_MASK_FEATHER_PX);
-  const maskV = clamp01(Math.min(distTop, SCRIM_MASK_FEATHER_PX) / SCRIM_MASK_FEATHER_PX) *
-    clamp01(Math.min(distBottom, SCRIM_MASK_FEATHER_PX) / SCRIM_MASK_FEATHER_PX);
-  return maskH * maskV;
+// Cenários de fundo pra prova de robustez (Fase 11d): a foto real e dois
+// PNGs lisos, injetados via page.route (nunca gravados em public/, nem
+// nunca de verdade servidos — pura substituição de bytes na resposta HTTP
+// da imagem do hero, foto original restaurada assim que a rota é removida).
+async function buildScenarios() {
+  const white = await sharp({
+    create: { width: 1920, height: 1080, channels: 3, background: { r: 255, g: 255, b: 255 } },
+  })
+    .jpeg()
+    .toBuffer();
+  const gray = await sharp({
+    create: { width: 1920, height: 1080, channels: 3, background: { r: 200, g: 200, b: 200 } },
+  })
+    .jpeg()
+    .toBuffer();
+
+  return [
+    { label: "foto atual (atmosphere-02.jpg)", flatRgb: null, buffer: null },
+    { label: "PNG branco liso #FFFFFF", flatRgb: [255, 255, 255], buffer: white },
+    { label: "PNG cinza #C8C8C8", flatRgb: [200, 200, 200], buffer: gray },
+  ];
 }
 
-async function measureHeroViewport(page, viewport, deviceTag, heroSharpMeta, heroBuffer) {
+async function measureHeroViewport(page, viewport, deviceTag, scenario, heroSharpMeta, heroBuffer, peakOpacity) {
   await page.setViewportSize(viewport);
+
+  if (scenario.buffer) {
+    await page.route(/atmosphere-02/, (route) =>
+      route.fulfill({ status: 200, contentType: "image/jpeg", body: scenario.buffer })
+    );
+  }
+
   await page.goto(SITE_URL, { waitUntil: "networkidle" });
   await page.waitForSelector("text=GOOGLE RATING", { timeout: 10000 }).catch(() => {});
   await page.waitForTimeout(1800); // contador dos stats termina (1.4s) + folga
@@ -412,7 +468,8 @@ async function measureHeroViewport(page, viewport, deviceTag, heroSharpMeta, her
     h: el.naturalHeight,
   }));
 
-  // REPORTE SEM ALTERAR — filter computado da imagem e do container dela.
+  // REPORTE SEM ALTERAR (Fase 11f) — filter computado da imagem e do
+  // container dela, só no cenário da foto real (é o que roda em produção).
   const imgFilter = await img.evaluate((el) => getComputedStyle(el).filter);
   const containerFilter = await img.evaluate((el) => getComputedStyle(el.parentElement).filter);
 
@@ -425,22 +482,31 @@ async function measureHeroViewport(page, viewport, deviceTag, heroSharpMeta, her
       const cs = getComputedStyle(el);
       return { color: cs.color, fontSize: cs.fontSize, fontWeight: cs.fontWeight };
     });
-    const relBox = { x: box.x - imgBox.x, y: box.y - imgBox.y, width: box.width, height: box.height };
-    const photo = await samplePhotoRegion(
-      heroSharpMeta,
-      heroBuffer,
-      relBox,
-      coverMap,
-      imgBox.width,
-      imgBox.height
-    );
+    let avgRgb;
+    let lightRgb;
+    if (scenario.flatRgb) {
+      avgRgb = scenario.flatRgb;
+      lightRgb = scenario.flatRgb;
+    } else {
+      const relBox = { x: box.x - imgBox.x, y: box.y - imgBox.y, width: box.width, height: box.height };
+      const photo = await samplePhotoRegion(
+        heroSharpMeta,
+        heroBuffer,
+        relBox,
+        coverMap,
+        imgBox.width,
+        imgBox.height
+      );
+      avgRgb = photo.avgRgb;
+      lightRgb = photo.lightRgb;
+    }
     return {
       box,
       color: parseCssColor(style.color),
       fontSizePx: parseFloat(style.fontSize),
       fontWeight: parseInt(style.fontWeight, 10) || 400,
-      avgRgb: photo.avgRgb,
-      lightRgb: photo.lightRgb,
+      avgRgb,
+      lightRgb,
     };
   }
 
@@ -448,11 +514,11 @@ async function measureHeroViewport(page, viewport, deviceTag, heroSharpMeta, her
   const nameLoc = page.locator("#cl-hero h1").first();
   const taglineLoc = page.locator("#cl-hero p.italic").first();
   const subheadlineLoc = page.locator("#cl-hero p:not(.italic)").first();
-  const statsRowLoc = page.locator("#cl-hero .border-t").first();
   const statSpans = page.locator("#cl-hero .border-t span");
   const statCount = await statSpans.count();
   const menuBtnLoc = page.locator('#cl-hero a[href="#cl-menu"]').first();
   const findUsLoc = page.locator('#cl-hero a[href="#cl-hours"]').first();
+  const blockLoc = page.locator("#cl-hero .relative.inline-block").first();
 
   const eyebrow = await measureEl(eyebrowLoc);
   const name = await measureEl(nameLoc);
@@ -460,6 +526,7 @@ async function measureHeroViewport(page, viewport, deviceTag, heroSharpMeta, her
   const subheadline = await measureEl(subheadlineLoc);
   const menuBtn = await measureEl(menuBtnLoc);
   const findUs = await measureEl(findUsLoc);
+  const blockBoxRaw = await blockLoc.boundingBox();
 
   const statLabels = [];
   const statNumbers = [];
@@ -470,48 +537,34 @@ async function measureHeroViewport(page, viewport, deviceTag, heroSharpMeta, her
     else statLabels.push(el);
   }
 
+  if (scenario.buffer) {
+    await page.unroute(/atmosphere-02/);
+  }
+
   // Botão "View the menu" tem fundo OPACO próprio (#C89B6A) — contraste
   // independe do véu/scrim da foto, calculado direto contra a cor do botão.
   const buttonBgRgb = hexToRgb("#C89B6A");
   const buttonBgLum = relativeLuminance(...buttonBgRgb);
 
-  // Caixa do "bloco" pro gradiente do scrim: topo do eyebrow até 40px abaixo
-  // da linha dos rótulos dos stats. Largura = união de todos os elementos
-  // (equivalente ao que um wrapper inline-block encolhido ao conteúdo mediria).
-  const allBoxes = [eyebrow, name, tagline, subheadline, menuBtn, findUs, ...statLabels, ...statNumbers]
-    .filter(Boolean)
-    .map((e) => e.box);
-  const blockLeft = Math.min(...allBoxes.map((b) => b.x));
-  const blockRight = Math.max(...allBoxes.map((b) => b.x + b.width));
-  const blockTop = eyebrow.box.y;
-  const statsRowBox = await statsRowLoc.boundingBox();
-  const statsBottom = statsRowBox
-    ? statsRowBox.y + statsRowBox.height
-    : Math.max(...allBoxes.map((b) => b.y + b.height));
-  const blockBottom = statsBottom + SCRIM_EXTRA_BOTTOM_PX;
-
-  const scrimBox = {
-    left: blockLeft - SCRIM_SLACK_PX,
-    right: blockRight + SCRIM_SLACK_PX,
-    top: blockTop,
-    bottom: blockBottom,
+  // Bloco de referência do scrim = a própria caixa do wrapper
+  // `.relative.inline-block` (o container real que o -inset-[120px] do
+  // CSS usa), medida direto — não mais uma aproximação por união de caixas.
+  const blockBox = {
+    left: blockBoxRaw.x,
+    top: blockBoxRaw.y,
+    right: blockBoxRaw.x + blockBoxRaw.width,
+    bottom: blockBoxRaw.y + blockBoxRaw.height,
   };
-  const gradientTop = blockTop;
-  const gradientHeight = blockBottom - blockTop;
 
-  function scrimAlphaFor(box, baseOpacity) {
-    const centerX = box.x + box.width / 2;
-    const centerY = box.y + box.height / 2;
-    const yFraction = clamp01((centerY - gradientTop) / gradientHeight);
-    const mask = maskFactorAt(centerX, centerY, scrimBox);
-    return baseOpacity * yFraction * mask;
-  }
-
+  // Fase 11c/11d: piso 3:1 pra texto >= 24px, sem qualificar peso — regra
+  // explícita desta fase (a Fase 12, depois, reintroduz weight >= 700 como
+  // critério próprio da sua própria trava global; aqui segue o texto do
+  // comando ao pé da letra).
   function floorFor(el) {
-    return el.fontSizePx >= 24 && el.fontWeight >= 700 ? 3.0 : 4.5;
+    return el.fontSizePx >= 24 ? 3.0 : 4.5;
   }
 
-  function evalElement(label, el, dependsOnScrim, baseOpacity) {
+  function evalElement(label, el, dependsOnScrim, peakOpacityVal) {
     if (!dependsOnScrim) {
       // texto sobre fundo opaco do próprio botão: compara direto, sem véu/foto.
       const fgLum = relativeLuminance(el.color.r, el.color.g, el.color.b);
@@ -532,7 +585,9 @@ async function measureHeroViewport(page, viewport, deviceTag, heroSharpMeta, her
       };
     }
 
-    const alpha = scrimAlphaFor(el.box, baseOpacity);
+    const centerX = el.box.x + el.box.width / 2;
+    const centerY = el.box.y + el.box.height / 2;
+    const alpha = radialScrimAlphaAt(centerX, centerY, blockBox, peakOpacityVal);
     const bgAvg = compositeOver(el.avgRgb, HERO_SCRIM_RGB, alpha);
     const bgLight = compositeOver(el.lightRgb, HERO_SCRIM_RGB, alpha);
 
@@ -561,36 +616,29 @@ async function measureHeroViewport(page, viewport, deviceTag, heroSharpMeta, her
     };
   }
 
-  function buildTable(baseOpacity) {
+  function buildTable(peakOpacityVal) {
     const rows = [];
-    rows.push(evalElement("eyebrow (// FRESHLY BREWED · DUBLIN 8)", eyebrow, true, baseOpacity));
-    rows.push(evalElement("nome (Café Lisboa)", name, true, baseOpacity));
-    rows.push(evalElement("frase itálica (Your morning, done right.)", tagline, true, baseOpacity));
-    rows.push(evalElement("subheadline (Open since seven...)", subheadline, true, baseOpacity));
+    rows.push(evalElement("eyebrow (// FRESHLY BREWED · DUBLIN 8)", eyebrow, true, peakOpacityVal));
+    rows.push(evalElement("nome (Café Lisboa)", name, true, peakOpacityVal));
+    rows.push(evalElement("frase itálica (Your morning, done right.)", tagline, true, peakOpacityVal));
+    rows.push(evalElement("subheadline (Open since seven...)", subheadline, true, peakOpacityVal));
     statLabels.forEach((el, i) =>
-      rows.push(evalElement(`rótulo stat #${i + 1} (GOOGLE RATING/REVIEWS/OPEN FROM)`, el, true, baseOpacity))
+      rows.push(evalElement(`rótulo stat #${i + 1} (GOOGLE RATING/REVIEWS/OPEN FROM)`, el, true, peakOpacityVal))
     );
     statNumbers.forEach((el, i) =>
-      rows.push(evalElement(`número stat #${i + 1} (4.8/503/7AM)`, el, true, baseOpacity))
+      rows.push(evalElement(`número stat #${i + 1} (4.8/503/7AM)`, el, true, peakOpacityVal))
     );
-    rows.push(evalElement('botão "View the menu" (fundo próprio, independe do véu)', menuBtn, false, baseOpacity));
-    rows.push(evalElement('link "Find us →"', findUs, true, baseOpacity));
+    rows.push(evalElement('botão "View the menu" (fundo próprio, independe do véu)', menuBtn, false, peakOpacityVal));
+    rows.push(evalElement('link "Find us →"', findUs, true, peakOpacityVal));
     return rows;
   }
 
-  let baseOpacity = SCRIM_OPACITY_START;
-  let table = buildTable(baseOpacity);
-  while (
-    table.some((r) => !r.independent && !r.pass) &&
-    baseOpacity < SCRIM_OPACITY_MAX - 1e-9
-  ) {
-    baseOpacity = Math.min(SCRIM_OPACITY_MAX, Number((baseOpacity + SCRIM_OPACITY_STEP).toFixed(2)));
-    table = buildTable(baseOpacity);
-  }
+  const table = buildTable(peakOpacity);
 
   return {
     deviceTag,
-    baseOpacity,
+    scenarioLabel: scenario.label,
+    peakOpacity,
     table,
     imgFilter,
     containerFilter,
@@ -599,7 +647,9 @@ async function measureHeroViewport(page, viewport, deviceTag, heroSharpMeta, her
 }
 
 function printTable(result) {
-  console.log(`\n[veu] ===== HERO — ${result.deviceTag} (scrim baseOpacity=${result.baseOpacity}) =====`);
+  console.log(
+    `\n[veu] ===== HERO — ${result.deviceTag} — cenário: ${result.scenarioLabel} (peakOpacity=${result.peakOpacity}) =====`
+  );
   console.log(
     "cor | opacidade | luminância média | luminância quartil claro | ratio | piso | resultado"
   );
@@ -612,8 +662,10 @@ function printTable(result) {
       `${r.label} — ${r.colorRgb} | ${r.opacity} | ${bgInfo} | ${r.ratio}:1 | ${r.floor}:1 | ${status}`
     );
   }
-  console.log(`[veu] filter da <img> do hero: ${result.imgFilter}`);
-  console.log(`[veu] filter do container da <img> do hero: ${result.containerFilter}`);
+  if (result.imgFilter !== undefined) {
+    console.log(`[veu] filter da <img> do hero: ${result.imgFilter}`);
+    console.log(`[veu] filter do container da <img> do hero: ${result.containerFilter}`);
+  }
 }
 
 async function main() {
@@ -624,44 +676,61 @@ async function main() {
 
   const heroSharpMeta = await sharp(HERO_IMAGE).metadata();
   const heroBuffer = await fs.readFile(HERO_IMAGE);
+  const scenarios = await buildScenarios();
 
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();
 
-  const desktopResult = await measureHeroViewport(
-    page,
-    { width: 1920, height: 1080 },
-    "desktop",
-    heroSharpMeta,
-    heroBuffer
-  );
-  const mobileResult = await measureHeroViewport(
-    page,
-    { width: 390, height: 844 },
-    "mobile",
-    heroSharpMeta,
-    heroBuffer
-  );
+  const viewports = [
+    { viewport: { width: 1920, height: 1080 }, deviceTag: "desktop" },
+    { viewport: { width: 390, height: 844 }, deviceTag: "mobile" },
+  ];
+
+  // Prova contra foto qualquer (Fase 11d): mede as 3 x 2 combinações no
+  // opacity de partida; se alguma reprovar, sobe o degrau e remede TODAS
+  // de novo — um único peakOpacity final tem que servir pros 6 casos.
+  let peakOpacity = SCRIM_OPACITY_START;
+  let allResults = [];
+  for (;;) {
+    allResults = [];
+    for (const { viewport, deviceTag } of viewports) {
+      for (const scenario of scenarios) {
+        const result = await measureHeroViewport(
+          page,
+          viewport,
+          deviceTag,
+          scenario,
+          heroSharpMeta,
+          heroBuffer,
+          peakOpacity
+        );
+        allResults.push(result);
+      }
+    }
+    const anyFail = allResults.some((r) => !r.allPass);
+    if (!anyFail || peakOpacity >= SCRIM_OPACITY_MAX - 1e-9) break;
+    peakOpacity = Math.min(SCRIM_OPACITY_MAX, Number((peakOpacity + SCRIM_OPACITY_STEP).toFixed(2)));
+  }
 
   await browser.close();
 
-  printTable(desktopResult);
-  printTable(mobileResult);
+  for (const r of allResults) printTable(r);
 
-  // Um único valor de opacidade base pra produção: o pior caso dos dois
-  // viewports (mais conservador), reavaliado nos dois pra confirmar.
-  const finalBaseOpacity = Math.max(desktopResult.baseOpacity, mobileResult.baseOpacity);
-  console.log(`\n[veu] scrim baseOpacity final (pior caso dos dois viewports): ${finalBaseOpacity}`);
+  console.log(`\n[veu] scrim peakOpacity final (prova dos 3 cenários x 2 viewports): ${peakOpacity}`);
 
-  const failing = [...desktopResult.table, ...mobileResult.table].filter((r) => !r.pass);
+  const failing = allResults.flatMap((r) =>
+    r.table.filter((row) => !row.pass).map((row) => ({ ...row, scenario: r.scenarioLabel, device: r.deviceTag }))
+  );
   if (failing.length > 0) {
     console.log(
       `[veu] FALHOU — ${failing.length} linha(s) não bateram o piso de contraste mesmo no teto de opacidade (${SCRIM_OPACITY_MAX}):`
     );
-    for (const f of failing) console.log(`  - ${f.label}: ${f.ratio}:1 (piso ${f.floor}:1)`);
+    for (const f of failing) console.log(`  - [${f.device}/${f.scenario}] ${f.label}: ${f.ratio}:1 (piso ${f.floor}:1)`);
   } else {
-    console.log("[veu] todas as linhas do hero aprovadas na trava de contraste.");
+    console.log("[veu] todas as linhas do hero aprovadas nos 3 cenários x 2 viewports.");
   }
+
+  const realPhotoResults = allResults.filter((r) => r.scenarioLabel.startsWith("foto atual"));
 
   const output = {
     generatedAt: new Date().toISOString(),
@@ -672,16 +741,26 @@ async function main() {
     map,
     heroBlurDataURL,
     buildYoursBg,
-    heroScrim: {
+    heroScrimPeakOpacity: peakOpacity,
+    heroScrimProof: {
       rgb: HERO_SCRIM_RGB,
-      baseOpacity: finalBaseOpacity,
-      maskFeatherPx: SCRIM_MASK_FEATHER_PX,
-      slackPx: SCRIM_SLACK_PX,
-      extraBottomPx: SCRIM_EXTRA_BOTTOM_PX,
+      folgaPx: SCRIM_FOLGA_PX,
+      centerXFrac: SCRIM_CENTER_X_FRAC,
+      centerYFrac: SCRIM_CENTER_Y_FRAC,
+      ellipseRxFactor: SCRIM_ELLIPSE_RX_FACTOR,
+      ellipseRyFactor: SCRIM_ELLIPSE_RY_FACTOR,
+      stops: SCRIM_STOPS,
+      peakOpacity,
       allPass: failing.length === 0,
-      desktop: { baseOpacity: desktopResult.baseOpacity, table: desktopResult.table },
-      mobile: { baseOpacity: mobileResult.baseOpacity, table: mobileResult.table },
+      scenarios: allResults.map((r) => ({
+        deviceTag: r.deviceTag,
+        scenarioLabel: r.scenarioLabel,
+        allPass: r.allPass,
+        table: r.table,
+      })),
     },
+    heroImgFilter: realPhotoResults.find((r) => r.deviceTag === "desktop")?.imgFilter ?? null,
+    heroImgContainerFilter: realPhotoResults.find((r) => r.deviceTag === "desktop")?.containerFilter ?? null,
   };
 
   const outPath = path.resolve("components/cafe-lisboa/veu.json");
