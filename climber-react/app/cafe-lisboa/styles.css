@@ -202,10 +202,6 @@
    padrão (mobile e fallback de hidratação) o quadro e a imagem ficam no
    estado final, sem clip nem escala nenhuma. Só transform e clip-path
    animam — nunca width/height/top/left/margin/background-position. */
-.cl-photo-reveal-frame {
-  overflow: hidden;
-}
-
 /* position:absolute + inset:0 (não height/width:100%) — um pai dimensionado
    só por min-height (ex.: a foto do manifesto no mobile, min-h-[280px] sem
    height explícito) não resolve porcentagem de altura em bloco normal (o
@@ -223,6 +219,15 @@
 }
 
 @media (min-width: 769px) {
+  /* overflow:hidden só entra aqui — no mobile o clipping já vem do
+     MaskReveal (que embrulha o mesmo conteúdo por dentro, ver
+     manifesto.tsx/gallery-grid.tsx); a fachada (hours.tsx, sem MaskReveal)
+     nunca tem filho maior que o quadro no mobile (a imagem só ganha
+     scale() aqui dentro), então não há nada pra vazar sem esta regra lá. */
+  .cl-photo-reveal-frame {
+    overflow: hidden;
+  }
+
   .cl-photo-reveal-clip {
     clip-path: inset(100% 0 0 0);
     transition: clip-path 900ms cubic-bezier(0.16, 1, 0.3, 1);
