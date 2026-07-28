@@ -197,7 +197,7 @@ function OptionAxis<T extends { id: string; name: string }>({
               className={`flex min-h-[44px] items-center font-[family-name:var(--font-newsreader)] text-[clamp(1rem,1.5vw,1.15rem)] transition-colors duration-200 md:min-h-[48px] md:justify-center md:rounded-[4px] md:px-2 md:text-center max-md:min-h-[48px] max-md:justify-center max-md:rounded-[4px] max-md:px-2 max-md:text-center max-md:text-[0.95rem] ${
                 selected
                   ? "md:border md:border-transparent md:bg-[rgba(232,201,160,0.02)] md:text-[#E8C9A0] md:underline md:decoration-2 md:underline-offset-4 max-md:border max-md:border-transparent max-md:bg-[rgba(232,201,160,0.14)] max-md:text-[#E8C9A0] max-md:underline max-md:decoration-2 max-md:underline-offset-4"
-                  : "md:border md:border-[rgba(247,242,234,0.18)] md:text-[rgba(247,242,234,0.72)] md:no-underline max-md:border max-md:border-[rgba(247,242,234,0.18)] max-md:text-[rgba(247,242,234,0.72)] max-md:no-underline"
+                  : "md:border md:border-[rgba(247,242,234,0.18)] md:text-[rgba(247,242,234,0.80)] md:no-underline max-md:border max-md:border-[rgba(247,242,234,0.18)] max-md:text-[rgba(247,242,234,0.72)] max-md:no-underline"
               }`}
             >
               {opt.name}
@@ -233,10 +233,20 @@ function ExtraAxis({
           seção (#674c39, veu.json/buildYoursBg) esse alpha mede ~4.2:1 pro
           texto #E8C9A0 — abaixo do piso de 4,5:1 exigido nesta fase. Baixei
           só o alpha do fundo pra 0.02 (texto e cor continuam exatamente os
-          pedidos); medido de verdade (Playwright, área 16x16 pra não herdar
-          ruído do grão): selecionado 4.65:1, não-selecionado 4.50:1 — ver
-          auditoria/_scripts/fase16-verify.mjs. Mobile (0.14) não muda —
-          fora do escopo [SO DESKTOP]. */}
+          pedidos). Mobile (0.14) não muda — fora do escopo [SO DESKTOP].
+
+          Contraste do NÃO-selecionado (achado na auditoria da Fase 20, com
+          `node scripts/veu.mjs --audit-contrast`, que amostra a caixa
+          inteira do botão — mais rigoroso que a amostra pontual da
+          verificação original da Fase 16): rgba(247,242,234,0.72) mede só
+          ~4.2-4.4:1 na prática (o alvo analítico era 4.57:1, mas o ruído
+          do grão de fundo em componentes/cafe-lisboa/build-yours.tsx
+          empurra pra baixo do piso em pontos aleatórios da caixa). Subi só
+          a opacidade do texto pra 0.80 no desktop (cor continua a mesma,
+          #F7F2EA) — analítico ~5.04:1, com folga contra o ruído. Mobile
+          (0.72) não muda — fora do escopo [SO DESKTOP]. Ver
+          auditoria/final-2/contrast-audit.log (antes) e
+          auditoria/_scripts/fase16-verify.mjs. */}
       <div className="flex flex-wrap gap-x-5 gap-y-3 md:grid md:grid-cols-3 md:gap-3 max-md:grid max-md:grid-cols-3 max-md:gap-3">
         {buildYoursOptions.extras.map((opt) => {
           const selected = opt.id === "none" ? activeExtras.size === 0 : activeExtras.has(opt.id);
@@ -249,7 +259,7 @@ function ExtraAxis({
               className={`flex min-h-[44px] items-center font-[family-name:var(--font-newsreader)] text-[clamp(1rem,1.5vw,1.15rem)] transition-colors duration-200 md:min-h-[48px] md:justify-center md:rounded-[4px] md:px-2 md:text-center max-md:min-h-[48px] max-md:justify-center max-md:rounded-[4px] max-md:px-2 max-md:text-center max-md:text-[0.95rem] ${
                 selected
                   ? "md:border md:border-transparent md:bg-[rgba(232,201,160,0.02)] md:text-[#E8C9A0] md:underline md:decoration-2 md:underline-offset-4 max-md:border max-md:border-transparent max-md:bg-[rgba(232,201,160,0.14)] max-md:text-[#E8C9A0] max-md:underline max-md:decoration-2 max-md:underline-offset-4"
-                  : "md:border md:border-[rgba(247,242,234,0.18)] md:text-[rgba(247,242,234,0.72)] md:no-underline max-md:border max-md:border-[rgba(247,242,234,0.18)] max-md:text-[rgba(247,242,234,0.72)] max-md:no-underline"
+                  : "md:border md:border-[rgba(247,242,234,0.18)] md:text-[rgba(247,242,234,0.80)] md:no-underline max-md:border max-md:border-[rgba(247,242,234,0.18)] max-md:text-[rgba(247,242,234,0.72)] max-md:no-underline"
               }`}
             >
               {opt.name}
