@@ -1,0 +1,21 @@
+Fase 24 — verificacao Playwright, sem scroll e sem arraste, desktop 1920x1080:
+t=0ms    marquee transform: matrix(1,0,0,1,-2768.46,0)   reviews transform: matrix(1,0,0,1,-23.75,0)
+t=3000ms marquee transform: matrix(1,0,0,1,-2647.57,0)   reviews transform: matrix(1,0,0,1,-99.15,0)
+marquee delta = 120.89px / 3s = 40.3px/s (base configurada: 40px/s)
+reviews delta = 75.40px / 3s = 25.13px/s (base configurada: 25px/s)
+As duas mudaram de posicao com o motor 100% parado (sem interacao).
+
+Mobile 390x844, mesma checagem:
+t=0ms    marquee: matrix(1,0,0,1,-773.96,0)   reviews: matrix(1,0,0,1,-22.49,0)
+t=3000ms marquee: matrix(1,0,0,1,-653.05,0)   reviews: matrix(1,0,0,1,-97.89,0)
+marquee display (era none <768px): "block" -- volta a existir no mobile (Fase 24b).
+
+prefers-reduced-motion: reduce (desktop, #cl-reviews e marquee):
+marquee transform: "none" (parado) em t=0 e apos 1500ms.
+cartoes de avaliacao renderizados: 3 (era 6 empilhadas verticalmente).
+
+Scroll-soma-velocidade (sanity check, nao faz parte da verificacao formal):
+antes do scroll: -2783.51
+200ms apos wheel(0,3000): -2766.35 (delta 17.16px em 0.2s ~ 86px/s, acima da
+base 40px/s, dentro do teto 3x=120px/s)
+1000ms depois: -2661.06 (velocidade extra decaindo de volta a base)

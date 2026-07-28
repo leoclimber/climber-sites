@@ -1,17 +1,48 @@
+"use client";
+
+import { useEffect } from "react";
 import { business, hours } from "./data";
+import { useContinuousStrip, usePrefersReducedMotion } from "./motion";
+
+// Fase 24a [NOS DOIS]: velocidade de base constante do marquee, sempre
+// rodando (não depende de scroll pra se mover) — ver
+// components/cafe-lisboa/motion/continuous-strip.ts pro motor físico
+// (rAF único, translate3d, scroll da página soma velocidade extra que
+// decai de volta à base em ~600ms).
+const MARQUEE_BASE_SPEED_PX_PER_SEC = 40;
 
 // Destaque 4/4: marquee, direção OPOSTA à esteira das avaliações (a esteira
-// roda direita->esquerda; aqui é esquerda->direita — mesma técnica de
-// duplicar o conteúdo e transladar -50%, só que animation-direction:
-// reverse). Newsreader grande, opacidade 0.32 sobre #FAF8F5 — não é dark
-// mode, o rodapé escuro só começa depois da faixa.
+// roda direita->esquerda; aqui é esquerda->direita — mesmo motor de
+// rolagem contínua, só o parâmetro `direction` inverte o sentido). Newsreader
+// grande, opacidade 0.32 sobre #FAF8F5 — não é dark mode, o rodapé escuro só
+// começa depois da faixa. Fase 24b: volta a existir no mobile (era
+// display:none) — ver .cl-esteira em styles.css pro ajuste de altura/fonte
+// da faixa nesse viewport.
 export function Footer() {
+  const reducedMotion = usePrefersReducedMotion();
   const brandText = `${business.name.toUpperCase()} · MEATH STREET · DUBLIN 8 · EST. ${business.establishedYear} · `;
+  const { trackRef, pushDelta } = useContinuousStrip({
+    baseSpeedPxPerSec: MARQUEE_BASE_SPEED_PX_PER_SEC,
+    reducedMotion,
+    direction: -1,
+  });
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    let lastScrollY = window.scrollY;
+    function onScroll() {
+      const current = window.scrollY;
+      pushDelta(current - lastScrollY);
+      lastScrollY = current;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [reducedMotion, pushDelta]);
 
   return (
     <footer id="cl-footer">
       <div className="cl-esteira bg-[#FAF8F5]">
-        <div className="cl-esteira-track" data-dir="ltr" style={{ ["--cl-dur" as string]: "50s" }}>
+        <div className="cl-esteira-track" ref={trackRef}>
           <MarqueeText text={brandText} />
           <MarqueeText text={brandText} dup />
         </div>
@@ -84,8 +115,7 @@ export function Footer() {
 function MarqueeText({ text, dup = false }: { text: string; dup?: boolean }) {
   return (
     <span
-      className="shrink-0 whitespace-nowrap font-[family-name:var(--font-newsreader)] font-semibold tracking-[-0.02em] text-[#1C1917]"
-      style={{ fontSize: "min(9vw, 108px)", opacity: 0.32 }}
+      className="cl-marquee-text shrink-0 whitespace-nowrap font-[family-name:var(--font-newsreader)] font-semibold tracking-[-0.02em] text-[#1C1917]"
       data-dup={dup}
     >
       {text}

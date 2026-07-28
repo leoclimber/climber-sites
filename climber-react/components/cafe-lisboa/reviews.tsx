@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import useEmblaCarousel from "embla-carousel-react";
-import Autoplay from "embla-carousel-autoplay";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Rule } from "./manifesto";
-import { usePrefersReducedMotion } from "./motion/hooks";
+import { useContinuousStrip, usePrefersReducedMotion } from "./motion";
 import { reviews } from "./data";
 
-// Esteira arrastável (embla-carousel-react + embla-carousel-autoplay,
-// API consultada via context7 antes de escrever este arquivo — não
-// chutada). loop contínuo, autoplay que retoma sozinho depois de um
-// arraste (stopOnInteraction:false), 1 card por vez no mobile com ~12% do
-// próximo espiando na borda (flex-basis 88%), 3 por vez no desktop — sem
-// setas nem bolinhas, o próprio espião na borda já avisa que dá pra
-// arrastar.
+// Fase 24c [NOS DOIS]: esteira contínua (motor compartilhado com o marquee
+// do rodapé, ver components/cafe-lisboa/motion/continuous-strip.ts) —
+// substitui o embla-carousel (loop por snap + autoplay que andava e parava)
+// por rolagem contínua sem emenda, sempre rodando. Arraste soma velocidade
+// (mesma física do scroll do marquee) e decai de volta à base sozinho. As 6
+// avaliações, o texto e o visual do QuoteCard (Fase 18) são intocados —
+// só o mecanismo de movimento muda.
+const REVIEWS_BASE_SPEED_PX_PER_SEC = 25;
+
 export function Reviews() {
   return (
     <section id="cl-reviews" className="bg-[#FAF8F5] pb-6 pt-[58px] md:pb-12 md:pt-[110px]">
@@ -27,35 +27,60 @@ export function Reviews() {
 
 function ReviewsCarousel() {
   const reducedMotion = usePrefersReducedMotion();
-  const [emblaRef, emblaApi] = useEmblaCarousel(
-    { loop: true, dragFree: false, duration: 24 },
-    reducedMotion ? [] : [Autoplay({ delay: 4500, stopOnInteraction: false })]
-  );
+  const { trackRef, pushDelta, getProgress } = useContinuousStrip({
+    baseSpeedPxPerSec: REVIEWS_BASE_SPEED_PX_PER_SEC,
+    reducedMotion,
+    direction: 1,
+  });
+  const drag = useRef({ dragging: false, lastX: 0 });
+  const [displayIndex, setDisplayIndex] = useState(0);
 
-  // Fase 6d: indicador de posição mobile ("01 / 06") — lê o índice
-  // selecionado direto da API do embla (mesma instância que já dirige o
-  // autoplay/arraste, não duplica nenhuma lógica de scroll).
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
+  // Indicador "01 / 06" do mobile (decorativo, aria-hidden) — não existe
+  // mais uma API de carrossel com "slide selecionado"; deriva o índice
+  // aproximado direto do progresso contínuo do motor, num polling leve
+  // (200ms) pra não gerar um re-render por frame de animação.
   useEffect(() => {
-    if (!emblaApi) return;
-    function onSelect() {
-      setSelectedIndex(emblaApi!.selectedScrollSnap());
+    if (reducedMotion) return;
+    const id = setInterval(() => {
+      const track = trackRef.current;
+      if (!track || reviews.length === 0) return;
+      const half = track.scrollWidth / 2;
+      if (half <= 0) return;
+      const cardStep = half / reviews.length;
+      const idx = Math.floor(getProgress() / cardStep) % reviews.length;
+      setDisplayIndex(idx);
+    }, 200);
+    return () => clearInterval(id);
+  }, [reducedMotion, getProgress, trackRef]);
+
+  function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    drag.current.dragging = true;
+    drag.current.lastX = e.clientX;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!drag.current.dragging) return;
+    const delta = e.clientX - drag.current.lastX;
+    drag.current.lastX = e.clientX;
+    // Arrastar pra esquerda (delta negativo) acelera o sentido natural da
+    // esteira (direita->esquerda, o mesmo do scroll pra baixo no marquee).
+    pushDelta(-delta);
+  }
+  function onPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    drag.current.dragging = false;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
     }
-    onSelect();
-    emblaApi.on("select", onSelect);
-    emblaApi.on("reInit", onSelect);
-    return () => {
-      emblaApi.off("select", onSelect);
-      emblaApi.off("reInit", onSelect);
-    };
-  }, [emblaApi]);
+  }
 
   if (reducedMotion) {
+    // Fase 24c: parado, mostrando as 3 primeiras (era as 6 empilhadas).
     return (
-      <div className="mt-10 flex flex-col gap-8 px-6 md:mt-12 md:px-16">
-        {reviews.map((r) => (
-          <QuoteCard key={r.author} quote={r.quote} author={r.author} />
+      <div className="mt-10 flex gap-6 px-6 md:mt-12 md:gap-8 md:px-16">
+        {reviews.slice(0, 3).map((r) => (
+          <div key={r.author} className="min-w-0 shrink-0 grow-0 basis-[88%] md:basis-[calc(33.333%-1.334rem)]">
+            <QuoteCard quote={r.quote} author={r.author} />
+          </div>
         ))}
       </div>
     );
@@ -72,11 +97,19 @@ function ReviewsCarousel() {
   // acontece exatamente na margem certa dos dois lados.
   return (
     <div className="mt-10 px-6 md:mt-12 md:px-16">
-      <div className="overflow-hidden" ref={emblaRef}>
-        <div className="flex gap-6 md:gap-8">
-          {reviews.map((r) => (
+      <div className="overflow-hidden">
+        <div
+          ref={trackRef}
+          className="flex cursor-grab gap-6 active:cursor-grabbing md:gap-8"
+          style={{ touchAction: "pan-y" }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+        >
+          {[...reviews, ...reviews].map((r, i) => (
             <div
-              key={r.author}
+              key={`${r.author}-${i}`}
               className="min-w-0 shrink-0 grow-0 basis-[88%] md:basis-[calc(33.333%-1.334rem)]"
             >
               <QuoteCard quote={r.quote} author={r.author} />
@@ -90,7 +123,7 @@ function ReviewsCarousel() {
         style={{ color: "rgba(28,22,20,0.45)" }}
         aria-hidden
       >
-        {String(selectedIndex + 1).padStart(2, "0")} / {String(reviews.length).padStart(2, "0")}
+        {String(displayIndex + 1).padStart(2, "0")} / {String(reviews.length).padStart(2, "0")}
       </p>
     </div>
   );

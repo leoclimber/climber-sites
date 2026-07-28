@@ -1,4 +1,5 @@
 export { usePrefersReducedMotion, useCountUp, useAnimatedNumber, useIsDesktop } from "./hooks";
+export { useContinuousStrip } from "./continuous-strip";
 export { LineReveal } from "./line-reveal";
 export { MaskReveal } from "./mask-reveal";
 export { PhotoReveal } from "./photo-reveal";

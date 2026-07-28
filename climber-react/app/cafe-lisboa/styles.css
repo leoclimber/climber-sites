@@ -19,46 +19,43 @@
   padding-bottom: 48px;
 }
 
-/* Fase 6c: no celular só cabe metade de duas palavras do marquee, lê como
-   bug em vez de destaque tipográfico. Some abaixo de 768px; desktop
-   continua exatamente como está. */
+/* Fase 24b [SO MOBILE]: o marquee volta a existir abaixo de 768px (Fase 6c
+   tinha escondido — display:none — porque, parado, só cabia metade de duas
+   palavras na tela e lia como bug). Com o movimento contínuo da Fase 24a o
+   texto sempre está fluindo, então volta a aparecer; só a banda fica mais
+   baixa (padding menor) e a fonte (.cl-marquee-text abaixo) menor, pra não
+   dominar a tela num viewport estreito. */
 @media (max-width: 768px) {
   .cl-esteira {
-    display: none;
+    padding-top: 40px;
+    padding-bottom: 20px;
   }
 }
 
+/* Fase 24a: a animação CSS por keyframes saiu — o motor é JS agora
+   (components/cafe-lisboa/motion/continuous-strip.ts), que escreve
+   transform:translate3d(...) direto no elemento a cada frame de um único
+   requestAnimationFrame. will-change continua (mesma otimização de
+   composição), só não há mais @keyframes/animation-name aqui. */
 .cl-esteira-track {
   display: inline-flex;
   align-items: center;
   will-change: transform;
 }
 
-.cl-esteira-track[data-dir="rtl"] {
-  animation: cl-esteira-scroll var(--cl-dur, 60s) linear infinite;
+.cl-marquee-text {
+  font-size: min(9vw, 108px);
+  opacity: 0.32;
 }
 
-.cl-esteira-track[data-dir="ltr"] {
-  animation: cl-esteira-scroll var(--cl-dur, 50s) linear infinite reverse;
-}
-
-.cl-esteira:hover .cl-esteira-track,
-.cl-esteira[data-paused="true"] .cl-esteira-track {
-  animation-play-state: paused;
-}
-
-@keyframes cl-esteira-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
+@media (max-width: 768px) {
+  .cl-marquee-text {
+    font-size: clamp(22px, 8vw, 40px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cl-esteira-track {
-    animation: none !important;
     transform: none !important;
     flex-wrap: wrap;
     white-space: normal;
