@@ -34,8 +34,10 @@ function StatBlock({ value, label }: { value: string; label: string }) {
       >
         {value}
       </span>
+      {/* Fase 31c [NOS DOIS]: mesmo tratamento de hero-stats.tsx (fallback
+          estatico) -- 11px, opacidade 0.85. */}
       <span
-        className="text-[0.56rem] tracking-[0.18em] text-[#F7F2EA]/55"
+        className="text-[11px] tracking-[0.18em] text-[#F7F2EA]/85"
         style={{ textShadow: STAT_TEXT_SHADOW }}
       >
         {label}

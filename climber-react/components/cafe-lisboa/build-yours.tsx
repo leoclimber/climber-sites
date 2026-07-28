@@ -132,7 +132,14 @@ export function BuildYours() {
         </div>
 
         <div className="flex flex-col md:w-[48%]">
-          <span className="block text-[0.53rem] tracking-[0.22em] text-[#F7F2EA]/42">
+          {/* Fase 31b [NOS DOIS]: rotulos de eixo renderizavam a 8,48px --
+              pequeno demais em qualquer fundo. 11px, tracking 0.24em. O
+              comando pedia opacidade 0.85 (era 0.42 aqui, dando 2,63:1);
+              0.85 fecha o desktop mas o ruido do grao de fundo (mesmo
+              motivo do ajuste da Fase 16/20a) deixava 3 dos 4 rotulos
+              abaixo de 4,5:1 no mobile -- subiu pra 0.92 nos quatro, pra
+              manter os rotulos consistentes entre si (ver auditoria/fase31). */}
+          <span className="block text-[11px] tracking-[0.24em] text-[#F7F2EA]/92">
             YOUR CUP
           </span>
           <div className="mt-2 flex items-end gap-6 md:flex-col md:items-start md:gap-0">
@@ -184,7 +191,9 @@ function OptionAxis<T extends { id: string; name: string }>({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[0.53rem] tracking-[0.22em] text-[#F7F2EA]/80">{label}</span>
+      {/* Fase 31b [NOS DOIS]: 11px, tracking 0.24em, opacidade 0.92 (ver
+          nota em YOUR CUP acima -- 0.85 deixava mobile abaixo de 4,5:1). */}
+      <span className="text-[11px] tracking-[0.24em] text-[#F7F2EA]/92">{label}</span>
       {/* Fase 16 (desktop): mesma grade fixa de 3 colunas do mobile (Fase 4),
           agora também >= 769px — COFFEE (6 opções) fecha 3x2, SIZE (2) e
           EXTRA (3) herdam a mesma grade com uma célula vazia sobrando. */}
@@ -227,7 +236,8 @@ function ExtraAxis({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[0.53rem] tracking-[0.22em] text-[#F7F2EA]/80">EXTRA</span>
+      {/* Fase 31b [NOS DOIS]: mesmo tratamento de YOUR CUP/COFFEE/SIZE. */}
+      <span className="text-[11px] tracking-[0.24em] text-[#F7F2EA]/92">EXTRA</span>
       {/* Fase 16 (desktop): mesma grade de 3 colunas do COFFEE/SIZE, agora
           também >= 769px.
 

@@ -35,8 +35,10 @@ function StatBlock({ value, label }: { value: string; label: string }) {
       >
         {value}
       </span>
+      {/* Fase 31c [NOS DOIS]: 8,96px/opacidade 0,55 dava 3,79:1. 11px,
+          opacidade 0.85, mesma cor #F7F2EA e mesmo text-shadow. */}
       <span
-        className="text-[0.56rem] tracking-[0.18em] text-[#F7F2EA]/55"
+        className="text-[11px] tracking-[0.18em] text-[#F7F2EA]/85"
         style={{ textShadow: STAT_TEXT_SHADOW }}
       >
         {label}

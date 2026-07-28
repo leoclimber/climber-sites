@@ -123,9 +123,13 @@ export function Menu() {
               className="relative shrink-0 whitespace-nowrap py-2 text-[1.1rem] md:text-[22px]"
               aria-pressed={active === c.id}
             >
+              {/* Fase 31a [NOS DOIS]: aba nao-ativa era #A8A29E (2,38:1 sobre
+                  o creme #FAF8F5, o pior contraste do site, e e controle de
+                  navegacao) -- #6B6560 fecha >=4,5:1. A aba ATIVA (#1C1917)
+                  nao muda. */}
               <span
                 className="font-[family-name:var(--font-newsreader)]"
-                style={{ color: active === c.id ? "#1C1917" : "#A8A29E" }}
+                style={{ color: active === c.id ? "#1C1917" : "#6B6560" }}
               >
                 {c.label}
               </span>
@@ -215,11 +219,13 @@ function AllergenDisclosure() {
 
   return (
     <div>
+      {/* Fase 31d [NOS DOIS]: #78716C dava 4,45:1, abaixo do piso -- #6B6560
+          fecha >=4,5:1. */}
       <Tappable
         as="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex min-h-[44px] items-center text-[0.8125rem] text-[#78716C] underline decoration-[#A8A29E] underline-offset-2"
+        className="flex min-h-[44px] items-center text-[0.8125rem] text-[#6B6560] underline decoration-[#A8A29E] underline-offset-2"
       >
         Allergen info (14) →
       </Tappable>

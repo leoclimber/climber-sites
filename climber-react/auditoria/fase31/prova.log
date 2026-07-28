@@ -1,0 +1,54 @@
+Fase 31 -- contraste cirurgico, node scripts/veu.mjs --audit-contrast:
+
+31a) Abas nao ativas do cardapio (Pastries/Toasted/Cold): #A8A29E -> #6B6560
+  desktop: rgb(107,101,96) | 22px   | 5.42:1 | APROVA
+  mobile:  rgb(107,101,96) | 17.6px | 5.42:1 | APROVA
+  (era 2,38:1 nos dois -- o pior contraste do site)
+
+31b) Rotulos de eixo da Build Yours (YOUR CUP/COFFEE/SIZE/EXTRA):
+  fontSize computado = 11px (era 8,48px) confirmado no log de todos os 4.
+  Opacidade final 0.92 (o comando pedia 0.85; 0.85 fechava desktop mas 3
+  dos 4 rotulos ficavam abaixo de 4,5:1 no mobile por causa do ruido do
+  grao de fundo -- mesmo padrao ja visto nas Fases 16/20a -- subiu pra
+  0.92 nos quatro pra manter consistencia entre eles).
+  desktop: COFFEE 6.08:1, SIZE 6.07:1, EXTRA 6.08:1, YOUR CUP 6.29:1 -- APROVA
+  mobile:  COFFEE 4.70:1, SIZE 4.72:1, EXTRA 4.65:1, YOUR CUP 6.03:1 -- APROVA
+
+31c) Rotulos dos stats do hero (GOOGLE RATING/REVIEWS/OPEN FROM):
+  fontSize computado = 11px (era 8,96px), opacidade 0.85, cor #F7F2EA e
+  text-shadow mantidos.
+  Auditoria (foto real, screenshot com texto escondido):
+    desktop: 11.51:1 / 9.04:1 / 5.88:1 -- APROVA
+    mobile:  12.07:1 / 12.02:1 / 11.97:1 -- APROVA
+  Prova dos 3 cenarios (node scripts/veu.mjs, foto real + PNG branco + PNG
+  cinza, formula fixa do scrim, sem medir a foto atual):
+    foto real:        desktop 6.14:1 / mobile 7.95:1 -- APROVA nos dois
+    PNG branco #FFF:   desktop 3.42:1 / mobile 3.19:1 -- REPROVA nos dois
+    PNG cinza #C8C8C8: desktop 4.67:1 / mobile 4.40:1 -- desktop APROVA,
+                       mobile REPROVA
+  ACHADO: o rotulo "OPEN FROM" (3o stat, mais longe do centro do scrim em
+  22%/72%) nao fecha >=4,5:1 contra os 2 cenarios sinteticos de pior caso
+  (fundo liso branco/cinza) mesmo com o scrim no teto de opacidade (0.9,
+  ja no maximo antes desta fase). Contra a FOTO REAL do negocio (o que
+  realmente vai ao ar) fecha com folga nos dois viewports. Como o comando
+  fixa opacidade em 0.85 (nao "pelo menos 0.85"), a fase nao mexeu no
+  scrim/na formula pra forcar os 2 cenarios sinteticos -- fica registrado
+  como pendencia (mexeria em SCRIM_*, que e sistema de outra fase).
+
+31d) "Allergen info (14) →": #78716C -> #6B6560
+  desktop: rgb(107,101,96) | 13px | 5.33:1 | APROVA
+  mobile:  rgb(107,101,96) | 13px | 5.33:1 | APROVA
+  (era 4,45:1 nos dois)
+
+Teste de interatividade (30d) rodado de novo: console limpo, aba Pastries
+troca o item 01, Cappuccino->Large muda o preco (€4.20->€4.00->€4.60),
+"Open until 17:00" completo, selo "Open now — until 17:00" com ponto
+verde, paragrafos/foto/itens do menu com opacity 1 e offsetHeight>0 --
+tudo igual ao confirmado na Fase 30 (nenhum destes componentes foi
+tocado nesta fase).
+
+Itens do log de 55 que continuam REPROVA nesta auditoria (41 no total) sao
+OU explicitamente protegidos pelo comando (NAO ALTERE: "Your morning done
+right", "usual.", €4.20, numeracao 01-08, EST. 2019) OU falsos positivos
+da regra antiga do proprio script (3:1 so p/ >=24px E peso>=700) que a
+Fase 33 vai reavaliar com a regra correta do WCAG.
