@@ -1,0 +1,22 @@
+Fase 32 -- bloco de dados do manifesto, desktop 1920x1080:
+
+Rotulos e valores renderizados:
+  AREA      -> Dublin 8
+  BUSIEST   -> Weekdays, 8-10am
+  GOOD FOR  -> Laptop mornings
+
+Alinhamento EST. 2019 x foto (invariante da Fase 27, nao mexido):
+  photoBottom = 1055.78125
+  estBottom   = 1055.78125
+  diferenca   = 0px (<=8px)
+
+Layout: mesmas classes de largura/altura de linha (h-14 = 56px), mesmos
+filetes (border-b/border-t rgba(28,22,20,0.14)), mesmo rotulo a esquerda /
+valor a direita, mesmas cores (#8B4A2F rotulo, #1C1614 valor) e tamanhos
+(10px/15px) -- so o conteudo dos 3 pares mudou.
+
+Teste de interatividade (30d) rodado de novo: console limpo, aba
+"Pastries" troca o item, Cappuccino->Large muda o preco, "Open until
+17:00"/"Open now" completos, paragrafos+foto+itens do menu com opacity 1
+e offsetHeight>0 -- tudo igual ao das fases anteriores (nenhum componente
+de interacao foi tocado nesta fase).

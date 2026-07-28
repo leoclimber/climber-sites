@@ -33,10 +33,17 @@ import { business } from "./data";
 // (foto) + 140 (respiro que a Fase 8a usa pro ritmo de 160px até o
 // Cardápio) = 1308px. Números literais nas classes (não variáveis) porque
 // o scanner do Tailwind só gera CSS pra strings completas no código-fonte.
+// Fase 32: ROAST/BEHIND THE COUNTER eram dados internos (só o dono saberia)
+// e SINCE repetia o mesmo número três vezes na seção (headline "since
+// 2019", este selo, e "EST. 2019" logo abaixo) — este template é gerado
+// para muitas cafeterias, prospecção inclusive, então todo dado aqui tem
+// que ser o tipo de coisa que já sai da própria ficha do Google Maps do
+// negócio (área, horário de pico, "bom para" — não algo que exige
+// perguntar ao dono).
 const MANIFESTO_DETAILS = [
-  { label: "ROAST", value: "Small batches, weekly" },
-  { label: "SINCE", value: String(business.establishedYear) },
-  { label: "BEHIND THE COUNTER", value: "Sara" },
+  { label: "AREA", value: "Dublin 8" },
+  { label: "BUSIEST", value: "Weekdays, 8-10am" },
+  { label: "GOOD FOR", value: "Laptop mornings" },
 ] as const;
 
 // Fase 27c: os 3 dados já existem no texto do manifesto — não inventa nada
