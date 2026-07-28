@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Rule } from "./manifesto";
 import { business, hours } from "./data";
+import { useOpenStatus } from "./use-open-status";
 import veu from "./veu.json";
 
 // Mesmo véu adaptativo do hero (scripts/veu.mjs), calculado pra
@@ -11,54 +11,6 @@ import veu from "./veu.json";
 const mapPreset = veu.presets[veu.map.preset as keyof typeof veu.presets];
 const mapA3 = veu.map.forcedA3 ?? mapPreset.a3;
 const [mvr, mvg, mvb] = veu.veilRgb;
-
-// "Open now" — calculado no fuso de Dublin (Europe/Dublin), não no fuso da
-// máquina de quem visita. Só roda no cliente, depois do mount: o servidor
-// nunca sabe a hora real de quem vai ver a página, então renderizar isso no
-// SSR gera meio segundo de estado errado (ou pior, mismatch de hydration).
-function useOpenStatus() {
-  const [status, setStatus] = useState<{ open: boolean; text: string } | null>(null);
-
-  useEffect(() => {
-    function compute() {
-      const now = new Date();
-      const parts = new Intl.DateTimeFormat("en-IE", {
-        timeZone: "Europe/Dublin",
-        weekday: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }).formatToParts(now);
-
-      const weekday = parts.find((p) => p.type === "weekday")?.value ?? "Mon";
-      const h = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
-      const m = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
-      const minutesNow = h * 60 + m;
-
-      const row =
-        weekday === "Sat"
-          ? hours[1]
-          : weekday === "Sun"
-            ? hours[2]
-            : hours[0];
-
-      const isOpen = minutesNow >= row.openMin && minutesNow < row.closeMin;
-      const closeLabel = row.range.split(" – ")[1];
-      const openLabel = row.range.split(" – ")[0];
-
-      setStatus({
-        open: isOpen,
-        text: isOpen ? `Open now — until ${closeLabel}` : `Closed — opens ${openLabel}`,
-      });
-    }
-
-    compute();
-    const interval = setInterval(compute, 60_000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return status;
-}
 
 export function Hours() {
   const status = useOpenStatus();
@@ -121,10 +73,12 @@ export function Hours() {
               <>
                 <span
                   className="h-[9px] w-[9px] shrink-0 rounded-full"
-                  style={{ backgroundColor: status.open ? "#8B4A2F" : "#A8A29E" }}
+                  style={{ backgroundColor: status.open ? "#22C55E" : "#A8A29E" }}
                   aria-hidden
                 />
-                {status.text}
+                {status.open
+                  ? `Open now — until ${status.closeLabel}`
+                  : `Closed — opens ${status.openLabel}`}
               </>
             )}
           </div>

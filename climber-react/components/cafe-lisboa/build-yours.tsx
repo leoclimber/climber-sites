@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Tappable, useAnimatedNumber } from "./motion";
 import { usePrefersReducedMotion } from "./motion/hooks";
-import { business, buildYoursOptions, hours } from "./data";
+import { business, buildYoursOptions } from "./data";
+import { useOpenStatus } from "./use-open-status";
 import veu from "./veu.json";
 
 // Configurador de preço — NUNCA loja: sem carrinho, sem quantidade, sem
@@ -49,7 +50,7 @@ export function BuildYours() {
 
   const price = coffee.price + size.delta + extrasDelta;
   const animatedPrice = useAnimatedNumber(price, 0.42);
-  const closing = useTodayClosing();
+  const status = useOpenStatus();
 
   function toggleExtra(id: string) {
     setActiveExtras((prev) => {
@@ -138,7 +139,12 @@ export function BuildYours() {
               Get directions →
             </a>
             <p className="text-[0.72rem] text-[#F7F2EA]/80">
-              {business.addressShort} · {closing ? `Open until ${closing}` : " "}
+              {business.addressShort} ·{" "}
+              {status
+                ? status.open
+                  ? `Open until ${status.closeLabel}`
+                  : `Closed — opens ${status.openLabel}`
+                : " "}
             </p>
             <p className="text-[0.72rem] text-[#F7F2EA]/80">
               Made fresh at the counter — no app, no queue.
@@ -374,26 +380,3 @@ function GrainAndVignette() {
   );
 }
 
-// "Open until HH:MM" de verdade, calculado no fuso de Dublin — não um
-// texto fixo (o horário de fechamento muda por dia da semana). Só roda no
-// cliente, depois do mount, mesmo motivo do useOpenStatus em hours.tsx.
-function useTodayClosing() {
-  const [label, setLabel] = useState<string | null>(null);
-
-  useEffect(() => {
-    function compute() {
-      const now = new Date();
-      const weekday = new Intl.DateTimeFormat("en-IE", {
-        timeZone: "Europe/Dublin",
-        weekday: "short",
-      }).format(now);
-      const row = weekday === "Sat" ? hours[1] : weekday === "Sun" ? hours[2] : hours[0];
-      setLabel(row.range.split(" – ")[1]);
-    }
-    compute();
-    const id = setInterval(compute, 60_000);
-    return () => clearInterval(id);
-  }, []);
-
-  return label;
-}
