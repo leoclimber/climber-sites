@@ -89,7 +89,7 @@ export function BuildYours() {
           que é a mais alta); md:mt-auto no grupo de eixos (abaixo) empurra
           só ELE pro fim da coluna esquerda agora esticada, fechando o vão
           marrom sem redistribuir o espaço entre eyebrow/headline/parágrafo. */}
-      <div className="relative z-10 mx-auto flex w-full max-w-[1240px] flex-col gap-3 md:flex-row md:items-stretch md:gap-[96px]">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1240px] flex-col gap-3 md:flex-row md:gap-[96px]">
         <div className="flex flex-col md:w-[52%]">
           <span className="text-[0.55rem] tracking-[0.26em] text-[var(--accent-text)]">04 · BUILD YOURS</span>
           <h2 className="mt-2 font-[family-name:var(--font-newsreader)] text-[clamp(2rem,4.4vw,3.2rem)] leading-[1.05] text-[#F7F2EA]">
@@ -99,7 +99,13 @@ export function BuildYours() {
             Three taps. Know the price before you walk in.
           </p>
 
-          <div className="mt-4 flex flex-col gap-4 md:mt-auto md:gap-8">
+          {/* Fase 16 (desktop): md:mt-auto (Fase 4) esticava esse grupo até
+              a base da coluna direita, mais alta — isso é exatamente o vão
+              marrom de ~175px entre o parágrafo e "COFFEE" que o comando
+              pede pra eliminar. Vira respiro fixo de 48px (md:mt-12) igual
+              nos dois lados (md:pb-12 fecha o mesmo respiro embaixo do
+              último eixo, já que a coluna não estica mais). */}
+          <div className="mt-4 flex flex-col gap-4 md:mt-12 md:gap-8 md:pb-12">
             <OptionAxis
               label="COFFEE"
               options={buildYoursOptions.coffees}
@@ -170,10 +176,10 @@ function OptionAxis<T extends { id: string; name: string }>({
   return (
     <div className="flex flex-col gap-2">
       <span className="text-[0.53rem] tracking-[0.22em] text-[#F7F2EA]/80">{label}</span>
-      {/* Mobile (Fase 4): grade fixa de 3 colunas, mesmo pro SIZE (2 opções)
-          e EXTRA (3 opções) — "herdam a mesma grade". Desktop mantém o
-          flex-wrap de sempre, intocado. */}
-      <div className="flex flex-wrap gap-x-5 gap-y-3 max-md:grid max-md:grid-cols-3 max-md:gap-3">
+      {/* Fase 16 (desktop): mesma grade fixa de 3 colunas do mobile (Fase 4),
+          agora também >= 769px — COFFEE (6 opções) fecha 3x2, SIZE (2) e
+          EXTRA (3) herdam a mesma grade com uma célula vazia sobrando. */}
+      <div className="flex flex-wrap gap-x-5 gap-y-3 md:grid md:grid-cols-3 md:gap-3 max-md:grid max-md:grid-cols-3 max-md:gap-3">
         {options.map((opt) => {
           const selected = opt.id === selectedId;
           return (
@@ -182,10 +188,10 @@ function OptionAxis<T extends { id: string; name: string }>({
               as="button"
               onClick={() => onSelect(opt.id)}
               aria-pressed={selected}
-              className={`flex min-h-[44px] items-center font-[family-name:var(--font-newsreader)] text-[clamp(1rem,1.5vw,1.15rem)] transition-colors duration-200 max-md:min-h-[48px] max-md:justify-center max-md:rounded-[4px] max-md:px-2 max-md:text-center max-md:text-[0.95rem] ${
+              className={`flex min-h-[44px] items-center font-[family-name:var(--font-newsreader)] text-[clamp(1rem,1.5vw,1.15rem)] transition-colors duration-200 md:min-h-[48px] md:justify-center md:rounded-[4px] md:px-2 md:text-center max-md:min-h-[48px] max-md:justify-center max-md:rounded-[4px] max-md:px-2 max-md:text-center max-md:text-[0.95rem] ${
                 selected
-                  ? "md:text-[#C89B6A] md:underline md:decoration-[1.6px] md:underline-offset-4 max-md:border max-md:border-transparent max-md:bg-[rgba(232,201,160,0.14)] max-md:text-[#E8C9A0] max-md:underline max-md:decoration-2 max-md:underline-offset-4"
-                  : "md:text-[rgba(247,242,234,0.45)] max-md:border max-md:border-[rgba(247,242,234,0.18)] max-md:text-[rgba(247,242,234,0.72)] max-md:no-underline"
+                  ? "md:border md:border-transparent md:bg-[rgba(232,201,160,0.02)] md:text-[#E8C9A0] md:underline md:decoration-2 md:underline-offset-4 max-md:border max-md:border-transparent max-md:bg-[rgba(232,201,160,0.14)] max-md:text-[#E8C9A0] max-md:underline max-md:decoration-2 max-md:underline-offset-4"
+                  : "md:border md:border-[rgba(247,242,234,0.18)] md:text-[rgba(247,242,234,0.72)] md:no-underline max-md:border max-md:border-[rgba(247,242,234,0.18)] max-md:text-[rgba(247,242,234,0.72)] max-md:no-underline"
               }`}
             >
               {opt.name}
@@ -213,8 +219,19 @@ function ExtraAxis({
   return (
     <div className="flex flex-col gap-2">
       <span className="text-[0.53rem] tracking-[0.22em] text-[#F7F2EA]/80">EXTRA</span>
-      {/* Mobile (Fase 4): mesma grade de 3 colunas do COFFEE/SIZE. */}
-      <div className="flex flex-wrap gap-x-5 gap-y-3 max-md:grid max-md:grid-cols-3 max-md:gap-3">
+      {/* Fase 16 (desktop): mesma grade de 3 colunas do COFFEE/SIZE, agora
+          também >= 769px.
+
+          Contraste do chip selecionado (desktop): o comando pediu fundo
+          rgba(232,201,160,0.14) igual ao mobile, mas contra o fundo real da
+          seção (#674c39, veu.json/buildYoursBg) esse alpha mede ~4.2:1 pro
+          texto #E8C9A0 — abaixo do piso de 4,5:1 exigido nesta fase. Baixei
+          só o alpha do fundo pra 0.02 (texto e cor continuam exatamente os
+          pedidos); medido de verdade (Playwright, área 16x16 pra não herdar
+          ruído do grão): selecionado 4.65:1, não-selecionado 4.50:1 — ver
+          auditoria/_scripts/fase16-verify.mjs. Mobile (0.14) não muda —
+          fora do escopo [SO DESKTOP]. */}
+      <div className="flex flex-wrap gap-x-5 gap-y-3 md:grid md:grid-cols-3 md:gap-3 max-md:grid max-md:grid-cols-3 max-md:gap-3">
         {buildYoursOptions.extras.map((opt) => {
           const selected = opt.id === "none" ? activeExtras.size === 0 : activeExtras.has(opt.id);
           return (
@@ -223,10 +240,10 @@ function ExtraAxis({
               as="button"
               onClick={() => (opt.id === "none" ? onClear() : onToggle(opt.id))}
               aria-pressed={selected}
-              className={`flex min-h-[44px] items-center font-[family-name:var(--font-newsreader)] text-[clamp(1rem,1.5vw,1.15rem)] transition-colors duration-200 max-md:min-h-[48px] max-md:justify-center max-md:rounded-[4px] max-md:px-2 max-md:text-center max-md:text-[0.95rem] ${
+              className={`flex min-h-[44px] items-center font-[family-name:var(--font-newsreader)] text-[clamp(1rem,1.5vw,1.15rem)] transition-colors duration-200 md:min-h-[48px] md:justify-center md:rounded-[4px] md:px-2 md:text-center max-md:min-h-[48px] max-md:justify-center max-md:rounded-[4px] max-md:px-2 max-md:text-center max-md:text-[0.95rem] ${
                 selected
-                  ? "md:text-[#C89B6A] md:underline md:decoration-[1.6px] md:underline-offset-4 max-md:border max-md:border-transparent max-md:bg-[rgba(232,201,160,0.14)] max-md:text-[#E8C9A0] max-md:underline max-md:decoration-2 max-md:underline-offset-4"
-                  : "md:text-[rgba(247,242,234,0.45)] max-md:border max-md:border-[rgba(247,242,234,0.18)] max-md:text-[rgba(247,242,234,0.72)] max-md:no-underline"
+                  ? "md:border md:border-transparent md:bg-[rgba(232,201,160,0.02)] md:text-[#E8C9A0] md:underline md:decoration-2 md:underline-offset-4 max-md:border max-md:border-transparent max-md:bg-[rgba(232,201,160,0.14)] max-md:text-[#E8C9A0] max-md:underline max-md:decoration-2 max-md:underline-offset-4"
+                  : "md:border md:border-[rgba(247,242,234,0.18)] md:text-[rgba(247,242,234,0.72)] md:no-underline max-md:border max-md:border-[rgba(247,242,234,0.18)] max-md:text-[rgba(247,242,234,0.72)] max-md:no-underline"
               }`}
             >
               {opt.name}
