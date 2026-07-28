@@ -5,21 +5,59 @@ import { business } from "./data";
 // Fase 21 (desktop): a foto deixa de derivar tamanho do texto (Fase 14) —
 // medir o bloco de texto pra dimensionar a foto produzia 312×418 boiando
 // no canto sempre que o texto real era curto (268px de desalinhamento
-// contra o topo travado em 400px). Tamanho FIXO 560×747 (3:4), sem
-// ResizeObserver, sem depender de nenhum texto. Topo continua 400px do
-// início da seção (separação por título da Fase 2, intocada) e a altura
-// mínima da seção vira constante: 400 (topo) + 747 (foto) + 140 (respiro
-// que a Fase 8a usa pra fechar o ritmo de 160px até o Cardápio) = 1287px
-// (md:min-h-[1287px] abaixo).
+// contra o topo travado em 400px). Tamanho FIXO, sem ResizeObserver, sem
+// depender de nenhum texto. Topo continua 400px do início da seção
+// (separação por título da Fase 2, intocada).
 //
-// Coluna de texto: 520px (era 820px, deixando o texto ocupar pouca altura
-// perto da foto). "EST. 2019" vira o terminador da coluna — desce até a
-// base, alinhada com a base da foto (md:h-[959px] = distância do topo do
-// grid, logo abaixo da régua "02 · Manifesto" — pt-[140px] da seção + 48px
-// da própria régua — até a base da foto a 1147px [=400+747] do topo da
-// seção; md:mt-auto no selo empurra ele pro fim dessa caixa de altura
-// fixa). Números literais nas classes abaixo (não variáveis) porque o
-// scanner do Tailwind só gera CSS pra strings completas no código-fonte.
+// Fase 27 (desktop, fechamento): três erros corrigidos de uma vez —
+// (1) a foto sangrava (md:right-0 até a borda) e cortava conteúdo real,
+// porque o quadro fixo 560×747 (3:4) forçava um crop numa foto que na
+// verdade é 4992×3328 = 3:2 (proporção real lida do arquivo com sharp,
+// `node -e "sharp(...).metadata()"` — ver auditoria/fase27). (2) sobrava
+// ~837px de creme morto porque a coluna de texto (820px, depois 520px)
+// ficava presa no topo da seção enquanto a foto começava só a 400px.
+// (3) a base da coluna ficava vazia porque não havia conteúdo suficiente
+// pra preencher até a base da foto.
+//
+// Correção: quadro da foto vira 1152×768 (3:2, EXATAMENTE a proporção
+// natural — 1152/1.5=768 — então object-cover não corta nada) e para na
+// goteira direita (md:left-[704px], nunca mais md:right-0/sangria):
+// x=704 a x=1856 numa tela de 1920, 64px de goteira à direita. A coluna
+// de texto PASSA a ser posicionada (md:absolute) começando no mesmo topo
+// da foto (md:top-[400px]) e com a MESMA altura (md:h-[768px]) — antes
+// ela começava logo abaixo da régua "02 · Manifesto" e ficava alta demais
+// pro conteúdo real; agora começa mais abaixo (alinhada à foto) e ganha o
+// novo bloco de detalhes (ManifestoDetails, abaixo) pra preencher esse
+// vão. Vão horizontal texto->foto: 584 (fim da coluna, 64+520) até 704
+// (início da foto) = 120px. Altura mínima da seção: 400 (topo) + 768
+// (foto) + 140 (respiro que a Fase 8a usa pro ritmo de 160px até o
+// Cardápio) = 1308px. Números literais nas classes (não variáveis) porque
+// o scanner do Tailwind só gera CSS pra strings completas no código-fonte.
+const MANIFESTO_DETAILS = [
+  { label: "ROAST", value: "Small batches, weekly" },
+  { label: "SINCE", value: String(business.establishedYear) },
+  { label: "BEHIND THE COUNTER", value: "Sara" },
+] as const;
+
+// Fase 27c [SO DESKTOP]: os 3 dados já existem no texto do manifesto — não
+// inventa nada novo, só resume o que os parágrafos já dizem numa lista
+// rápida de escanear. hidden md:block: zero pixel/altura no mobile, que
+// mantém exatamente o fluxo de sempre (parágrafos -> EST. 2019 direto).
+function ManifestoDetails() {
+  return (
+    <div className="hidden md:mt-12 md:block md:border-t md:border-[rgba(28,22,20,0.14)]">
+      {MANIFESTO_DETAILS.map((d) => (
+        <div
+          key={d.label}
+          className="flex h-14 items-center justify-between border-b border-[rgba(28,22,20,0.14)]"
+        >
+          <span className="text-[10px] tracking-[0.3em] text-[#8B4A2F]">{d.label}</span>
+          <span className="text-right text-[15px] text-[#1C1614]">{d.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // Assimétrico de propósito (regra #3 do documento mestre): texto à esquerda,
 // foto como objeto solto à direita (Fase B da leva de correção — a foto
@@ -39,15 +77,15 @@ export function Manifesto() {
   return (
     <section
       id="cl-manifesto"
-      className="relative overflow-hidden bg-[#FAF8F5] pt-[120px] md:pt-[140px] md:min-h-[1287px]"
+      className="relative overflow-hidden bg-[#FAF8F5] pt-[120px] md:pt-[140px] md:min-h-[1308px]"
     >
       <div className="px-6 md:px-16">
         <Rule label="02 · Manifesto" />
       </div>
 
       <div className="grid md:items-start">
-        <div className="flex flex-col px-6 pb-9 md:w-[520px] md:px-0 md:ml-16 md:pb-0">
-          <div className="flex flex-col md:h-[959px]">
+        <div className="flex flex-col px-6 pb-9 md:absolute md:left-16 md:top-[400px] md:h-[768px] md:w-[520px] md:px-0 md:pb-0">
+          <div className="flex flex-col md:h-full">
             <div>
               <LineReveal
                 as="h2"
@@ -72,6 +110,8 @@ export function Manifesto() {
               </StaggerGroup>
             </div>
 
+            <ManifestoDetails />
+
             <div className="mt-10 md:mt-auto flex items-center gap-3 text-[0.75rem] tracking-[0.15em] text-[#78716C]">
               <span className="h-[2px] w-10 bg-[#8B4A2F]" aria-hidden />
               EST. {business.establishedYear}
@@ -79,19 +119,21 @@ export function Manifesto() {
           </div>
         </div>
 
-        <div className="px-6 pb-16 md:absolute md:right-0 md:top-[400px] md:h-[747px] md:w-[560px] md:px-0 md:pb-0">
+        <div className="px-6 pb-16 md:absolute md:left-[704px] md:top-[400px] md:h-[768px] md:w-[1152px] md:px-0 md:pb-0">
           {/* Fase 19 [SO DESKTOP]: PhotoReveal por fora (clip-path+scale,
               novo sistema) — MaskReveal segue por dentro só pro mobile
-              (vira no-op no desktop, ver useIsDesktop). */}
+              (vira no-op no desktop, ver useIsDesktop). Fase 27: quadro
+              1152×768 é a proporção NATURAL do arquivo (3:2) — object-cover
+              não recorta nada, só preenche o quadro exato. */}
           <PhotoReveal className="min-h-[280px] md:h-full md:min-h-0">
             <MaskReveal className="h-full w-full">
               <Image
                 src="/images/gallery/atmosphere-03.jpg"
                 alt="Leather armchair beside a marble table, an open book and a cup of coffee, morning light"
                 fill
-                sizes="(min-width: 768px) 560px, 100vw"
+                sizes="(min-width: 768px) 1152px, 100vw"
                 loading="lazy"
-                className="object-cover md:object-[center_bottom]"
+                className="object-cover"
               />
             </MaskReveal>
           </PhotoReveal>

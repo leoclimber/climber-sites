@@ -1,0 +1,32 @@
+Fase 27 -- verificacao, desktop 1920x1080:
+
+1. Proporcao natural do arquivo (sharp .metadata(), fonte da verdade):
+   naturalWidth=4992 naturalHeight=3328 ratio=1.5 (3:2)
+   naturalWidth/naturalHeight da <img> renderizada (Next/Image otimizada):
+   naturalWidth=1152 naturalHeight=768 ratio=1.5 -- mesma proporcao,
+   quadro 1152x768 bate exatamente, sem corte.
+
+2. Largura computada da foto: 1152. right da foto: 1856 (nunca 1920).
+
+3. Distancia entre o right do texto (584) e o left da foto (704): 120px.
+
+4. Bottom da linha "EST. 2019" (1054, medido) = bottom da foto (1054,
+   medido) -- diferenca 0px (<=8px).
+
+5. Areas de creme continuo (as duas do bug original, medidas):
+   a) vao horizontal texto->foto (bug "837px de creme"): largura=120px
+      (era ~837px) -- abaixo do teto de 200px.
+   b) sobra vertical na base da coluna, entre o fim do bloco de detalhes
+      e o topo de "EST. 2019" (bug "coluna vazia embaixo"): altura=135.8px
+      (era o vao entre o ultimo paragrafo e a base da coluna, ~740px+
+      antes do bloco de detalhes existir) -- abaixo do teto de 200px.
+   Nota: existe uma 3a banda de creme, ACIMA da coluna/foto (da regua "02
+   Manifesto" ate o topo de ambas, ~236px de altura, largura da secao
+   inteira) -- essa NAO e um bug: e o proprio espacamento de 400px do fim
+   da capa exigido pelo item 6 abaixo (Fase 2, "separacao por titulo"),
+   citado explicitamente no comando desta fase. Reportada aqui por
+   transparencia, nao contada contra o teto de 200px porque e mandatoria.
+
+6. Distancia entre a base da foto da capa (hero, bottom=1080 no viewport
+   de 1920x1080 com o manifesto no topo da tela) e o topo da foto do
+   manifesto: 400px exatos (>= 400px).
