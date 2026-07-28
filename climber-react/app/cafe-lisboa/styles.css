@@ -196,3 +196,77 @@
     animation: none;
   }
 }
+
+/* Sistema de entrada das fotos do desktop (Fase 19) — ver
+   components/cafe-lisboa/motion/photo-reveal.tsx. Só existe >= 769px: por
+   padrão (mobile e fallback de hidratação) o quadro e a imagem ficam no
+   estado final, sem clip nem escala nenhuma. Só transform e clip-path
+   animam — nunca width/height/top/left/margin/background-position. */
+.cl-photo-reveal-frame {
+  overflow: hidden;
+}
+
+/* position:absolute + inset:0 (não height/width:100%) — um pai dimensionado
+   só por min-height (ex.: a foto do manifesto no mobile, min-h-[280px] sem
+   height explícito) não resolve porcentagem de altura em bloco normal (o
+   filho colapsa a 0px); absolute+inset ancora no box já calculado do pai,
+   igual o próprio Next Image (fill) já faz. */
+.cl-photo-reveal-clip {
+  position: absolute;
+  inset: 0;
+}
+
+.cl-photo-reveal-img {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+@media (min-width: 769px) {
+  .cl-photo-reveal-clip {
+    clip-path: inset(100% 0 0 0);
+    transition: clip-path 900ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--cl-reveal-delay, 0ms);
+  }
+
+  .cl-photo-reveal-clip.cl-revealed {
+    clip-path: inset(0% 0 0 0);
+  }
+
+  .cl-photo-reveal-img {
+    transform: scale(1.12);
+    transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--cl-reveal-delay, 0ms);
+  }
+
+  .cl-photo-reveal-clip.cl-revealed .cl-photo-reveal-img {
+    transform: scale(1);
+  }
+
+  /* Depois que a entrada termina (transitionend do clip-path, ver
+     photo-reveal.tsx), a IMAGEM troca pra uma transição mais curta —
+     só ela serve o hover do mosaico daqui pra frente; o quadro nunca
+     mais se move. */
+  .cl-photo-reveal-clip.cl-revealed.cl-photo-reveal-entrance-done .cl-photo-reveal-img {
+    transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: 0ms;
+  }
+}
+
+@media (min-width: 769px) and (pointer: fine) {
+  .cl-photo-reveal-clip.cl-photo-reveal-hover.cl-revealed.cl-photo-reveal-entrance-done:hover
+    .cl-photo-reveal-img {
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-photo-reveal-clip {
+    clip-path: none !important;
+    transition: none !important;
+  }
+  .cl-photo-reveal-img {
+    transform: none !important;
+    transition: none !important;
+  }
+}

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { CSSProperties, ReactNode } from "react";
-import { usePrefersReducedMotion } from "./hooks";
+import { usePrefersReducedMotion, useIsDesktop } from "./hooks";
 
 type MaskRevealProps = {
   children: ReactNode;
@@ -26,8 +26,13 @@ export function MaskReveal({
   maskColor = "#FAF8F5",
 }: MaskRevealProps) {
   const reducedMotion = usePrefersReducedMotion();
+  // Fase 19 [SO DESKTOP]: no desktop este wipe vira no-op (ver useIsDesktop
+  // em ./hooks) — o novo sistema de entrada por clip-path+scale
+  // (motion/photo-reveal.tsx) assume a foto lá. Mobile nunca lê
+  // isDesktop=true, então continua exatamente no ramo animado de sempre.
+  const isDesktop = useIsDesktop();
 
-  if (reducedMotion) {
+  if (reducedMotion || isDesktop) {
     return (
       <div className={`relative overflow-hidden ${className}`} style={style}>
         {children}

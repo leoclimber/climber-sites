@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { LineReveal, MaskReveal, StaggerGroup, StaggerItem } from "./motion";
+import { LineReveal, MaskReveal, PhotoReveal, StaggerGroup, StaggerItem } from "./motion";
 import { business } from "./data";
 
 // Fase 14 (desktop): a foto deixa de ter altura fixa (1013px) e passa a
@@ -128,16 +128,21 @@ export function Manifesto() {
           className="px-6 pb-16 md:absolute md:right-0 md:top-[400px] md:h-[1013px] md:w-[760px] md:px-0 md:pb-0"
           style={dynamic ? { width: `${dynamic.width}px`, height: `${dynamic.height}px` } : undefined}
         >
-          <MaskReveal className="min-h-[280px] md:h-full md:min-h-0">
-            <Image
-              src="/images/gallery/atmosphere-03.jpg"
-              alt="Leather armchair beside a marble table, an open book and a cup of coffee, morning light"
-              fill
-              sizes="(min-width: 768px) 760px, 100vw"
-              loading="lazy"
-              className="object-cover md:object-[center_bottom]"
-            />
-          </MaskReveal>
+          {/* Fase 19 [SO DESKTOP]: PhotoReveal por fora (clip-path+scale,
+              novo sistema) — MaskReveal segue por dentro só pro mobile
+              (vira no-op no desktop, ver useIsDesktop). */}
+          <PhotoReveal className="min-h-[280px] md:h-full md:min-h-0">
+            <MaskReveal className="h-full w-full">
+              <Image
+                src="/images/gallery/atmosphere-03.jpg"
+                alt="Leather armchair beside a marble table, an open book and a cup of coffee, morning light"
+                fill
+                sizes="(min-width: 768px) 760px, 100vw"
+                loading="lazy"
+                className="object-cover md:object-[center_bottom]"
+              />
+            </MaskReveal>
+          </PhotoReveal>
         </div>
       </div>
     </section>

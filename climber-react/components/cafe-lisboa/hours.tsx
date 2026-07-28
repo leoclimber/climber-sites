@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { Rule } from "./manifesto";
+import { PhotoReveal } from "./motion";
 import { business, hours } from "./data";
 import { useOpenStatus } from "./use-open-status";
 import veu from "./veu.json";
@@ -26,13 +27,18 @@ export function Hours() {
           rel="noopener noreferrer"
           className="group relative block aspect-[4/3] w-full overflow-hidden bg-[#1C1614] active:scale-[0.97] active:opacity-70 md:aspect-auto md:h-full"
         >
-          <Image
-            src="/images/gallery/facade-vertical.jpg"
-            alt="Café Lisboa's green shopfront on Meath Street"
-            fill
-            sizes="(min-width: 768px) 50vw, 100vw"
-            className="object-cover"
-          />
+          {/* Fase 19 [SO DESKTOP]: fachada nunca teve animação de entrada
+              (mobile: instantânea, aprovado) — PhotoReveal só existe
+              >=769px, então abaixo disso isto continua sem nenhum efeito. */}
+          <PhotoReveal fill>
+            <Image
+              src="/images/gallery/facade-vertical.jpg"
+              alt="Café Lisboa's green shopfront on Meath Street"
+              fill
+              sizes="(min-width: 768px) 50vw, 100vw"
+              className="object-cover"
+            />
+          </PhotoReveal>
 
           {veu.map.needsDesaturate && (
             <div

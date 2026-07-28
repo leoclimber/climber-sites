@@ -4,7 +4,7 @@ import Image from "next/image";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, type Ref } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MaskReveal, Tappable } from "./motion";
+import { MaskReveal, PhotoReveal, Tappable } from "./motion";
 import { usePrefersReducedMotion } from "./motion/hooks";
 import { Rule } from "./manifesto";
 import { mosaicSlots } from "./data";
@@ -176,20 +176,18 @@ function MosaicTile({
           className="group block h-full w-full cursor-pointer overflow-hidden"
           aria-label={`Open ${slot.alt} full screen`}
         >
-          <div className="relative h-full w-full overflow-hidden">
-            <Image
-              src={slot.src}
-              alt={slot.alt}
-              fill
-              sizes={sizes}
-              loading="lazy"
-              className="object-cover transition-transform duration-[600ms] ease-out group-hover:scale-[1.05]"
-            />
+          {/* Fase 19 [SO DESKTOP]: PhotoReveal assume o "quadro" que antes
+              era essa div relative/overflow-hidden — o hover-zoom antigo
+              (group-hover:scale-[1.05] direto na <Image>, 600ms) sai daqui;
+              vira o hover próprio do PhotoReveal (scale(1.04), 500ms,
+              só pointer:fine), escalonado 60ms por slot (index). */}
+          <PhotoReveal className="h-full w-full" delayMs={index * 60} hoverScale>
+            <Image src={slot.src} alt={slot.alt} fill sizes={sizes} loading="lazy" className="object-cover" />
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#3A1F0F]/30 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
             />
-          </div>
+          </PhotoReveal>
         </Tappable>
       </div>
     </MaskReveal>

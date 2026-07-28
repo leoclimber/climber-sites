@@ -20,6 +20,28 @@ export function usePrefersReducedMotion() {
   return reduced;
 }
 
+// Fase 19 [SO DESKTOP]: MaskReveal (o wipe de retângulo sólido) é o sistema
+// de entrada aprovado do MOBILE — continua existindo e rodando exatamente
+// igual lá. No desktop ele passa a ceder lugar ao novo sistema
+// (motion/photo-reveal.tsx, clip-path+scale). Em vez de duplicar a
+// animação nos dois breakpoints ao mesmo tempo, MaskReveal usa este hook
+// pra virar um no-op só quando a viewport é desktop — mobile nunca lê
+// `true` daqui, então seu ramo de código (e sua aparência) não muda em
+// nada.
+export function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 769px)");
+    setIsDesktop(query.matches);
+    const handler = (event: MediaQueryListEvent) => setIsDesktop(event.matches);
+    query.addEventListener("change", handler);
+    return () => query.removeEventListener("change", handler);
+  }, []);
+
+  return isDesktop;
+}
+
 // Conta de 0 até `target` quando `start` vira true (o chamador decide o
 // gatilho — normalmente um useInView no contêiner que engloba vários
 // contadores, pra todos dispararem juntos). Usa a função imperativa
