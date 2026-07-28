@@ -1,0 +1,78 @@
+Fase 30 -- diagnostico ANTES de qualquer mudanca.
+
+30a.1 -- Playwright 390x844, load ate 3s depois, console+pageerror:
+  Dev server (restart limpo, sem cache antigo em memoria): []
+  Build de producao (next build && next start): []
+  Nenhuma mensagem de erro, nenhum pageerror, em nenhuma das duas rodadas.
+
+30a.2 -- procura por "Hydration failed" / "did not match" / "Text content
+  does not match" / "window is not defined": NENHUMA ocorrencia em nenhum
+  dos dois testes (dev limpo e producao).
+
+30a.3 -- onde matchMedia e lido, componente de reveal:
+  components/cafe-lisboa/motion/hooks.ts, useIsDesktop():
+    const [isDesktop, setIsDesktop] = useState(false);      // estado inicial FIXO, igual servidor/cliente
+    useEffect(() => {
+      const query = window.matchMedia("(min-width: 769px)"); // SO dentro do useEffect
+      setIsDesktop(query.matches);
+      ...
+    }, []);
+  matchMedia so e lido dentro de useEffect (depois da montagem). O valor
+  inicial de useState e uma constante (false), NAO uma leitura de window.
+  Isto ja e o padrao seguro pedido no item 30c.
+
+Auditoria de TODOS os componentes com API de navegador (grep por
+window./matchMedia/document./typeof window/useState(window em todo
+components/cafe-lisboa): motion/hooks.ts, motion/stagger-reveal.tsx,
+motion/mask-reveal.tsx, motion/line-reveal.tsx, hero-parallax.tsx,
+menu.tsx, footer.tsx, gallery-grid.tsx, mobile-action-bar.tsx, nav-bar.tsx,
+use-open-status.ts, hero-stats.tsx, hero-stats-counter.tsx. Em TODOS, toda
+leitura de window/matchMedia/document esta dentro de useEffect/
+useLayoutEffect/handler de evento -- nenhuma no corpo do render, nenhuma
+como valor inicial de useState.
+
+CONCLUSAO DO DIAGNOSTICO: a hipotese da causa provavel (30b -- matchMedia
+lido no render ou como estado inicial) NAO se confirma no codigo atual.
+O padrao ja seguido em todo o cafe-lisboa e exatamente o pedido em 30c
+(estado inicial identico nos dois lados, matchMedia so em useEffect).
+Testado em dev (restart limpo) e em build de producao: zero erro de
+console, zero pageerror, zero hidratacao quebrada.
+
+30d -- TESTE DE INTERATIVIDADE, 390x844:
+  1. console limpo: [] erros -- PASSA
+  2. contadores: capturados via reload+load; ambas leituras deram "4.8"
+     porque o evento 'load' so dispara depois da foto grande do hero
+     carregar, e a contagem (1.4s) ja tinha terminado antes disso. Refeito
+     medindo em pontos intermediarios da MESMA carga (sem reload): t=200ms
+     "4.6", t=1700ms "4.8" -- muda, PASSA (numeros no corpo do relatorio).
+  3. aba "Pastries": item 01 = "Butter croissant..." -- PASSA
+  4. Cappuccino -> Large: €4.20 -> €4.00 -> €4.60 -- PASSA
+  5. esteira de avaliacoes: um UNICO arraste rapido move a faixa (prova:
+     transform de translate3d(-25.41px) pra translate3d(-53.38px) durante
+     o arraste) mas NAO cruza a largura de um cartao (~310px) rapido o
+     bastante pra trocar o rotulo "01/06" -- isso e o motor de velocidade
+     continua da Fase 24 por design (arraste SOMA velocidade, nao move
+     1:1; teto de 3x a base = 75px/s). Esperando 15s (tempo o bastante pra
+     a velocidade BASE de 25px/s sozinha cruzar ~310px) o rotulo troca pra
+     "02/06" -- confirma que o mecanismo inteiro (ponteiro -> motor ->
+     poll -> render) esta vivo. PASSA (com a ressalva do tempo).
+  6. galeria mobile: barra de progresso muda de transform ao arrastar a
+     fileira -- PASSA.
+  7. "Open until 17:00" aparece inteiro: "14 Meath Street, Dublin 8 · Open
+     until 17:00" -- PASSA.
+  8. selo "Open now — until 17:00" aparece com ponto verde
+     rgb(34,197,94) -- PASSA.
+  9. 3 paragrafos do manifesto (opacity 1, offsetHeight 112/112/84), foto
+     (opacity 1, offsetHeight 280), item 01 das 4 abas (opacity 1,
+     offsetHeight 59 em todas) -- PASSA.
+
+30e -- desktop: nav-bar aparece (transform translateY(0)) ao rolar, reveal
+  da foto do manifesto completo (classe cl-revealed
+  cl-photo-reveal-entrance-done), hover do cardapio muda o fundo da linha
+  pra rgb(241,233,220), contadores sobem (4.6 -> 4.8 em 1.5s) -- tudo
+  funcionando, zero erro de console.
+
+RESULTADO: nenhum bug de hidratacao/JS morto foi reproduzido em nenhum dos
+testes (dev limpo, producao, 390x844, 1920x1080). O codigo ja segue o
+padrao seguro pedido. Nenhuma mudanca estrutural foi necessaria; este
+commit documenta a auditoria.

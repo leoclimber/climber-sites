@@ -20,14 +20,16 @@ export function usePrefersReducedMotion() {
   return reduced;
 }
 
-// Fase 19 [SO DESKTOP]: MaskReveal (o wipe de retângulo sólido) é o sistema
-// de entrada aprovado do MOBILE — continua existindo e rodando exatamente
-// igual lá. No desktop ele passa a ceder lugar ao novo sistema
-// (motion/photo-reveal.tsx, clip-path+scale). Em vez de duplicar a
-// animação nos dois breakpoints ao mesmo tempo, MaskReveal usa este hook
-// pra virar um no-op só quando a viewport é desktop — mobile nunca lê
-// `true` daqui, então seu ramo de código (e sua aparência) não muda em
-// nada.
+// Usado por StaggerGroup/StaggerItem/LineReveal (Fase 29) pra decidir se o
+// reveal via whileInView roda (só desktop) ou se o conteúdo nasce direto no
+// estado final (mobile — nunca depende de IntersectionObserver).
+//
+// Fase 30 (auditoria): valor inicial é uma CONSTANTE (false), igual no
+// servidor e no primeiro paint do cliente — matchMedia só é lido dentro do
+// useEffect, depois da montagem. Nunca no corpo da função (render) nem como
+// valor inicial de useState — isso é o que evita qualquer divergência entre
+// o HTML do servidor e o do cliente nesse primeiro paint (uma divergência
+// aí quebraria a hidratação da página inteira, não só deste hook).
 export function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(false);
 
