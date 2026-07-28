@@ -2,6 +2,16 @@
    desta rota — não mexe em app/globals.css, que pertence ao café
    cinematográfico e ao shell compartilhado. */
 
+/* Tokens de cor (Fase 12b) — não substituem nenhum hex já usado no site,
+   só dão nome a dois papéis novos que a trava de contraste global exigiu
+   separar: --accent é decorativo (filetes, texto >= 24px bold, nunca
+   texto pequeno); --accent-text é o mesmo tom de marca, só que clareado
+   pra funcionar como TEXTO pequeno sobre fundo escuro/marrom. */
+:root {
+  --accent: #c89b6a;
+  --accent-text: #e8c9a0;
+}
+
 .cl-esteira {
   overflow: hidden;
   white-space: nowrap;

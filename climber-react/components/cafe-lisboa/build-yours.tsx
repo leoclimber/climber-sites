@@ -90,11 +90,11 @@ export function BuildYours() {
           marrom sem redistribuir o espaço entre eyebrow/headline/parágrafo. */}
       <div className="relative z-10 mx-auto flex w-full max-w-[1240px] flex-col gap-3 md:flex-row md:items-stretch md:gap-[96px]">
         <div className="flex flex-col md:w-[52%]">
-          <span className="text-[0.55rem] tracking-[0.26em] text-[#C89B6A]">04 · BUILD YOURS</span>
+          <span className="text-[0.55rem] tracking-[0.26em] text-[var(--accent-text)]">04 · BUILD YOURS</span>
           <h2 className="mt-2 font-[family-name:var(--font-newsreader)] text-[clamp(2rem,4.4vw,3.2rem)] leading-[1.05] text-[#F7F2EA]">
             Build your <em className="italic text-[#C89B6A]">usual.</em>
           </h2>
-          <p className="mt-2 max-w-[46ch] text-[0.95rem] text-[#F7F2EA]/70">
+          <p className="mt-2 max-w-[46ch] text-[0.95rem] text-[#F7F2EA]/80">
             Three taps. Know the price before you walk in.
           </p>
 
@@ -120,13 +120,13 @@ export function BuildYours() {
             YOUR CUP
           </span>
           <div className="mt-2 flex items-end gap-6 md:flex-col md:items-start md:gap-0">
-            <span className="font-[family-name:var(--font-newsreader)] text-[clamp(4.5rem,9vw,7rem)] leading-none tabular-nums text-[#C89B6A]">
+            <span className="font-[family-name:var(--font-newsreader)] text-[clamp(4.5rem,9vw,7rem)] leading-none tabular-nums text-[var(--accent)]">
               €{animatedPrice.toFixed(2)}
             </span>
             <Cup coffeeId={coffeeId} sizeId={sizeId} activeExtras={activeExtras} className="md:mt-3" />
           </div>
 
-          <span className="mt-2 text-[0.8rem] text-[#F7F2EA]/50">{summary}</span>
+          <span className="mt-2 text-[0.8rem] text-[#F7F2EA]/80">{summary}</span>
 
           <div className="mt-4 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] md:mt-10 md:gap-3">
             <a
@@ -137,10 +137,10 @@ export function BuildYours() {
             >
               Get directions →
             </a>
-            <p className="text-[0.72rem] text-[#F7F2EA]/50">
+            <p className="text-[0.72rem] text-[#F7F2EA]/80">
               {business.addressShort} · {closing ? `Open until ${closing}` : " "}
             </p>
-            <p className="text-[0.72rem] text-[#F7F2EA]/50">
+            <p className="text-[0.72rem] text-[#F7F2EA]/80">
               Made fresh at the counter — no app, no queue.
             </p>
           </div>
@@ -163,7 +163,7 @@ function OptionAxis<T extends { id: string; name: string }>({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[0.53rem] tracking-[0.22em] text-[#F7F2EA]/42">{label}</span>
+      <span className="text-[0.53rem] tracking-[0.22em] text-[#F7F2EA]/80">{label}</span>
       {/* Mobile (Fase 4): grade fixa de 3 colunas, mesmo pro SIZE (2 opções)
           e EXTRA (3 opções) — "herdam a mesma grade". Desktop mantém o
           flex-wrap de sempre, intocado. */}
@@ -206,7 +206,7 @@ function ExtraAxis({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[0.53rem] tracking-[0.22em] text-[#F7F2EA]/42">EXTRA</span>
+      <span className="text-[0.53rem] tracking-[0.22em] text-[#F7F2EA]/80">EXTRA</span>
       {/* Mobile (Fase 4): mesma grade de 3 colunas do COFFEE/SIZE. */}
       <div className="flex flex-wrap gap-x-5 gap-y-3 max-md:grid max-md:grid-cols-3 max-md:gap-3">
         {buildYoursOptions.extras.map((opt) => {

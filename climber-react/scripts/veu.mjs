@@ -21,6 +21,7 @@ import sharp from "sharp";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "@playwright/test";
+import { PNG } from "pngjs";
 
 const GALLERY = path.resolve("public/images/gallery");
 const HERO_IMAGE = path.join(GALLERY, "atmosphere-02.jpg");
@@ -480,7 +481,20 @@ async function measureHeroViewport(page, viewport, deviceTag, scenario, heroShar
     if (!box) return null;
     const style = await locator.evaluate((el) => {
       const cs = getComputedStyle(el);
-      return { color: cs.color, fontSize: cs.fontSize, fontWeight: cs.fontWeight };
+      // Tailwind v4 serializa cor com modificador de opacidade (/NN) em
+      // lab()/oklch(), não rgba() — normaliza via canvas 2D (que resolve
+      // QUALQUER espaço de cor pro pipeline de pixel real do navegador)
+      // antes de devolver, ou o parser rgba()-only do resto deste arquivo
+      // cai no fallback branco opaco e mede opacidade errada.
+      const canvas = document.createElement("canvas");
+      canvas.width = 1;
+      canvas.height = 1;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = cs.color;
+      ctx.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+      const normalizedColor = `rgba(${r},${g},${b},${(a / 255).toFixed(4)})`;
+      return { color: normalizedColor, fontSize: cs.fontSize, fontWeight: cs.fontWeight };
     });
     let avgRgb;
     let lightRgb;
@@ -768,7 +782,211 @@ async function main() {
   console.log(`[veu] escrito em ${outPath}`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// ---------------------------------------------------------------------------
+// Trava de contraste GLOBAL (Fase 12a) — `node scripts/veu.mjs --audit-contrast`
+// ---------------------------------------------------------------------------
+// Percorre TODO nó de texto visível da página, sem lista escrita à mão:
+// tira um screenshot normal (cor real do texto) e um segundo com todo texto
+// tornado transparente (`color/-webkit-text-fill-color: transparent`,
+// injetado via <style>, nunca editando os componentes) — o segundo é o
+// fundo REAL sob cada elemento, para QUALQUER tipo de fundo (foto, cor
+// sólida, gradiente), sem precisar distinguir os casos. Composita a cor do
+// texto (do primeiro screenshot/computedStyle) sobre a média E o quartil
+// mais claro dos pixels de fundo (segundo screenshot) na área do elemento;
+// a PIOR das duas governa. Piso 4,5:1; exceção 3:1 só para texto >= 24px
+// COM peso >= 700 (Fase 12's own rule — mais estrita que a 11c/11d).
+async function collectVisibleTextElements(page) {
+  return page.evaluate(() => {
+    function isVisible(el) {
+      const cs = getComputedStyle(el);
+      if (cs.display === "none" || cs.visibility === "hidden" || Number(cs.opacity) === 0) return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    }
+    function ownsDirectText(el) {
+      return Array.from(el.childNodes).some(
+        (n) => n.nodeType === Node.TEXT_NODE && n.textContent.trim().length > 0
+      );
+    }
+    function describe(el) {
+      const id = el.id ? `#${el.id}` : "";
+      const parentId = el.closest("section,footer,header")?.id;
+      const scope = parentId ? `#${parentId} ` : "";
+      const tag = el.tagName.toLowerCase();
+      const text = el.textContent.trim().slice(0, 40);
+      return `${scope}${tag}${id} "${text}"`;
+    }
+
+    // Tailwind v4 serializa cor com modificador de opacidade (/NN) em
+    // lab()/oklch(), não rgba() — normaliza via canvas 2D antes de
+    // devolver, mesmo motivo documentado em measureEl (measureHeroViewport).
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext("2d");
+    function toRgbaString(cssColor) {
+      // sem isso, um fillRect com alpha<1 composita por cima do pixel da
+      // medição ANTERIOR (canvas reaproveitado por performance) em vez de
+      // substituir — cada leitura ficava contaminada pela cor do elemento
+      // medido antes dela.
+      ctx.clearRect(0, 0, 1, 1);
+      ctx.fillStyle = cssColor;
+      ctx.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+      return `rgba(${r},${g},${b},${(a / 255).toFixed(4)})`;
+    }
+
+    const all = document.querySelectorAll("body *");
+    const rows = [];
+    for (const el of all) {
+      if (!ownsDirectText(el)) continue;
+      if (!isVisible(el)) continue;
+      if (el.closest('[aria-hidden="true"]')) continue;
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      rows.push({
+        selector: describe(el),
+        box: { x: r.x, y: r.y, width: r.width, height: r.height },
+        color: toRgbaString(cs.color),
+        fontSize: cs.fontSize,
+        fontWeight: cs.fontWeight,
+      });
+    }
+    return rows;
+  });
+}
+
+async function screenshotWithTextHidden(page) {
+  await page.addStyleTag({
+    content: `*, *::before, *::after {
+      color: transparent !important;
+      -webkit-text-fill-color: transparent !important;
+      text-shadow: none !important;
+      caret-color: transparent !important;
+    }`,
+  });
+  const buffer = await page.screenshot({ fullPage: true });
+  // remove o <style> injetado antes de seguir usando a mesma page
+  await page.evaluate(() => {
+    const tags = document.querySelectorAll("style");
+    const last = tags[tags.length - 1];
+    if (last) last.remove();
+  });
+  return buffer;
+}
+
+function sampleRegionLuminance(png, box) {
+  const left = Math.max(0, Math.round(box.x));
+  const top = Math.max(0, Math.round(box.y));
+  const right = Math.min(png.width, Math.round(box.x + box.width));
+  const bottom = Math.min(png.height, Math.round(box.y + box.height));
+  if (right <= left || bottom <= top) return { avgRgb: [255, 255, 255], lightRgb: [255, 255, 255] };
+
+  const pixels = [];
+  for (let y = top; y < bottom; y++) {
+    for (let x = left; x < right; x++) {
+      const idx = (png.width * y + x) << 2;
+      pixels.push([png.data[idx], png.data[idx + 1], png.data[idx + 2]]);
+    }
+  }
+  const avgRgb = averageRgb(pixels);
+  const withLum = pixels.map((p) => ({ p, l: relativeLuminance(...p) }));
+  withLum.sort((a, b) => b.l - a.l);
+  const quartileCount = Math.max(1, Math.ceil(pixels.length * 0.25));
+  const lightRgb = averageRgb(withLum.slice(0, quartileCount).map((x) => x.p));
+  return { avgRgb, lightRgb };
+}
+
+async function auditViewportContrast(page, viewport, deviceTag) {
+  await page.setViewportSize(viewport);
+  await page.goto(SITE_URL, { waitUntil: "networkidle" });
+
+  // revela todo conteúdo disparado por IntersectionObserver (StaggerGroup,
+  // MaskReveal, whileInView) rolando a página inteira antes de medir —
+  // mesmo problema já documentado na auditoria da leva anterior.
+  const fullHeight = await page.evaluate(() => document.body.scrollHeight);
+  for (let y = 0; y < fullHeight; y += Math.round(viewport.height * 0.8)) {
+    await page.evaluate((yy) => window.scrollTo(0, yy), y);
+    await page.waitForTimeout(200);
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(2000); // contador do hero + últimas transições
+
+  const elements = await collectVisibleTextElements(page);
+  const bgBuffer = await screenshotWithTextHidden(page);
+  const bgPng = PNG.sync.read(bgBuffer);
+
+  const rows = elements.map((el) => {
+    const { avgRgb, lightRgb } = sampleRegionLuminance(bgPng, el.box);
+    const fg = parseCssColor(el.color);
+    const composedAvg = compositeOver(avgRgb, [fg.r, fg.g, fg.b], fg.a ?? 1);
+    const composedLight = compositeOver(lightRgb, [fg.r, fg.g, fg.b], fg.a ?? 1);
+    const ratioAvg = contrastRatio(relativeLuminance(...composedAvg), relativeLuminance(...avgRgb));
+    const ratioLight = contrastRatio(relativeLuminance(...composedLight), relativeLuminance(...lightRgb));
+    const ratio = Math.min(ratioAvg, ratioLight);
+    const fontSizePx = parseFloat(el.fontSize);
+    const fontWeight = parseInt(el.fontWeight, 10) || 400;
+    const floor = fontSizePx >= 24 && fontWeight >= 700 ? 3.0 : 4.5;
+    return {
+      selector: el.selector,
+      colorRgb: `rgb(${Math.round(fg.r)},${Math.round(fg.g)},${Math.round(fg.b)})`,
+      opacity: Number((fg.a ?? 1).toFixed(2)),
+      fontSizePx: Number(fontSizePx.toFixed(2)),
+      fontWeight,
+      ratioAvg: Number(ratioAvg.toFixed(2)),
+      ratioLight: Number(ratioLight.toFixed(2)),
+      ratio: Number(ratio.toFixed(2)),
+      floor,
+      pass: ratio >= floor,
+    };
+  });
+
+  return { deviceTag, rows };
+}
+
+async function auditContrast() {
+  const browser = await chromium.launch({ headless: false });
+  const page = await browser.newPage();
+
+  const desktop = await auditViewportContrast(page, { width: 1920, height: 1080 }, "desktop");
+  const mobile = await auditViewportContrast(page, { width: 390, height: 844 }, "mobile");
+
+  await browser.close();
+
+  for (const result of [desktop, mobile]) {
+    console.log(`\n[veu-audit] ===== ${result.deviceTag} — ${result.rows.length} nós de texto =====`);
+    console.log("seletor | cor | opacidade | fontSize | fontWeight | ratio | piso | resultado");
+    for (const r of result.rows) {
+      const status = r.pass ? "APROVA" : "REPROVA";
+      console.log(
+        `${r.selector} | ${r.colorRgb} | ${r.opacity} | ${r.fontSizePx}px | ${r.fontWeight} | ${r.ratio}:1 | ${r.floor}:1 | ${status}`
+      );
+    }
+  }
+
+  const failing = [desktop, mobile].flatMap((result) =>
+    result.rows.filter((r) => !r.pass).map((r) => ({ ...r, device: result.deviceTag }))
+  );
+  console.log(`\n[veu-audit] total REPROVA: ${failing.length}`);
+  for (const f of failing) {
+    console.log(`  - [${f.device}] ${f.selector}: ${f.ratio}:1 (piso ${f.floor}:1)`);
+  }
+  if (failing.length === 0) {
+    console.log("[veu-audit] todas as linhas da página aprovadas nos dois viewports.");
+  }
+
+  return { desktop, mobile, failing };
+}
+
+const args = process.argv.slice(2);
+if (args.includes("--audit-contrast")) {
+  auditContrast().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+} else {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
