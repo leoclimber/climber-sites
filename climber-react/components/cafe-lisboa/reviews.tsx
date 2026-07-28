@@ -96,11 +96,14 @@ function ReviewsCarousel() {
   );
 }
 
+// Fase 18 [NOS DOIS]: fundo/contorno/sombra do card viram um valor só, igual
+// nos dois breakpoints (antes o desktop não tinha sombra e usava um
+// contorno diferente, #E7E2DB) — sem tocar em arraste, autoplay, nas 6
+// avaliações nem no indicador "04 / 06" do mobile, que ficam acima/abaixo
+// deste componente, intocados.
 function QuoteCard({ quote, author }: { quote: string; author: string }) {
   return (
-    <div
-      className="flex h-full flex-col justify-between gap-6 border border-[#E7E2DB] bg-white p-8 max-md:border-[rgba(28,22,20,0.12)] max-md:shadow-[0_1px_3px_rgba(28,22,20,0.06)]"
-    >
+    <div className="flex h-full flex-col justify-between gap-6 border border-[rgba(28,22,20,0.14)] bg-white p-8 shadow-[0_1px_3px_rgba(28,22,20,0.07)]">
       <p className="font-[family-name:var(--font-newsreader)] text-[1.4rem] italic leading-[1.3] text-[#1C1917] md:text-[1.75rem]">
         &ldquo;{quote}&rdquo;
       </p>
