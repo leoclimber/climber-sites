@@ -926,7 +926,11 @@ async function auditViewportContrast(page, viewport, deviceTag) {
     const ratio = Math.min(ratioAvg, ratioLight);
     const fontSizePx = parseFloat(el.fontSize);
     const fontWeight = parseInt(el.fontWeight, 10) || 400;
-    const floor = fontSizePx >= 24 && fontWeight >= 700 ? 3.0 : 4.5;
+    // Fase 33: regra antiga era "3:1 só para >=24px E negrito" -- a regra
+    // certa do WCAG (texto grande) é >=24px em peso NORMAL OU >=18,66px
+    // (14pt) em negrito (>=700), qualquer um dos dois basta.
+    const isLargeText = fontSizePx >= 24 || (fontSizePx >= 18.66 && fontWeight >= 700);
+    const floor = isLargeText ? 3.0 : 4.5;
     return {
       selector: el.selector,
       colorRgb: `rgb(${Math.round(fg.r)},${Math.round(fg.g)},${Math.round(fg.b)})`,

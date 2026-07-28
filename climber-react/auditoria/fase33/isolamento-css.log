@@ -1,0 +1,25 @@
+Fase 33.3 -- isolamento por CSS, declaracao por declaracao, para cada
+commit desta leva (30 a 32). Analise feita sobre `git show <hash>`.
+Formato: fase | arquivo | declaracao | correto (S/N)
+
+=== eb661ec -- fase 30 [NOS DOIS] -- components/cafe-lisboa/motion/hooks.ts ===
+30 | hooks.ts | (sem alteracao de classe CSS -- so comentario) | N/A (0 declaracoes)
+0 vazamentos (commit nao mexeu em nenhuma className).
+
+=== 45b9a18 -- fase 31 [NOS DOIS] -- menu.tsx, build-yours.tsx, hero-stats.tsx, hero-stats-counter.tsx ===
+31a | menu.tsx            | style={{color: ... : "#6B6560"}} (classe/estilo BASE, sem md:) | S -- fase e NOS DOIS
+31b | build-yours.tsx      | text-[11px] tracking-[0.24em] text-[#F7F2EA]/92 (BASE, x3: YOUR CUP/OptionAxis/EXTRA) | S -- NOS DOIS
+31c | hero-stats.tsx       | text-[11px] tracking-[0.18em] text-[#F7F2EA]/85 (BASE) | S -- NOS DOIS
+31c | hero-stats-counter.tsx | text-[11px] tracking-[0.18em] text-[#F7F2EA]/85 (BASE) | S -- NOS DOIS
+31d | menu.tsx             | text-[#6B6560] (BASE, Allergen info) | S -- NOS DOIS
+0 vazamentos (todas as classes tocadas sao base, e a fase inteira e NOS DOIS --
+e exatamente essa a regra certa pra essa fase).
+
+=== c327891 -- fase 32 [NOS DOIS] -- components/cafe-lisboa/manifesto.tsx ===
+32 | manifesto.tsx | (sem alteracao de classe CSS -- so o array de dados MANIFESTO_DETAILS, label/value) | N/A (0 declaracoes)
+0 vazamentos (conteudo puro, nenhuma className tocada).
+
+TOTAL: 0 VAZAMENTO em toda a leva 30-32 (nenhuma classe SO DESKTOP/SO
+MOBILE foi usada onde nao devia, e nenhuma classe base vazou de uma fase
+que nao era NOS DOIS -- as tres fases desta leva com mudanca de CSS real
+(31) sao NOS DOIS por definicao, entao classe base e a escolha certa).

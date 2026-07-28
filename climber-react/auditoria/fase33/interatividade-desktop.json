@@ -1,0 +1,88 @@
+{
+  "viewport": "1920x1080",
+  "1_console_limpo": {
+    "errors": [],
+    "pass": true
+  },
+  "2_contadores": {
+    "t0": "0.9",
+    "t1": "4.8",
+    "mudou": true
+  },
+  "3_aba_pastries": {
+    "item01": "01Butter croissantG D€3.20",
+    "pass": true
+  },
+  "4_build_yours": {
+    "priceBefore": "€4.20",
+    "priceAfterCap": "€4.00",
+    "priceAfterLarge": "€4.60",
+    "mudou": true
+  },
+  "7_open_until": {
+    "text": "14 Meath Street, Dublin 8 · Open until 17:00",
+    "pass": true
+  },
+  "5_esteira_avaliacoes": {
+    "indicatorBefore": "01 / 06",
+    "indicatorAfter": "01 / 06",
+    "mudou": false
+  },
+  "6_galeria_barra": {
+    "before": "matrix(1.00686, 0, 0, 1.00686, 0, 0)",
+    "after": "matrix(1.02406, 0, 0, 1.02406, 0, 0)",
+    "mudou": true,
+    "nota": "desktop: hover-scale do mosaico (nao ha barra de progresso arrastavel)"
+  },
+  "8_selo_open_now": {
+    "text": "Open now — until 17:00",
+    "dotColor": "rgb(34, 197, 94)"
+  },
+  "9_manifesto_e_menu": {
+    "manifesto": {
+      "paras": [
+        {
+          "needle": "We opened the green corner door",
+          "opacity": "1",
+          "offsetHeight": 84
+        },
+        {
+          "needle": "This isn",
+          "opacity": "1",
+          "offsetHeight": 84
+        },
+        {
+          "needle": "Ask for Sara",
+          "opacity": "1",
+          "offsetHeight": 56
+        }
+      ],
+      "photo": {
+        "opacity": "1",
+        "offsetHeight": 768
+      }
+    },
+    "menuItems": [
+      {
+        "tab": "Coffee",
+        "opacity": "0.98039",
+        "offsetHeight": 88
+      },
+      {
+        "tab": "Pastries",
+        "opacity": "0.974879",
+        "offsetHeight": 88
+      },
+      {
+        "tab": "Toasted",
+        "opacity": "0.977778",
+        "offsetHeight": 88
+      },
+      {
+        "tab": "Cold",
+        "opacity": "0.973207",
+        "offsetHeight": 88
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+Fase 33.5 -- offsetLeft (boundingClientRect().left) do primeiro elemento de
+conteudo de cada uma das 8 secoes, desktop 1920x1080 (goteira esperada: 64px):
+
+01-hero (span "// FRESHLY BREWED")        : 64
+02-manifesto (Rule, .mb-6)                : 64
+03-cardapio (Rule, .mb-6)                 : 64
+04-build-yours (span eyebrow)             : 64
+05-espaco (Rule, .mb-6)                   : 64
+06-horarios (Rule, .mb-6)                 : 64
+07-avaliacoes (Rule, .mb-6)               : 64
+08-rodape (h2 "Café Lisboa")              : 64
+
+Todas as 8 batem exatamente 64px.

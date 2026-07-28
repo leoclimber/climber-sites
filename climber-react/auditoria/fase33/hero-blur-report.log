@@ -1,0 +1,36 @@
+Fase 33.7 -- REPORTE (sem alterar nada): filter/backdrop-filter computados
+da imagem do hero e do container dela, nos dois viewports.
+
+Desktop 1920x1080:
+  <img> (#cl-hero-photo img)      filter: "none"   backdrop-filter: "none"
+  container (#cl-hero-photo)      filter: "none"   backdrop-filter: "none"
+
+Mobile 390x844:
+  <img> (#cl-hero-photo img)      filter: "none"   backdrop-filter: "none"
+  container (#cl-hero-photo)      filter: "none"   backdrop-filter: "none"
+
+Nao ha nenhum blur/desfoque aplicado por CSS na foto do hero nem no
+container dela, em nenhum dos dois viewports -- qualquer suavidade/fora de
+foco visivel na imagem (ex.: fundo atras da maquina de espresso) e da
+PROPRIA FOTOGRAFIA (profundidade de campo real da foto), nao de um efeito
+CSS.
+
+Existe um terceiro elemento na secao (nao a <img> nem o container dela,
+citados acima): uma faixa separada (div "absolute inset-x-0 bottom-0
+h-[55%]", irma da <img>, por cima dela) que tem backdrop-filter:
+saturate(0.45) -- confirmado ativo (veu.hero.needsDesaturate=true pra
+esta foto). Isso e SATURACAO (reduz a cor), nao desfoque/blur -- nao
+borra nada, so dessatura o terco inferior da foto pra proteger o
+contraste do texto. Segue sendo verdade que NENHUM elemento do hero tem
+blur/desfoque por CSS.
+
+naturalWidth/naturalHeight do ARQUIVO de origem do hero
+(public/images/gallery/atmosphere-02.jpg, lido com sharp):
+  width: 4992
+  height: 3328
+
+(O naturalWidth/naturalHeight lido direto do elemento <img> renderizado
+reflete a versao OTIMIZADA que o Next/Image serve via /_next/image, que
+varia por viewport/dpr -- ex.: 1920x1280 no desktop, menor no mobile --
+por isso o numero que importa pra "o arquivo" e o do arquivo de origem,
+acima.)
