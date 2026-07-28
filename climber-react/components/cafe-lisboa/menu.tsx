@@ -93,7 +93,7 @@ export function Menu() {
   }, [active]);
 
   return (
-    <section id="cl-menu" className="bg-[#FAF8F5] px-6 pt-[30px] pb-0 md:px-16 md:pt-[18px]">
+    <section id="cl-menu" className="bg-[#FAF8F5] px-6 pt-[30px] pb-0 md:px-16 md:pt-[18px] md:pb-24">
       {/* Desktop (Fase 3 + Fase 15): container de 1100px deixava ~755px de
           branco à direita numa tela de 1920 — md:max-w-none volta a
           ocupar a faixa inteira goteira-a-goteira (64px dos dois lados,
@@ -102,9 +102,17 @@ export function Menu() {
       <div className="mx-auto max-w-[1100px] md:mx-0 md:max-w-none">
         <Rule label="03 · Menu" />
 
+        {/* Fase 22a [NOS DOIS]: overflow-y-hidden — sem ele, o computed
+            overflow-y desta linha virava "auto" de fábrica (regra do CSS:
+            overflow-x diferente de visible força o eixo Y ausente a virar
+            auto também), e o scrollHeight (58px) passava o clientHeight
+            (56px) por causa do sublinhado/borda — 2px de sobra bastavam pra
+            desenhar uma barra de rolagem vertical inteira (com setinhas) na
+            altura das abas. overflow-x-auto continua igual (é o que permite
+            arrastar as abas com o dedo no mobile). */}
         <div
           ref={tabsRowRef}
-          className="cl-drag-row relative -mx-6 flex gap-8 overflow-x-auto px-6 pb-1 md:mx-0 md:gap-[32px] md:px-0"
+          className="cl-drag-row relative -mx-6 flex gap-8 overflow-x-auto overflow-y-hidden px-6 pb-1 md:mx-0 md:gap-[32px] md:px-0"
         >
           {menuCategories.map((c) => (
             <Tappable
@@ -154,14 +162,20 @@ export function Menu() {
         {/* Mobile (Fase 15): min-height fixo saiu — altura do container
             agora anima (ver useLayoutEffect acima), sem vazio sobrando em
             abas com menos itens. Desktop segue com altura natural, sem
-            estilo inline algum (mobileHeight só é setado abaixo de 769px). */}
+            estilo inline algum (mobileHeight só é setado abaixo de 769px).
+            Fase 22a [NOS DOIS]: overflow-hidden permanente na className
+            (era só inline, condicional a mobileHeight !== null) — sem ele,
+            em alguns estados o container ficava sem overflow declarado e o
+            navegador desenhava uma scrollbar vertical de fábrica (com
+            setinhas) na altura das abas. Altura animada continua idêntica,
+            só o clipping passou a ser incondicional. */}
         <div
           ref={listWrapRef}
+          className="overflow-hidden"
           style={
             mobileHeight !== null
               ? {
                   height: `${mobileHeight}px`,
-                  overflow: "hidden",
                   transition: reducedMotion ? undefined : "height 250ms cubic-bezier(0.16,1,0.3,1)",
                 }
               : undefined
@@ -183,6 +197,10 @@ export function Menu() {
           </div>
         </div>
 
+        {/* Fase 22b [SO DESKTOP]: md:pb-24 na seção (acima) abre 96px entre a
+            base deste bloco e o início do bloco marrom da Build Yours — era
+            ~0px (pb-0 herdado, sem override no desktop), a cor trocava
+            colada em cima de "Prices include VAT". */}
         <div className="mt-12 flex flex-col gap-3 border-t border-[#E7E2DB] pt-6 text-[0.8125rem] text-[#78716C]">
           <AllergenDisclosure />
           <p>Prices include VAT</p>

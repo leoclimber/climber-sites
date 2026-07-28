@@ -1,0 +1,7 @@
+Fase 22a — detector de elementos com scrollbar fantasma (overflowY auto/scroll + scrollHeight>clientHeight), no cardapio, desktop 1920x1080:
+ANTES do fix (overflow-x-auto sem overflow-y-hidden em .cl-drag-row): 1 elemento — DIV.cl-drag-row, overflowY=auto, scrollHeight=58, clientHeight=56, top=25, left=64.
+DEPOIS do fix (overflow-y-hidden adicionado): [] (zero elementos).
+
+Fase 22b — distancia entre o bottom de "Prices include VAT" e o top de #cl-build-yours, desktop 1920x1080:
+ANTES: 0px (cor trocava colada no texto).
+DEPOIS: 96px.
