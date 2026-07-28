@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 import { ProgressBar } from "@/components/cafe-lisboa/motion";
 import { Hero } from "@/components/cafe-lisboa/hero";
 import { MobileActionBar } from "@/components/cafe-lisboa/mobile-action-bar";
+import { DesktopNavBar } from "@/components/cafe-lisboa/nav-bar";
 
 // Abaixo da dobra: dynamic import pra separar cada seção em chunk próprio,
 // fora do bundle crítico do Hero. `ssr:false` não é permitido aqui (page.tsx
@@ -28,6 +29,7 @@ export default function CafeLisboaPage() {
   return (
     <main className="relative max-md:pb-[calc(64px+env(safe-area-inset-bottom))]">
       <ProgressBar />
+      <DesktopNavBar />
       <Hero />
       <Manifesto />
       <Menu />

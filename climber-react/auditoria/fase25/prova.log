@@ -1,0 +1,12 @@
+Fase 25 — barra de navegacao fixa, desktop 1920x1080:
+
+1. hero visivel: transform=matrix(1,0,0,1,0,-56) (translateY(-100%), escondida)
+2. meio da pagina (#cl-build-yours): transform=matrix(1,0,0,1,0,0) (visivel), rotulo ativo="Build yours"
+3. rodape entrando: transform=matrix(1,0,0,1,0,-56) (escondida de novo)
+4. fim da pagina: transform=matrix(1,0,0,1,0,-56) (continua escondida)
+
+Clique em "Horarios" -> scroll suave ate #cl-hours parar com
+getBoundingClientRect().top = 55.84px (alvo: 56px, offset da barra).
+
+prefers-reduced-motion: reduce -> transitionDuration computado da <nav> = "0s"
+(aparece sem deslizar).
