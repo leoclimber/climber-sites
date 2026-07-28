@@ -2,7 +2,7 @@
 
 import { motion, type Transition } from "framer-motion";
 import type { ReactNode } from "react";
-import { usePrefersReducedMotion } from "./hooks";
+import { usePrefersReducedMotion, useIsDesktop } from "./hooks";
 
 const EASE: Transition["ease"] = [0.16, 1, 0.3, 1];
 
@@ -13,9 +13,17 @@ type StaggerGroupProps = {
   as?: "div" | "ul";
 };
 
+// Fase 29 (emergência): o reveal (initial="hidden" + whileInView) rodava em
+// QUALQUER largura de tela — se o whileInView não disparasse por qualquer
+// motivo no mobile (layout, timing, navegador), o conteúdo ficava preso em
+// opacity:0 pra sempre. Regra desta fase: nenhum elemento abaixo de 769px
+// pode depender de IntersectionObserver pra ficar visível. !isDesktop cai
+// no mesmo ramo estático do reducedMotion — nem monta o motion.* component,
+// então nenhum observer chega a ser criado.
+//
 // Contêiner: dispara o stagger dos StaggerItem filhos quando entra na
-// viewport. Usar um StaggerGroup por bloco (lista do cardápio, grade de
-// preços, etc.) — não um só pra página inteira.
+// viewport (SÓ NO DESKTOP agora). Usar um StaggerGroup por bloco (lista do
+// cardápio, grade de preços, etc.) — não um só pra página inteira.
 export function StaggerGroup({
   children,
   className = "",
@@ -23,9 +31,10 @@ export function StaggerGroup({
   as = "div",
 }: StaggerGroupProps) {
   const reducedMotion = usePrefersReducedMotion();
+  const isDesktop = useIsDesktop();
   const MotionTag = as === "ul" ? motion.ul : motion.div;
 
-  if (reducedMotion) {
+  if (reducedMotion || !isDesktop) {
     const Tag = as;
     return <Tag className={className}>{children}</Tag>;
   }
@@ -54,9 +63,10 @@ type StaggerItemProps = {
 
 export function StaggerItem({ children, className = "", as = "div" }: StaggerItemProps) {
   const reducedMotion = usePrefersReducedMotion();
+  const isDesktop = useIsDesktop();
   const MotionTag = as === "li" ? motion.li : motion.div;
 
-  if (reducedMotion) {
+  if (reducedMotion || !isDesktop) {
     const Tag = as;
     return <Tag className={className}>{children}</Tag>;
   }

@@ -1,0 +1,94 @@
+Fase 29 -- EMERGENCIA: conteudo invisivel no mobile
+
+1. DIAGNOSTICO (antes da correcao)
+-----------------------------------
+O estado inicial escondido NAO vinha da classe base do sistema de foto da
+Fase 19 (components/cafe-lisboa/motion/photo-reveal.tsx +
+app/cafe-lisboa/styles.css) -- esse já estava corretamente isolado dentro
+de `@media (min-width: 769px)`. Medido direto em 390x844 antes de qualquer
+mudanca:
+  .cl-photo-reveal-clip -> clipPath computado: "none" (sem @media, a regra
+  clip-path:inset(100%...) nem existe fora do media query).
+
+O estado inicial escondido de verdade vinha de JS (Framer Motion), sem
+NENHUMA checagem de largura de tela, em tres componentes:
+
+a) components/cafe-lisboa/motion/stagger-reveal.tsx (StaggerGroup +
+   StaggerItem, usados pelos 3 paragrafos do manifesto E pelos itens do
+   cardapio):
+     initial="hidden" whileInView="show" variants={{hidden:{opacity:0,y:18}}}
+   Sem checagem de largura -- rodava (e podia travar) em QUALQUER tela.
+
+b) components/cafe-lisboa/motion/mask-reveal.tsx (MaskReveal, usado pela
+   foto do manifesto e pelo mosaico):
+     initial={{ scaleY: 1 }} whileInView={{ scaleY: 0 }}
+   Este era o reveal ATIVO do mobile por design (`if (reducedMotion ||
+   isDesktop) return <div estatica>` -- ou seja, só ANIMAVA quando NAO
+   era desktop). Um retangulo cobrindo a foto, preso em scaleY:1 se o
+   whileInView nao disparasse, e a foto ficava atras dele pra sempre.
+
+c) components/cafe-lisboa/motion/line-reveal.tsx (LineReveal, usado na
+   headline do manifesto) -- mesmo padrao ungated de whileInView.
+
+Medido em 390x844 antes da correcao (primeiro paragrafo, foto do
+manifesto, primeiro item do cardapio), scroll JUSTO ate a secao sem
+esperar o reveal:
+  primeiro paragrafo: clipPath none | opacity 0 | transform matrix(1,0,0,1,0,18) [as StaggerItem, ANTES de whileInView disparar]
+  foto do manifesto (.cl-photo-reveal-frame): clipPath none | opacity 1 | offsetHeight 280 (o FRAME em si sempre visivel -- quem escondia a foto era a mascara do MaskReveal, um <div> SEPARADO por cima, nao capturado nessa consulta)
+  primeiro item do cardapio (antes de rolar o cardapio pra vista): opacity 0 | transform translateY(18px) [ainda nao tinha entrado no viewport]
+  mascara do MaskReveal sobre a foto (elemento aria-hidden separado): transform scaleY(0) DEPOIS de esperar -- ou seja, quando o whileInView disparava certo funcionava; o risco era exatamente esse disparo depender de IntersectionObserver sem nenhuma rede de seguranca abaixo de 769px.
+
+2. CORRECAO
+-----------
+- StaggerGroup / StaggerItem: ganham useIsDesktop(); quando `!isDesktop`
+  (bloco reducedMotion || !isDesktop), renderizam a tag pura, sem
+  motion.*, sem initial/whileInView -- nenhum IntersectionObserver chega
+  a ser criado abaixo de 769px.
+- LineReveal: mesmo tratamento (useIsDesktop(), mesma condicao).
+- MaskReveal: o retangulo animado (whileInView) foi REMOVIDO por
+  completo -- o componente virou um wrapper estatico sempre (era no-op no
+  desktop desde a Fase 19; agora tambem e no-op no mobile, entao a
+  branch condicional inteira saiu, sem framer-motion, sem observer,
+  em NENHUM tamanho de tela).
+- components/cafe-lisboa/manifesto.tsx (ManifestoDetails): o bloco
+  ROAST/SINCE/BEHIND estava com `hidden md:block` (Fase 27c, decisao de
+  escopo, nao um bug de reveal) -- removido; o bloco e um <div> comum
+  (nunca usou StaggerGroup/MaskReveal) e passa a aparecer tambem no
+  mobile.
+
+3. VERIFICACAO em 390x844 (scroll ate a secao + 300ms, SEM esperar
+   nenhuma animacao terminar):
+
+  3 paragrafos do manifesto:
+    "We opened..."  clipPath=none opacity=1 offsetHeight=112
+    "This isn't..."  clipPath=none opacity=1 offsetHeight=112
+    "Ask for Sara..." clipPath=none opacity=1 offsetHeight=84
+
+  Foto do manifesto (.cl-photo-reveal-frame):
+    clipPath=none opacity=1 offsetHeight=280
+
+  3 linhas do bloco de detalhes:
+    ROAST / Small batches, weekly   clipPath=none opacity=1 offsetHeight=56
+    SINCE / 2019                     clipPath=none opacity=1 offsetHeight=56
+    BEHIND THE COUNTER / Sara        clipPath=none opacity=1 offsetHeight=56
+
+  Primeiro item de cada uma das 4 abas do cardapio:
+    Coffee   -> "01 Flat white €4.20"      clipPath=none opacity=1 offsetHeight=59
+    Pastries -> "01 Butter croissant..."   clipPath=none opacity=1 offsetHeight=59
+    Toasted  -> "01 Sourdough & avocado..." clipPath=none opacity=1 offsetHeight=59
+    Cold     -> "01 Iced latte..."         clipPath=none opacity=1 offsetHeight=59
+
+  Todos: clipPath=none, opacity=1, offsetHeight>0. Nenhum console error /
+  pageerror durante a navegacao (desktop e mobile).
+
+  Capturas: auditoria/fase29/manifesto-mobile.png,
+  auditoria/fase29/cardapio-mobile.png.
+
+4. Desktop -- reveal continua funcionando (auditoria/fase29/manifesto-desktop.png):
+   foto: className "cl-photo-reveal-clip cl-revealed cl-photo-reveal-entrance-done",
+   clipPath computado "inset(0% 0px 0px)" (revelado, transicao completa).
+   headline (LineReveal): opacity=1, transform=none.
+
+prefers-reduced-motion: reduce (sanity check extra, nao pedido mas
+verificado): headline opacity=1, foto clipPath=none -- continua estatico
+e visivel, sem regressao.

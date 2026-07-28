@@ -39,13 +39,16 @@ const MANIFESTO_DETAILS = [
   { label: "BEHIND THE COUNTER", value: "Sara" },
 ] as const;
 
-// Fase 27c [SO DESKTOP]: os 3 dados já existem no texto do manifesto — não
-// inventa nada novo, só resume o que os parágrafos já dizem numa lista
-// rápida de escanear. hidden md:block: zero pixel/altura no mobile, que
-// mantém exatamente o fluxo de sempre (parágrafos -> EST. 2019 direto).
+// Fase 27c: os 3 dados já existem no texto do manifesto — não inventa nada
+// novo, só resume o que os parágrafos já dizem numa lista rápida de
+// escanear. Era [SO DESKTOP] (hidden md:block) até a Fase 29: o "hidden"
+// saiu — passa a aparecer também no mobile (mesmas classes, sem prefixo
+// md:), já que este bloco nunca dependeu do sistema de reveal (não usa
+// StaggerGroup/MaskReveal, é um <div> comum) — só estava escondido por uma
+// decisão de escopo da Fase 27c, não por causa do bug de reveal.
 function ManifestoDetails() {
   return (
-    <div className="hidden md:mt-12 md:block md:border-t md:border-[rgba(28,22,20,0.14)]">
+    <div className="mt-12 border-t border-[rgba(28,22,20,0.14)]">
       {MANIFESTO_DETAILS.map((d) => (
         <div
           key={d.label}

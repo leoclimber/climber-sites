@@ -2,7 +2,7 @@
 
 import { motion, type Transition } from "framer-motion";
 import type { ReactNode } from "react";
-import { usePrefersReducedMotion } from "./hooks";
+import { usePrefersReducedMotion, useIsDesktop } from "./hooks";
 
 type LineRevealProps = {
   lines: ReactNode[];
@@ -30,9 +30,15 @@ export function LineReveal({
   delay = 0,
 }: LineRevealProps) {
   const reducedMotion = usePrefersReducedMotion();
+  const isDesktop = useIsDesktop();
   const Tag = as;
 
-  if (reducedMotion) {
+  // Fase 29 (emergência): mesma regra do StaggerGroup/StaggerItem — abaixo
+  // de 769px nunca depende de whileInView (IntersectionObserver) pra ficar
+  // visível. onMount=true (hero) já não passa por aqui de qualquer forma
+  // (Hero é Server Component com reveal em CSS puro); isto cobre os usos
+  // com whileInView (headline do manifesto).
+  if (reducedMotion || !isDesktop) {
     return (
       <Tag className={className}>
         {lines.map((line, i) => (
