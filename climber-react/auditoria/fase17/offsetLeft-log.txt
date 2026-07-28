@@ -1,0 +1,9 @@
+secao | offsetLeft (px)
+01-hero | 64.0
+02-manifesto | 64.0
+03-cardapio | 64.0
+04-build-yours | 64.0
+05-espaco | 64.0
+06-horarios | 64.0
+07-avaliacoes | 64.0
+08-rodape | 64.0

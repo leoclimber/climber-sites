@@ -76,7 +76,11 @@ export function Hero() {
 
       <HeroParallax />
 
-      <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-[8vh] md:px-[6.5vw]">
+      {/* Fase 17 (desktop): goteira única de 64px — md:px-[6.5vw] dava
+          ~124px numa tela de 1920 (viewport-relativo, cada seção com uma
+          margem diferente); md:px-16 fixa em 64px, igual às outras 7
+          seções. */}
+      <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-[8vh] md:px-16">
         <div className="relative inline-block">
           {/* Scrim de contraste local (Fase 11b) — elipse ancorada no canto
               onde o texto mora (22% da largura, 72% da altura do bloco+folga),

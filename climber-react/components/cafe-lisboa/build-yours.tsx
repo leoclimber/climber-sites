@@ -79,7 +79,7 @@ export function BuildYours() {
   return (
     <section
       id="cl-build-yours"
-      className="relative flex min-h-[560px] w-full flex-col overflow-hidden px-6 pt-24 pb-6 md:pb-8 md:px-[6.5vw] md:pt-40"
+      className="relative flex min-h-[560px] w-full flex-col overflow-hidden px-6 pt-24 pb-6 md:pb-8 md:px-16 md:pt-40"
       style={{ backgroundColor: bg }}
     >
       <GrainAndVignette />
@@ -89,7 +89,13 @@ export function BuildYours() {
           que é a mais alta); md:mt-auto no grupo de eixos (abaixo) empurra
           só ELE pro fim da coluna esquerda agora esticada, fechando o vão
           marrom sem redistribuir o espaço entre eyebrow/headline/parágrafo. */}
-      <div className="relative z-10 mx-auto flex w-full max-w-[1240px] flex-col gap-3 md:flex-row md:gap-[96px]">
+      {/* Fase 17 (desktop): md:px-[6.5vw] -> md:px-16 na seção (acima) já
+          fixa a goteira externa em 64px, mas o max-w-[1240px] + mx-auto
+          ainda recentralizava o conteúdo DENTRO dessa faixa, deixando o
+          bloco de texto em ~x=332 (não 64) numa tela de 1920. md:mx-0
+          md:max-w-none no desktop tira essa segunda centralização — mesmo
+          padrão já usado no Cardápio (menu.tsx) pro mesmo problema. */}
+      <div className="relative z-10 mx-auto flex w-full max-w-[1240px] flex-col gap-3 md:mx-0 md:max-w-none md:flex-row md:gap-[96px]">
         <div className="flex flex-col md:w-[52%]">
           <span className="text-[0.55rem] tracking-[0.26em] text-[var(--accent-text)]">04 · BUILD YOURS</span>
           <h2 className="mt-2 font-[family-name:var(--font-newsreader)] text-[clamp(2rem,4.4vw,3.2rem)] leading-[1.05] text-[#F7F2EA]">

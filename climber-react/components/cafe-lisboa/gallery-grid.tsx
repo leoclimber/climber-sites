@@ -72,7 +72,12 @@ export function GalleryGrid() {
         <Rule label="05 · O Espaço" />
       </div>
 
-      <div className="hidden md:block md:px-4">
+      {/* Fase 17 (desktop): md:px-4 (16px) não batia a goteira única de
+          64px que o rótulo acima já usa (md:px-16) — md:px-16 alinha os
+          dois. Só a margem lateral do wrapper muda; a grade de 5 slots
+          (proporções 3fr/1fr/1.5fr) e o sangramento da última foto mobile
+          são intocados. */}
+      <div className="hidden md:block md:px-16">
         <div className="cl-mosaic">
           <MosaicTile
             slot={slotA}
