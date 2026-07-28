@@ -1,0 +1,10 @@
+Fase 23a — telefone da secao #cl-hours, desktop 1920x1080:
+href: tel:+35312345678
+textDecorationLine: underline
+textDecorationColor: rgb(139, 74, 47) (#8B4A2F)
+textDecorationThickness: 1px
+textUnderlineOffset: 4px
+
+Fase 23b — respiro marrom de #cl-build-yours, desktop 1920x1080:
+ANTES: topGap=160px (md:pt-40), bottomGap=32px (md:pb-8)
+DEPOIS: topGap=96px (md:pt-24), bottomGap=96px (md:pb-24)

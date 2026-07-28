@@ -76,10 +76,13 @@ export function BuildYours() {
     ? `${coffee.name} · ${size.name} · ${extrasSummary}`
     : `${coffee.name} · ${size.name}`;
 
+  // Fase 23b [SO DESKTOP]: respiro marrom vazio no topo/embaixo igualado a
+  // 96px nos dois lados — medido antes da mudança: 160px em cima (md:pt-40)
+  // e 32px embaixo (md:pb-8), desbalanceado. md:pt-24/md:pb-24 = 96px cada.
   return (
     <section
       id="cl-build-yours"
-      className="relative flex min-h-[560px] w-full flex-col overflow-hidden px-6 pt-24 pb-6 md:pb-8 md:px-16 md:pt-40"
+      className="relative flex min-h-[560px] w-full flex-col overflow-hidden px-6 pt-24 pb-6 md:pb-24 md:px-16 md:pt-24"
       style={{ backgroundColor: bg }}
     >
       <GrainAndVignette />

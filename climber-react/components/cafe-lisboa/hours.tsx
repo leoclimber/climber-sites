@@ -102,11 +102,15 @@ export function Hours() {
             <a href={business.mapsHref} target="_blank" rel="noopener noreferrer" className="w-fit hover:text-[#1C1917]">
               {business.addressLine}
             </a>
-            {/* Fase 6b: telefone parecia não-tocável (cinza, sem sublinhado).
-                Mesmo tratamento do rodapé — mobile só, desktop intocado. */}
+            {/* Fase 6b: telefone parecia não-tocável (cinza, sem sublinhado)
+                no mobile. Fase 23a [SO DESKTOP]: mesmo problema existia no
+                desktop (link funcional, href já era tel:+35312345678, mas
+                sem nenhuma pista visual de que é clicável, ao contrário do
+                telefone do rodapé) — md:underline com o mesmo sublinhado
+                (1px #8B4A2F, offset 4px) fecha a paridade. */}
             <a
               href={business.phoneHref}
-              className="w-fit max-md:underline max-md:decoration-[#8B4A2F] max-md:decoration-1 max-md:underline-offset-4 hover:text-[#1C1917]"
+              className="w-fit max-md:underline max-md:decoration-[#8B4A2F] max-md:decoration-1 max-md:underline-offset-4 md:underline md:decoration-[#8B4A2F] md:decoration-1 md:underline-offset-4 hover:text-[#1C1917]"
             >
               {business.phoneDisplay}
             </a>
