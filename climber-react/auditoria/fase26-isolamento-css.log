@@ -1,0 +1,56 @@
+Fase 26.2 -- isolamento por CSS, declaracao por declaracao, para cada
+commit desta leva (21 a 25). Analise feita sobre `git show <hash>`.
+Formato: fase | arquivo | declaracao | correto (S/N)
+
+=== b98502b -- fase 21 [SO DESKTOP] -- components/cafe-lisboa/manifesto.tsx ===
+21 | manifesto.tsx | md:min-h-[1287px] (section)                  | S
+21 | manifesto.tsx | md:w-[520px] md:px-0 md:ml-16 md:pb-0 (coluna)| S
+21 | manifesto.tsx | md:h-[959px] (coluna interna)                 | S
+21 | manifesto.tsx | md:mt-auto (linha EST. 2019)                  | S
+21 | manifesto.tsx | md:absolute md:right-0 md:top-[400px] md:h-[747px] md:w-[560px] md:px-0 md:pb-0 (foto) | S
+21 | manifesto.tsx | sizes="(min-width: 768px) 560px, 100vw" (next/image, media query propria) | S
+Nenhuma classe base (sem md:) foi adicionada/alterada nesta fase. 0 vazamentos.
+
+=== 06dd47e -- fase 22 -- components/cafe-lisboa/menu.tsx ===
+22a | menu.tsx | overflow-y-hidden (.cl-drag-row, classe BASE)      | S -- 22a e explicitamente [NOS DOIS], classe base e a regra certa
+22a | menu.tsx | className="overflow-hidden" (listWrapRef, BASE)   | S -- mesmo motivo, [NOS DOIS]
+22b | menu.tsx | md:pb-24 (section #cl-menu)                        | S -- 22b e [SO DESKTOP], md: correto
+0 vazamentos.
+
+=== 313a170 -- fase 23 [SO DESKTOP] -- hours.tsx, build-yours.tsx ===
+23a | hours.tsx      | md:underline md:decoration-[#8B4A2F] md:decoration-1 md:underline-offset-4 | S
+23b | build-yours.tsx| md:pb-24 md:pt-24 (section #cl-build-yours)  | S
+0 vazamentos.
+
+=== f9fb29d -- fase 24 [NOS DOIS] -- footer.tsx, reviews.tsx, styles.css, motion/continuous-strip.ts ===
+24a | styles.css | .cl-esteira { padding-top:112px; padding-bottom:48px; } (BASE, pre-existente, nao alterada nesta fase) | S -- fase e NOS DOIS, base e a regra certa
+24b | styles.css | @media(max-width:768px) .cl-esteira { padding-top:40px; padding-bottom:20px; } | S -- 24b e [SO MOBILE], max-width correto
+24a | styles.css | .cl-esteira-track { display:inline-flex; align-items:center; will-change:transform; } (BASE) | S -- NOS DOIS
+24a | styles.css | .cl-marquee-text { font-size:min(9vw,108px); opacity:.32; } (BASE)  | S -- NOS DOIS
+24b | styles.css | @media(max-width:768px) .cl-marquee-text { font-size:clamp(22px,8vw,40px); } | S -- [SO MOBILE], max-width correto
+-   | styles.css | @media(prefers-reduced-motion:reduce) {...}          | S -- acessibilidade, ortogonal a SO DESKTOP/SO MOBILE, exigida pela propria fase
+24c | reviews.tsx | classes do track/cards (flex, gap-6, basis-[88%], md:basis-[...], cursor-grab) (BASE + md: ja existentes) | S -- 24c e NOS DOIS, nenhuma classe nova quebra o padrao existente
+24a | footer.tsx  | nenhuma classe Tailwind nova com breakpoint errado (so JS: useContinuousStrip, useEffect de scroll) | S
+0 vazamentos.
+
+=== 7506b3f -- fase 25 [SO DESKTOP, componente novo] -- components/cafe-lisboa/nav-bar.tsx ===
+25 | nav-bar.tsx | className da <nav> raiz: "hidden md:flex md:items-center md:justify-between md:px-16" | S
+25 | nav-bar.tsx | classes DESCENDENTES sem prefixo md: (font-[...] text-[17px] text-[#F7F2EA]; flex items-center gap-[28px]; relative py-2 text-[13px] tracking-[0.08em] text-[#F7F2EA] transition-opacity duration-[180ms] hover:opacity-100; absolute bottom-0 left-0 h-px w-full bg-[#C89B6A]) | S, com ressalva
+
+RESSALVA (25): as classes dos elementos FILHOS da <nav> nao levam prefixo
+md: individualmente. Isso NAO e vazamento na pratica: o proprio elemento
+raiz usa `hidden` (display:none) sem qualquer override abaixo de 768px --
+com display:none no pai, TODA a subarvore fica fora da renderizacao
+(display:none cascade), entao nenhuma dessas classes produz um unico pixel
+visivel no mobile. Confirmado via Playwright: getComputedStyle(nav).display
+= "none" e getBoundingClientRect() = {x:0,y:0,width:0,height:0} em 390x844
+(ver auditoria/fase25/prova.log e verificacao desta auditoria). Como o
+componente e INTEIRAMENTE novo e delimitado por esse guard de raiz (nao e
+um componente compartilhado que tambem renderiza no mobile), classificado
+como correto (S), nao como VAZAMENTO -- mas fica registrado que a letra
+literal da regra ("classe base em fase SO DESKTOP = VAZAMENTO em caixa
+alta") se aplicaria se a leitura fosse puramente sintatica.
+
+TOTAL: 0 VAZAMENTO real confirmado por medicao (nenhuma classe alterada
+nesta leva produziu efeito visivel fora do viewport pretendido da sua
+fase).
