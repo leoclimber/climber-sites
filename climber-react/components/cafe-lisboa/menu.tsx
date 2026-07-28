@@ -1,11 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { LineReveal, StaggerGroup, StaggerItem, Tappable } from "./motion";
 import { usePrefersReducedMotion } from "./motion/hooks";
 import { Rule } from "./manifesto";
 import { menuCategories, allergenLegend, allergenDeclaration } from "./data";
+
+// Classes md:hover:/md:group-hover: escritas por extenso direto no
+// className (não como template-literal com prefixo importado): o scanner
+// estático do Tailwind só gera CSS pra strings de classe completas e
+// literais no arquivo-fonte — uma tentativa anterior de montar isso via
+// variável (`${HOVER_FINE}hover:...`) nunca virava CSS real (o "md:" não
+// ficava adjacente ao resto no texto-fonte), confirmado direto no CSS
+// compilado. Tailwind v4 já embrulha `hover:` em @media(hover:hover) por
+// padrão, então md:hover: sozinho já evita hover "grudado" depois de um
+// toque em telas grandes, com min-width:768px como isolamento auditável.
 
 // Cardápio tipográfico — sem foto em card (regra do Clean A). Abas rolam
 // com o dedo no mobile (overflow-x nativo, sem empilhar); linha do preço
@@ -13,25 +23,96 @@ import { menuCategories, allergenLegend, allergenDeclaration } from "./data";
 export function Menu() {
   const [active, setActive] = useState(menuCategories[0].id);
   const category = menuCategories.find((c) => c.id === active) ?? menuCategories[0];
+  const reducedMotion = usePrefersReducedMotion();
+
+  // Sublinhado único do desktop (Fase 15): mede a posição/largura real da
+  // aba ativa e translada+redimensiona UM elemento só entre trocas — o
+  // antigo motion.span com layoutId ficava condicional por aba (desmonta
+  // uma, monta outra), e sem AnimatePresence framer não tem o par
+  // saída/entrada pra interpolar, então ele "pula" em vez de deslizar.
+  // Mobile mantém o mecanismo antigo intocado (fora do escopo desta fase).
+  const tabsRowRef = useRef<HTMLDivElement>(null);
+  const [underline, setUnderline] = useState<{ x: number; width: number } | null>(null);
+
+  useEffect(() => {
+    function measure() {
+      const row = tabsRowRef.current;
+      // Tappable não é forwardRef (componente compartilhado, não vale
+      // mexer só por causa desta medição) — acha o botão ativo pelo
+      // data-tab-id em vez de guardar refs individuais.
+      const el = row?.querySelector<HTMLElement>(`[data-tab-id="${active}"]`);
+      if (!el || !row) return;
+      const elRect = el.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      setUnderline({ x: elRect.left - rowRect.left, width: elRect.width });
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [active]);
+
+  // Altura animada do container mobile (Fase 15): substitui o
+  // max-md:min-h-[496px] fixo (resolvia o salto mas deixava ~700px de
+  // vazio na aba Toasted, 4 itens). Trava a altura ATUAL antes de trocar
+  // de aba, deixa o novo conteúdo renderizar, mede a altura natural dele
+  // (scrollHeight ainda mede o conteúdo real mesmo com a caixa presa no
+  // valor antigo) e anima até lá via CSS transition. Só roda abaixo de
+  // 769px — desktop nunca ganha altura/overflow inline (mantém o fluxo
+  // natural de sempre).
+  const listWrapRef = useRef<HTMLDivElement>(null);
+  // conteúdo real, sem NENHUM estilo de altura/overflow próprio — o
+  // wrapper (listWrapRef) é quem trava a altura antiga durante a transição,
+  // então o offsetHeight DELE fica preso no valor antigo também (uma caixa
+  // de altura fixa maior que o conteúdo novo não "estoura", então o
+  // conteúdo simplesmente cabe dentro sem gerar overflow nenhum pra medir).
+  // contentRef nunca é limitado, então mede o tamanho natural de verdade
+  // do conteúdo ATUAL, encolhendo ou crescendo.
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [mobileHeight, setMobileHeight] = useState<number | null>(null);
+  const isFirstRender = useRef(true);
+
+  function handleTabChange(id: string) {
+    if (window.innerWidth < 769 && listWrapRef.current) {
+      setMobileHeight(listWrapRef.current.getBoundingClientRect().height);
+    }
+    setActive(id);
+  }
+
+  useLayoutEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (window.innerWidth >= 769 || !contentRef.current) {
+      setMobileHeight(null);
+      return;
+    }
+    const target = contentRef.current.getBoundingClientRect().height;
+    const raf = requestAnimationFrame(() => setMobileHeight(target));
+    return () => cancelAnimationFrame(raf);
+  }, [active]);
 
   return (
     <section id="cl-menu" className="bg-[#FAF8F5] px-6 pt-[30px] pb-0 md:px-16 md:pt-[18px]">
-      {/* Desktop (Fase 3): container de 1100px deixa de se centralizar
-          dentro da faixa já com goteira (o que empurrava o início pra
-          x≈403) e passa a começar na própria goteira de 64px do padding
-          da seção, igual às outras 6 seções cream. mx-auto continua
-          existindo pro mobile (onde não faz diferença visual nenhuma,
-          já que 1100px nunca é o fator limitante ali). */}
-      <div className="mx-auto max-w-[1100px] md:mx-0">
+      {/* Desktop (Fase 3 + Fase 15): container de 1100px deixava ~755px de
+          branco à direita numa tela de 1920 — md:max-w-none volta a
+          ocupar a faixa inteira goteira-a-goteira (64px dos dois lados,
+          já dados pelo padding da seção). mx-auto/max-w continuam
+          existindo pro mobile, onde nunca foram o fator limitante. */}
+      <div className="mx-auto max-w-[1100px] md:mx-0 md:max-w-none">
         <Rule label="03 · Menu" />
 
-        <div className="cl-drag-row -mx-6 flex gap-8 overflow-x-auto px-6 pb-1 md:mx-0 md:gap-10 md:px-0">
+        <div
+          ref={tabsRowRef}
+          className="cl-drag-row relative -mx-6 flex gap-8 overflow-x-auto px-6 pb-1 md:mx-0 md:gap-[32px] md:px-0"
+        >
           {menuCategories.map((c) => (
             <Tappable
               key={c.id}
               as="button"
-              onClick={() => setActive(c.id)}
-              className="relative shrink-0 whitespace-nowrap py-2 text-[1.1rem] md:text-[1.2rem]"
+              data-tab-id={c.id}
+              onClick={() => handleTabChange(c.id)}
+              className="relative shrink-0 whitespace-nowrap py-2 text-[1.1rem] md:text-[22px]"
               aria-pressed={active === c.id}
             >
               <span
@@ -40,14 +121,26 @@ export function Menu() {
               >
                 {c.label}
               </span>
+              {/* Mobile: mecanismo antigo (por aba, condicional), fora do
+                  escopo da Fase 15 — intocado, só ganha md:hidden pra não
+                  duplicar com o sublinhado único do desktop abaixo. */}
               {active === c.id && (
                 <motion.span
-                  layoutId="cl-menu-underline"
-                  className="absolute -bottom-0.5 left-0 h-[2px] w-full bg-[#8B4A2F]"
+                  layoutId="cl-menu-underline-mobile"
+                  className="absolute -bottom-0.5 left-0 h-[2px] w-full bg-[#8B4A2F] md:hidden"
                 />
               )}
             </Tappable>
           ))}
+
+          {underline && (
+            <motion.span
+              aria-hidden
+              className="pointer-events-none absolute -bottom-0.5 left-0 hidden h-[2px] bg-[#8B4A2F] md:block"
+              animate={{ x: underline.x, width: underline.width }}
+              transition={{ duration: reducedMotion ? 0 : 0.25, ease: [0.16, 1, 0.3, 1] }}
+            />
+          )}
         </div>
 
         {/* key={active}: força remontar o grupo a cada troca de categoria.
@@ -58,23 +151,37 @@ export function Menu() {
             nenhum novo evento de entrada em viewport pra acordar eles. Com a
             key, cada categoria ganha sua própria instância e o observer
             dispara de novo (a seção já está visível, então dispara na hora). */}
-        {/* Mobile (Fase 3): altura travada no maior conteúdo real (Coffee,
-            8 itens = 496px medido de verdade via Playwright, não chutado) —
-            trocar de aba não muda mais a altura do container, então a
-            página não pula debaixo do dedo. max-md: só existe abaixo de
-            768px; desktop usa a altura natural de sempre. */}
-        <StaggerGroup
-          key={active}
-          as="ul"
-          stagger={0.06}
-          className="mt-12 flex flex-col gap-1 max-md:min-h-[496px] md:mt-16"
+        {/* Mobile (Fase 15): min-height fixo saiu — altura do container
+            agora anima (ver useLayoutEffect acima), sem vazio sobrando em
+            abas com menos itens. Desktop segue com altura natural, sem
+            estilo inline algum (mobileHeight só é setado abaixo de 769px). */}
+        <div
+          ref={listWrapRef}
+          style={
+            mobileHeight !== null
+              ? {
+                  height: `${mobileHeight}px`,
+                  overflow: "hidden",
+                  transition: reducedMotion ? undefined : "height 250ms cubic-bezier(0.16,1,0.3,1)",
+                }
+              : undefined
+          }
         >
-          {category.items.map((item, i) => (
-            <StaggerItem as="li" key={`${category.id}-${item.name}`}>
-              <MenuRow index={i} name={item.name} price={item.price} allergens={item.allergens} />
-            </StaggerItem>
-          ))}
-        </StaggerGroup>
+          <div ref={contentRef}>
+            <StaggerGroup
+              key={active}
+              as="ul"
+              stagger={0.06}
+              className="mt-12 flex flex-col gap-1 md:mt-16"
+            >
+              {category.items.map((item, i) => (
+                <StaggerItem as="li" key={`${category.id}-${item.name}`}>
+                  <MenuRow index={i} name={item.name} price={item.price} allergens={item.allergens} />
+                </StaggerItem>
+              ))}
+            </StaggerGroup>
+          </div>
+        </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-[#E7E2DB] pt-6 text-[0.8125rem] text-[#78716C]">
           <AllergenDisclosure />
@@ -131,18 +238,18 @@ function MenuRow({
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, amount: 0.4 }}
-      className="flex items-baseline border-b border-[#E7E2DB] py-4"
+      className="group flex items-baseline border-b border-[#E7E2DB] py-4 md:h-[88px] md:py-0 transition-colors duration-[180ms] md:hover:bg-[#F1E9DC]"
     >
-      <span className="shrink-0 text-[0.75rem] tabular-nums text-[#A8A29E]">
+      <span className="shrink-0 text-[0.75rem] tabular-nums text-[#A8A29E] transition-colors duration-[180ms] md:text-[13px] md:text-[#1C1917]/45 md:group-hover:text-[#8B4A2F]">
         {String(index + 1).padStart(2, "0")}
       </span>
-      <span className="ml-4 text-[1.0625rem] text-[#1C1917]">
+      <span className="ml-4 text-[1.0625rem] text-[#1C1917] md:text-[26px]">
         {name}
         {allergens && (
           <sup className="ml-1 text-[0.65rem] text-[#78716C]">{allergens.join(" ")}</sup>
         )}
       </span>
-      <span className="relative mx-2 min-w-[8px] flex-1 self-end overflow-hidden">
+      <span className="relative mx-2 min-w-[8px] flex-1 self-end overflow-hidden md:self-auto">
         <motion.span
           variants={{
             hidden: { scaleX: reducedMotion ? 1 : 0 },
@@ -153,7 +260,9 @@ function MenuRow({
           aria-hidden
         />
       </span>
-      <span className="shrink-0 text-[1.0625rem] tabular-nums text-[#1C1917]">€{price}</span>
+      <span className="shrink-0 text-[1.0625rem] tabular-nums text-[#1C1917] md:text-[26px]">
+        €{price}
+      </span>
     </Tappable>
   );
 }
